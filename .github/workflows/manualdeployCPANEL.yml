@@ -1,0 +1,17 @@
+on: 
+  workflow_dispatch:
+name: 🚀 Deploy website on manual
+jobs:
+  web-deploy:
+    name: 🎉 Deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: 🚚 Get latest code
+      uses: actions/checkout@v2
+    
+    - name: 📂 Sync files
+      uses: SamKirkland/FTP-Deploy-Action@4.3.0
+      with:
+        server: ${{ secrets.FTP_SERVER_LIVE }}
+        username: ${{ secrets.FTP_USERNAME_LIVE }}
+        password: ${{ secrets.FTP_PASSWORD_LIVE }}
