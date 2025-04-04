@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\ContactUsController;
 use App\Http\Controllers\Admin\CrmController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Auth\adminlogincontroller;
+use App\Http\Controllers\Admin\FarmerSliderController;
 
 /*
 |--------------------------------------------------------------------------
@@ -70,6 +71,14 @@ Route::get('/update_settings/{id}', [CrmController::class, 'update_settings'])->
 Route::post('/add_settings_process', [CrmController::class, 'add_settings_process'])->name('add_settings_process');
 Route::post('/update_settings_process/{id}', [CrmController::class, 'update_settings_process'])->name('update_settings_process');
 Route::get('/deletesetting/{id}', [CrmController::class, 'deletesetting'])->name('deletesetting');
+
+Route::get('farmer_slider', [FarmerSliderController::class, 'index'])->name('farmer_slider.list');
+Route::get('farmer_slider/add', [FarmerSliderController::class, 'createForm'])->name('add_farmer_slider');
+Route::post('farmer_slider/store', [FarmerSliderController::class, 'storeSlider'])->name('store_farmer_slider');
+Route::get('farmer_slider/edit/{id}', [FarmerSliderController::class, 'editForm'])->name('edit_farmer_slider');
+Route::post('farmer_slider/update/{id}', [FarmerSliderController::class, 'updateSlider'])->name('update_farmer_slider');
+Route::get('farmer_slider/delete/{id}', [FarmerSliderController::class, 'deleteSlider'])->name('delete_farmer_slider');
+Route::get('farmer_slider/toggle/{id}', [FarmerSliderController::class, 'toggleSliderStatus'])->name('toggle_farmer_slider_status');
 
     });
 
