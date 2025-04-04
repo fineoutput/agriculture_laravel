@@ -11,6 +11,6 @@ class FarmerSlider extends Model
     use HasFactory;
     use SoftDeletes;
     
-    protected $table = 'tbl_farmerslider';
+    protected $table = 'tbl_farmersliderslider';
     protected $fillable = ['id','image', 'ip', 'added_by', 'is_active'];
 }

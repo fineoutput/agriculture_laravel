@@ -45,7 +45,7 @@
 
               <form action="{{ route('update_farmer_slider', ['id' => $slider->id]) }}" method="POST" enctype="multipart/form-data">
                 @csrf
-                @method('PUT')
+                @method('POST')
                 <div class="form-group row">
                   <label for="image" class="col-sm-2 col-form-label"><strong>Image</strong> <span style="color:red;">*</span></label>
                   <div class="col-sm-10">
@@ -53,7 +53,7 @@
                     <small class="text-muted">Leave empty if you don't want to change the image.</small>
                     @if($slider->image)
                       <div class="mt-2">
-                        <img src="{{ asset('uploads/farmer_sliders/' . $slider->image) }}" alt="Slider Image" width="200" class="img-thumbnail">
+                        <img src="{{ asset($slider->image) }}" alt="Slider Image" style="height: 100px;">
                       </div>
                     @endif
                   </div>

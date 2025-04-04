@@ -13,7 +13,7 @@ use App\Http\Controllers\Admin\CrmController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Auth\adminlogincontroller;
 use App\Http\Controllers\Admin\FarmerSliderController;
-
+use App\Http\Controllers\Admin\DiseaseController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -80,7 +80,19 @@ Route::post('farmer_slider/update/{id}', [FarmerSliderController::class, 'update
 Route::get('farmer_slider/delete/{id}', [FarmerSliderController::class, 'deleteSlider'])->name('delete_farmer_slider');
 Route::get('farmer_slider/toggle/{id}', [FarmerSliderController::class, 'toggleSliderStatus'])->name('toggle_farmer_slider_status');
 
-    });
+////////////////disease
+Route::get('disease', [DiseaseController::class, 'index'])->name('disease.index');
+Route::get('create', [DiseaseController::class, 'create'])->name('disease.create');
+Route::post('store', [DiseaseController::class, 'store'])->name('disease.store');
+Route::get('edit/{id}', [DiseaseController::class, 'edit'])->name('disease.edit');
+Route::post('update/{id}', [DiseaseController::class, 'update'])->name('disease.update');
+Route::get('toggle-status/{id}', [DiseaseController::class, 'toggleStatus'])->name('disease.toggleStatus');
+Route::delete('delete/{id}', [DiseaseController::class, 'destroy'])->name('disease.delete');
+
+
+
+
+});
 
 });
 

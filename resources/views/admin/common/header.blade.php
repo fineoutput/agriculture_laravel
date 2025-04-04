@@ -169,7 +169,10 @@
                             <a href="{{route('view_team')}}" class="waves-effect"><i class="bi bi-eye-fill"></i><span> Teams </span></a>
                         </li>
                         <li>
-                            <a href="{{route('farmer_slider.list')}}" class="waves-effect"><i class="bi bi-eye-fill"></i><span>Farmer Slider</span></a>
+                            <a href="{{route('farmer_slider.list')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Farmer Slider</span></a>
+                        </li>
+                        <li>
+                            <a href="{{route('disease.index')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Disease</span></a>
                         </li>
                         <?php
                         $admin_services = Session::get('services');
