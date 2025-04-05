@@ -32,15 +32,25 @@ class DiseaseController extends Controller
         $data = $request->only('title', 'content');
 
         if ($request->hasFile('image1')) {
-            $path = $request->file('image1')->store('uploads/diseases', 'public');
-            $data['image1'] = 'storage/' . $path;
+            $image = $request->file('image1');
+            $fileName = time() . '_' . $image->getClientOriginalName();
+    
+            $destinationPath = public_path('disease_images');
+    
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0755, true);
+            }
+    
+            $image->move($destinationPath, $fileName);
+    
+            $data['image1'] = 'disease_images/' . $fileName;
         }
 
         $data['added_by'] = Auth::id();
         $data['is_active'] = true;
 
         Disease::create($data);
-        return redirect()->route('admin.diseases.index')->with('success', 'Disease added successfully.');
+        return redirect()->route('disease.index')->with('success', 'Disease added successfully.');
     }
 
     public function edit(Disease $disease)
@@ -59,35 +69,41 @@ class DiseaseController extends Controller
         $data = $request->only('title', 'content');
 
         if ($request->hasFile('image1')) {
-            // Delete old image if exists
-            if ($disease->image1) {
-                Storage::disk('public')->delete(str_replace('storage/', '', $disease->image1));
+            $image = $request->file('image1');
+            $fileName = time() . '_' . $image->getClientOriginalName();
+    
+            $destinationPath = public_path('disease_images');
+    
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0755, true);
             }
-            $path = $request->file('image1')->store('uploads/diseases', 'public');
-            $data['image1'] = 'storage/' . $path;
+    
+            $image->move($destinationPath, $fileName);
+    
+            $data['image1'] = 'disease_images/' . $fileName;
         }
 
         $disease->update($data);
-        return redirect()->route('admin.diseases.index')->with('success', 'Disease updated successfully.');
+        return redirect()->route('disease.index')->with('success', 'Disease updated successfully.');
     }
 
-    public function toggleStatus(Disease $disease)
-    {
-        $disease->is_active = !$disease->is_active;
-        $disease->save();
-        return redirect()->route('admin.diseases.index')->with('success', 'Disease status updated.');
-    }
+    public function toggleStatus($id)
+{
+    $disease = Disease::findOrFail($id);
+    $disease->is_active = !$disease->is_active;
+    $disease->save();
 
-    public function destroy(Disease $disease)
-    {
-        if (Auth::user()->position === 'Super Admin') {
-            if ($disease->image1) {
-                Storage::disk('public')->delete(str_replace('storage/', '', $disease->image1));
-            }
+    return redirect()->route('disease.index')->with('success', 'Disease status updated.');
+}
+
+
+    public function destroy($id)
+        {
+            $disease = Disease::findOrFail($id);
+            Storage::disk('public')->delete($disease->image);
             $disease->delete();
-            return redirect()->route('admin.diseases.index')->with('success', 'Disease deleted.');
-        }
 
-        return redirect()->back()->with('error', 'You do not have permission to delete.');
-    }
+            // Session::flash('success', 'Slider deleted successfully!');
+            return redirect()->route('disease.index');
+        }
 }

@@ -90,12 +90,13 @@
                           </button>
                           <div class="dropdown-menu">
                             @if($disease->is_active)
-                              <a class="dropdown-item" href="{{ route('disease.toggleStatus', base64_encode($disease->id)) }}">Deactivate</a>
+                              <a class="dropdown-item" href="{{ route('disease.toggleStatus', $disease->id) }}">Deactivate</a>
                             @else
-                              <a class="dropdown-item" href="{{ route('disease.toggleStatus', base64_encode($disease->id)) }}">Activate</a>
+                              <a class="dropdown-item" href="{{ route('disease.toggleStatus', $disease->id)}}">Activate</a>
                             @endif
                             <a class="dropdown-item" href="{{ route('disease.edit', base64_encode($disease->id)) }}">Edit</a>
-                            <a class="dropdown-item text-danger delete-confirm" href="javascript:;" data-id="{{ base64_encode($disease->id) }}">Delete</a>
+                            <a class="dropdown-item" href="{{ route('disease.delete', $disease->id) }}">Delete</a>
+
                           </div>
                         </div>
                       </td>
