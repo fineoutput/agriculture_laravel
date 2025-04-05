@@ -85,7 +85,7 @@ Route::get('disease', [DiseaseController::class, 'index'])->name('disease.index'
 Route::get('create', [DiseaseController::class, 'create'])->name('disease.create');
 Route::post('store', [DiseaseController::class, 'store'])->name('disease.store');
 Route::get('edit/{id}', [DiseaseController::class, 'edit'])->name('disease.edit');
-Route::post('update/{id}', [DiseaseController::class, 'update'])->name('disease.update');
+Route::put('update/{id}', [DiseaseController::class, 'update'])->name('disease.update');
 Route::get('toggle-status/{id}', [DiseaseController::class, 'toggleStatus'])->name('disease.toggleStatus');
 Route::get('delete/{id}', [DiseaseController::class, 'destroy'])->name('disease.delete');
 

@@ -43,7 +43,9 @@
               <h4 class="mt-0 header-title mb-3">Update Disease Information</h4>
 
               <!-- Form -->
-              <form action="{{ route('disease.update', $disease->id) }}" method="POST" enctype="multipart/form-data">
+              @if($disease)
+              <form action="{{ route('disease.update', ['id' => $disease->id]) }}" method="POST" enctype="multipart/form-data">
+
 
                 @csrf
                 @method('PUT')
@@ -67,7 +69,8 @@
                   <div class="col-sm-10">
                     <input type="file" name="image1" class="form-control">
                     @if ($disease->image1)
-                      <img src="{{ asset('uploads/diseases/' . $disease->image1) }}" alt="Current Image" class="mt-2" width="100">
+                    <img src="{{ asset($disease->image1) }}" alt="Current Image" class="mt-2" width="100">
+
                     @endif
                   </div>
                 </div>
@@ -79,7 +82,9 @@
                 </div>
 
               </form>
-
+              @else
+    <p>Disease not found.</p>
+@endif
             </div> <!-- card-body -->
           </div> <!-- card -->
         </div> <!-- col -->

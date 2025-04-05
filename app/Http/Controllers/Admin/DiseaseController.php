@@ -53,13 +53,23 @@ class DiseaseController extends Controller
         return redirect()->route('disease.index')->with('success', 'Disease added successfully.');
     }
 
-    public function edit(Disease $disease)
+    public function edit($id)
     {
-        return view('admin.diseases.edit', compact('disease'));
+        try {
+            $decodedId = base64_decode($id);
+            $disease = Disease::findOrFail($decodedId);
+            return view('admin.diseases.edit', compact('disease'));
+        } catch (\Exception $e) {
+            return redirect()->route('disease.index')->with('error', 'Invalid disease ID.');
+        }
     }
 
-    public function update(Request $request, Disease $disease)
-    {
+    public function update(Request $request, $id)
+{
+    try {
+        $decodedId = base64_decode($id);
+        $disease = Disease::findOrFail($decodedId);
+
         $validated = $request->validate([
             'title' => 'required|string',
             'content' => 'required|string',
@@ -69,23 +79,18 @@ class DiseaseController extends Controller
         $data = $request->only('title', 'content');
 
         if ($request->hasFile('image1')) {
-            $image = $request->file('image1');
-            $fileName = time() . '_' . $image->getClientOriginalName();
-    
-            $destinationPath = public_path('disease_images');
-    
-            if (!file_exists($destinationPath)) {
-                mkdir($destinationPath, 0755, true);
+            if ($disease->image1) {
+                Storage::disk('public')->delete($disease->image1);
             }
-    
-            $image->move($destinationPath, $fileName);
-    
-            $data['image1'] = 'disease_images/' . $fileName;
+            $data['image1'] = $request->file('image1')->store('disease_images', 'public');
         }
 
         $disease->update($data);
         return redirect()->route('disease.index')->with('success', 'Disease updated successfully.');
+    } catch (\Exception $e) {
+        return redirect()->route('disease.index')->with('error', 'Failed to update disease.');
     }
+}
 
     public function toggleStatus($id)
 {
