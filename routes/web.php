@@ -91,12 +91,12 @@ Route::get('toggle-status/{id}', [DiseaseController::class, 'toggleStatus'])->na
 Route::get('delete/{id}', [DiseaseController::class, 'destroy'])->name('disease.delete');
 
 //////Farmer
-Route::get('/farmers', [FarmersController::class, 'index'])->name('admin.farmers.index');
-Route::get('/farmers/updateFarmersStatus/{id}/{status}', [FarmersController::class, 'updateStatus'])->name('admin.farmers.status');
-Route::get('/farmers/delete/{id}', [FarmersController::class, 'delete'])->name('admin.farmers.delete');
-Route::get('/farmers/viewrecords/{id}', [FarmersController::class, 'viewRecords'])->name('admin.farmers.records');
-Route::post('/farmers/store_cod_data', [FarmersController::class, 'storeCod'])->name('admin.farmers.store_cod');
-Route::post('/farmers/qtyupdate', [FarmersController::class, 'updateQty'])->name('admin.farmers.qtyupdate');
+Route::get('farmers', [FarmersController::class, 'index'])->name('admin.farmers.index');
+Route::get('farmers/updateFarmersStatus/{id}/{status}', [FarmersController::class, 'updateFarmerStatus'])->name('admin.farmers.status');
+Route::get('farmers/delete/{id}', [FarmersController::class, 'delete'])->name('admin.farmers.delete');
+Route::get('farmers/viewrecords/{id}', [FarmersController::class, 'viewRecords'])->name('admin.farmers.records');
+Route::post('farmers/store_cod_data', [FarmersController::class, 'storeCod'])->name('admin.farmers.store_cod');
+Route::post('farmers/qtyupdate', [FarmersController::class, 'updateQty'])->name('admin.farmers.qtyupdate');
 });
 
 });

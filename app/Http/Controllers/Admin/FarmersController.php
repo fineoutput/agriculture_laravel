@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Farmer;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 
 class FarmersController extends Controller
 {
@@ -24,6 +27,29 @@ class FarmersController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
+    public function updateFarmerStatus($id, $status)
+    {
+        $decodedId = base64_decode($id); // Decode the Base64-encoded ID
+        $farmer = Farmer::find($decodedId);
+
+        if (!$farmer) {
+            return response()->view('errors.500', ['e' => 'Farmer not found'], 500);
+        }
+
+        if ($status === 'active') {
+            $farmer->is_active = 1;
+        } elseif ($status === 'inactive') {
+            $farmer->is_active = 0;
+        } else {
+            return response()->view('errors.500', ['e' => 'Invalid status value'], 500);
+        }
+
+        if ($farmer->save()) {
+            return redirect()->route('admin.farmers.index')->with('success', 'Status updated successfully');
+        } else {
+            return response()->view('errors.500', ['e' => 'Error Occurred'], 500);
+        }
+    }
     public function create()
     {
         //
