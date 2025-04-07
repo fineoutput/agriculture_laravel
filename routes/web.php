@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Auth\adminlogincontroller;
 use App\Http\Controllers\Admin\FarmerSliderController;
 use App\Http\Controllers\Admin\DiseaseController;
+use App\Http\Controllers\Admin\FarmersController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -89,9 +90,13 @@ Route::put('update/{id}', [DiseaseController::class, 'update'])->name('disease.u
 Route::get('toggle-status/{id}', [DiseaseController::class, 'toggleStatus'])->name('disease.toggleStatus');
 Route::get('delete/{id}', [DiseaseController::class, 'destroy'])->name('disease.delete');
 
-
-
-
+//////Farmer
+Route::get('/farmers', [FarmersController::class, 'index'])->name('admin.farmers.index');
+Route::get('/farmers/updateFarmersStatus/{id}/{status}', [FarmersController::class, 'updateStatus'])->name('admin.farmers.status');
+Route::get('/farmers/delete/{id}', [FarmersController::class, 'delete'])->name('admin.farmers.delete');
+Route::get('/farmers/viewrecords/{id}', [FarmersController::class, 'viewRecords'])->name('admin.farmers.records');
+Route::post('/farmers/store_cod_data', [FarmersController::class, 'storeCod'])->name('admin.farmers.store_cod');
+Route::post('/farmers/qtyupdate', [FarmersController::class, 'updateQty'])->name('admin.farmers.qtyupdate');
 });
 
 });

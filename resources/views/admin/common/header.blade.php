@@ -174,6 +174,9 @@
                         <li>
                             <a href="{{route('disease.index')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Disease</span></a>
                         </li>
+                        <li>
+                            <a href="{{route('admin.farmers.index')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Farmers</span></a>
+                        </li>
                         <?php
                         $admin_services = Session::get('services');
                         $ser = json_decode($admin_services);
