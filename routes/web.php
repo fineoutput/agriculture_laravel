@@ -15,6 +15,7 @@ use App\Http\Controllers\Auth\adminlogincontroller;
 use App\Http\Controllers\Admin\FarmerSliderController;
 use App\Http\Controllers\Admin\DiseaseController;
 use App\Http\Controllers\Admin\FarmersController;
+use App\Http\Controllers\Admin\DoctorsController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -97,6 +98,33 @@ Route::get('farmers/delete/{id}', [FarmersController::class, 'delete'])->name('a
 Route::get('farmers/viewrecords/{id}', [FarmersController::class, 'viewRecords'])->name('admin.farmers.records');
 Route::post('farmers/store_cod_data', [FarmersController::class, 'storeCod'])->name('admin.farmers.store_cod');
 Route::post('farmers/qtyupdate', [FarmersController::class, 'updateQty'])->name('admin.farmers.qtyupdate');
+
+
+///////Doctors
+    Route::get('/new', [DoctorsController::class, 'newDoctors'])->name('admin.doctor.new');
+    Route::get('/accepted', [DoctorsController::class, 'acceptedDoctors'])->name('admin.doctor.accepted');
+    Route::get('/normal', [DoctorsController::class, 'normalDoctors'])->name('admin.doctor.normal');
+    Route::get('/total', [DoctorsController::class, 'totalDoctors'])->name('admin.doctor.total');
+    Route::get('/rejected', [DoctorsController::class, 'rejectedDoctors'])->name('admin.doctor.rejected');
+    Route::get('/view-pdf/{idd}', [DoctorsController::class, 'viewPdf'])->name('admin.doctor.view-pdf');
+    Route::get('/requests', [DoctorsController::class, 'doctorRequest'])->name('admin.doctor.requests');
+    Route::get('/delete/{idd}', [DoctorsController::class, 'deleteDoctor'])->name('admin.doctor.delete');
+    Route::get('/update-status/{idd}/{t}', [DoctorsController::class, 'updateDoctorStatus'])->name('admin.doctor.update-status');
+    Route::get('/edit/{idd}', [DoctorsController::class, 'updateDoctor'])->name('admin.doctor.edit');
+    Route::get('/set-commission/{idd}', [DoctorsController::class, 'setCommissionDoctor'])->name('admin.doctor.set-commission');
+    Route::post('/update-commission/{idd}', [DoctorsController::class, 'addDoctorData2'])->name('admin.doctor.update-commission');
+    Route::get('/add-fees/{y}', [DoctorsController::class, 'addFeesDoctor'])->name('admin.doctor.add-fees');
+    Route::post('/store-fees/{y}', [DoctorsController::class, 'addDoctorData3'])->name('admin.doctor.store-fees');
+    Route::post('/update/{y}', [DoctorsController::class, 'updateDoctorData'])->name('admin.doctor.update');
+
+
+
+
+
+
+
+
+
 });
 
 });
