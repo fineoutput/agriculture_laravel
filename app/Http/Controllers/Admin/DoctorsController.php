@@ -19,12 +19,24 @@ class DoctorsController extends Controller
         $this->middleware('auth:admin');
     }
 
+    // public function newDoctors()
+    // {
+    //     $doctors = Doctor::where('is_approved', 0)
+    //         ->orderBy('id', 'desc')
+    //         ->get();
+    //         dd($doctors);
+    //     return view('admin.doctor.view_doctor', [
+    //         'user_name' => auth()->user()->name,
+    //         'doctor_data' => $doctors,
+    //         'heading' => 'New Doctors'
+    //     ]);
+    // }
+
     public function newDoctors()
     {
-        $doctors = Doctor::where('is_approved', 0)
-            ->orderBy('id', 'desc')
-            ->get();
-
+        $doctors = Doctor::all(); // Fetch all without any conditions
+        // dd($doctors);
+    
         return view('admin.doctor.view_doctor', [
             'user_name' => auth()->user()->name,
             'doctor_data' => $doctors,
