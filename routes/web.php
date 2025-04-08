@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\DiseaseController;
 use App\Http\Controllers\Admin\FarmersController;
 use App\Http\Controllers\Admin\DoctorsController;
 use App\Http\Controllers\Admin\SalePurchaseSliderController;
+use App\Http\Controllers\Admin\VendorSliderController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -149,6 +150,19 @@ Route::post('farmers/qtyupdate', [FarmersController::class, 'updateQty'])->name(
     Route::get('/SalePurchaseSlider/delete_slider/{idd}', [SalePurchaseSliderController::class, 'deleteSlider'])->name('admin.salepurchaseslider.delete');
     Route::get('/SalePurchaseSlider/updatesliderStatus/{idd}/{t}', [SalePurchaseSliderController::class, 'updateSliderStatus'])->name('admin.salepurchaseslider.update_status');
 
+/////VendorSlider
+
+
+    Route::get('/vendor_slider/view_vendorslider', [VendorSliderController::class, 'viewVendorSlider'])->name('admin.vendorslider.view');
+    Route::get('/vendor_slider/add_vendorslider', [VendorSliderController::class, 'addVendorSlider'])->name('admin.vendorslider.add');
+    Route::post('/vendor_slider/add_vendorslider_data/{t}/{iw?}', [VendorSliderController::class, 'addVendorSliderData'])->name('admin.vendorslider.add_data');
+    Route::get('/vendor_slider/update_vendorslider/{idd}', [VendorSliderController::class, 'updateVendorSlider'])->name('admin.vendorslider.update');
+    Route::get('/vendor_slider/delete_vendorslider/{idd}', [VendorSliderController::class, 'deleteVendorSlider'])->name('admin.vendorslider.delete');
+    Route::get('/vendor_slider/updatevendorsliderStatus/{idd}/{t}', [VendorSliderController::class, 'updateVendorSliderStatus'])->name('admin.vendorslider.update_status');
+    
+    // Vendor Slider Request Routes
+    Route::get('/vendor_slider/view_vendorslider_req', [VendorSliderController::class, 'viewVendorSliderRequest'])->name('admin.vendorslider.view_request');
+    Route::get('/vendor_slider/updatevendorslider_req/{idd}/{t}', [VendorSliderController::class, 'updateVendorSliderRequest'])->name('admin.vendorslider.update_request');
 
 
 
