@@ -32,39 +32,38 @@
         }
 
         public function storeSlider(Request $request)
-        {
-            $request->validate([
-                'image' => 'required|image|mimes:jpg,jpeg,png|max:25000',
-            ]);
+{
+    $request->validate([
+        'image.*' => 'required|image|mimes:jpg,jpeg,png|max:25000', // validate each image
+    ]);
 
-            if ($request->hasFile('image')) {
-                $image = $request->file('image');
-                $fileName = $image->getClientOriginalName();
-        
-                // Define destination path
-                $destinationPath = public_path('slider_images');
-        
-                // Create the directory if it doesn't exist
-                if (!file_exists($destinationPath)) {
-                    mkdir($destinationPath, 0755, true);
-                }
-        
-                // Move the file
-                $image->move($destinationPath, $fileName);
-        
-                $imagePath = 'slider_images/' . $fileName;
-            }    
+    $imagePaths = [];
 
-            FarmerSlider::create([
-                'image' => $imagePath,
-                'ip' => request()->ip(),
-                'added_by' => Auth::id(),
-                'is_active' => 1,
-            ]);
+    if ($request->hasFile('image')) {
+        foreach ($request->file('image') as $image) {
+            $fileName = time() . '_' . $image->getClientOriginalName();
+            $destinationPath = public_path('slider_images');
 
-            Session::flash('success', 'Slider added successfully!');
-            return redirect()->route('farmer_slider.list');
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0755, true);
+            }
+
+            $image->move($destinationPath, $fileName);
+            $imagePaths[] = 'slider_images/' . $fileName;
         }
+    }
+
+    FarmerSlider::create([
+        'image' => json_encode($imagePaths),
+        'ip' => request()->ip(),
+        'added_by' => Auth::id(),
+        'is_active' => 1,
+    ]);
+
+    Session::flash('success', 'Slider added successfully!');
+    return redirect()->route('farmer_slider.list');
+}
+
 
         public function editForm($id)
         {
@@ -79,44 +78,70 @@
         public function updateSlider(Request $request, $id)
         {
             $slider = FarmerSlider::findOrFail($id);
-
+        
             if ($request->hasFile('image')) {
                 $request->validate([
-                    'image' => 'image|mimes:jpg,jpeg,png|max:25000',
+                    'image.*' => 'image|mimes:jpg,jpeg,png|max:25000',
                 ]);
         
-                // Delete old image if exists
-                if ($slider->image && file_exists(public_path($slider->image))) {
-                    unlink(public_path($slider->image));
+                // Delete existing images
+                if ($slider->image) {
+                    $existingImages = json_decode($slider->image, true);
+                    foreach ($existingImages as $img) {
+                        if (file_exists(public_path($img))) {
+                            unlink(public_path($img));
+                        }
+                    }
                 }
         
-                $image = $request->file('image');
-                $fileName = $image->getClientOriginalName();
-                $destinationPath = public_path('slider_images');
+                $uploadedImages = [];
         
-                if (!file_exists($destinationPath)) {
-                    mkdir($destinationPath, 0755, true);
+                foreach ($request->file('image') as $image) {
+                    $fileName = time() . '_' . $image->getClientOriginalName();
+                    $destinationPath = public_path('slider_images');
+        
+                    if (!file_exists($destinationPath)) {
+                        mkdir($destinationPath, 0755, true);
+                    }
+        
+                    $image->move($destinationPath, $fileName);
+                    $uploadedImages[] = 'slider_images/' . $fileName;
                 }
         
-                $image->move($destinationPath, $fileName);
-                $slider->image = 'slider_images/' . $fileName;
+                // Store as JSON
+                $slider->image = json_encode($uploadedImages);
             }
-
+        
             $slider->save();
-
+        
             Session::flash('success', 'Slider updated successfully!');
             return redirect()->route('farmer_slider.list');
         }
+        
 
         public function deleteSlider($id)
-        {
-            $slider = FarmerSlider::findOrFail($id);
-            Storage::disk('public')->delete($slider->image);
-            $slider->delete();
+{
+    $slider = FarmerSlider::findOrFail($id);
 
-            Session::flash('success', 'Slider deleted successfully!');
-            return redirect()->route('farmer_slider.list');
+    $images = json_decode($slider->image, true);
+    if (is_array($images)) {
+        foreach ($images as $img) {
+            if (file_exists(public_path($img))) {
+                unlink(public_path($img));
+            }
         }
+    } else {
+        if (file_exists(public_path($slider->image))) {
+            unlink(public_path($slider->image));
+        }
+    }
+
+    $slider->delete();
+
+    Session::flash('success', 'Slider deleted successfully!');
+    return redirect()->route('farmer_slider.list');
+}
+
 
         public function toggleSliderStatus($id)
         {

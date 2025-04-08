@@ -59,7 +59,7 @@
                         <th>Image</th>
                         <th>Status</th>
                         <th>Actions</th>
-                      </tr>
+                      </tr> 
                     </thead>
                     <tbody>
                       @php $count = 1; @endphp
@@ -67,8 +67,18 @@
                         <tr>
                           <td>{{ $count++ }}</td>
                           <td>
-                            <img src="{{ asset($slider->image) }}" alt="Slider Image" style="height: 100px;">
-                          </td>
+                            @php
+      $images = json_decode($slider->image, true); // decode JSON array
+  @endphp
+
+  @if(is_array($images))
+    @foreach($images as $img)
+      <img src="{{ asset($img) }}" style="height: 100px; margin-right: 10px;" />
+    @endforeach
+  @else
+    <img src="{{ asset($slider->image) }}" style="height: 100px;" />
+  @endif
+</td>
                           <td>
                             @if($slider->is_active)
                               <span class="badge badge-success">Active</span>

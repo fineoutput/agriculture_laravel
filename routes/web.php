@@ -117,17 +117,32 @@ Route::post('farmers/qtyupdate', [FarmersController::class, 'updateQty'])->name(
     Route::post('/store-fees/{y}', [DoctorsController::class, 'addDoctorData3'])->name('admin.doctor.store-fees');
     Route::post('/update/{y}', [DoctorsController::class, 'updateDoctorData'])->name('admin.doctor.update');
 
+///////Products
+    Route::get('/Products/View_products', [ProductController::class, 'viewProducts'])->name('admin.products.view');
+    Route::get('/Products/vendor_pending_products', [ProductController::class, 'vendorPendingProducts'])->name('admin.products.vendor_pending');
+    Route::get('/Products/vendor_accepted_products', [ProductController::class, 'vendorAcceptedProducts'])->name('admin.products.vendor_accepted');
+    Route::get('/Products/add_products', [ProductController::class, 'addProducts'])->name('admin.products.add');
+    Route::post('/Products/add_products_data/{t}/{iw?}', [ProductController::class, 'addProductsData'])->name('admin.products.add_data');
+    Route::get('/Products/update_products/{idd}', [ProductController::class, 'updateProducts'])->name('admin.products.update');
+    Route::get('/Products/delete_products/{idd}', [ProductController::class, 'deleteProducts'])->name('admin.products.delete');
+    Route::get('/Products/updateproductsStatus/{idd}/{t}', [ProductController::class, 'updateProductsStatus'])->name('admin.products.update_status');
+    Route::get('/Products/approvedProduct/{idd}', [ProductController::class, 'approvedProduct'])->name('admin.products.approve');
+    Route::post('/Products/product_cod_data', [ProductController::class, 'productCodData'])->name('admin.products.cod_data');
 
+/////////////slider2
 
-
-
-
+    Route::get('/Slider/View_slider', [SliderController::class, 'viewSlider'])->name('admin.slider.view');
+    Route::get('/Slider/add_slider', [SliderController::class, 'addSlider'])->name('admin.slider.add');
+    Route::post('/Slider/add_slider_data/{t}/{iw?}', [SliderController::class, 'addSliderData'])->name('admin.slider.add_data');
+    Route::get('/Slider/update_slider/{idd}', [SliderController::class, 'updateSlider'])->name('admin.slider.update');
+    Route::get('/Slider/delete_slider/{idd}', [SliderController::class, 'deleteSlider'])->name('admin.slider.delete');
+    Route::get('/Slider/updatesliderStatus/{idd}/{t}', [SliderController::class, 'updateSliderStatus'])->name('admin.slider.update_status');
+});
 
 
 
 });
 
-});
 
 
 
