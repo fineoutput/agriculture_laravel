@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\FarmerSliderController;
 use App\Http\Controllers\Admin\DiseaseController;
 use App\Http\Controllers\Admin\FarmersController;
 use App\Http\Controllers\Admin\DoctorsController;
+use App\Http\Controllers\Admin\SalePurchaseSliderController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -137,7 +138,22 @@ Route::post('farmers/qtyupdate', [FarmersController::class, 'updateQty'])->name(
     Route::get('/Slider/update_slider/{idd}', [SliderController::class, 'updateSlider'])->name('admin.slider.update');
     Route::get('/Slider/delete_slider/{idd}', [SliderController::class, 'deleteSlider'])->name('admin.slider.delete');
     Route::get('/Slider/updatesliderStatus/{idd}/{t}', [SliderController::class, 'updateSliderStatus'])->name('admin.slider.update_status');
+
+
+
+    //////salePurchase
+    Route::get('/SalePurchaseSlider/View_slider', [SalePurchaseSliderController::class, 'viewSlider'])->name('admin.salepurchaseslider.view');
+    Route::get('/SalePurchaseSlider/add_slider', [SalePurchaseSliderController::class, 'addSlider'])->name('admin.salepurchaseslider.add');
+    Route::post('/SalePurchaseSlider/add_slider_data/{t}/{iw?}', [SalePurchaseSliderController::class, 'addSliderData'])->name('admin.salepurchaseslider.add_data');
+    Route::get('/SalePurchaseSlider/update_slider/{idd}', [SalePurchaseSliderController::class, 'updateSlider'])->name('admin.salepurchaseslider.update');
+    Route::get('/SalePurchaseSlider/delete_slider/{idd}', [SalePurchaseSliderController::class, 'deleteSlider'])->name('admin.salepurchaseslider.delete');
+    Route::get('/SalePurchaseSlider/updatesliderStatus/{idd}/{t}', [SalePurchaseSliderController::class, 'updateSliderStatus'])->name('admin.salepurchaseslider.update_status');
+
+
+
+
 });
+
 
 
 

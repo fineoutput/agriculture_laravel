@@ -186,6 +186,9 @@
                         <li>
                             <a href="{{route('admin.slider.view')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Farmer Slider 2</span></a>
                         </li>
+                        <li>
+                            <a href="{{route('admin.salepurchaseslider.view')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Sale Purchase Slider</span></a>
+                        </li>
                         <?php
                         $admin_services = Session::get('services');
                         $ser = json_decode($admin_services);
