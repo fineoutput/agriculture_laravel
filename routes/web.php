@@ -21,6 +21,8 @@ use App\Http\Controllers\Admin\VendorSliderController;
 use App\Http\Controllers\Admin\ManagerController;
 use App\Http\Controllers\Admin\GiftcardController;
 use App\Http\Controllers\Admin\ExpertiseCategoryController;
+use App\Http\Controllers\Admin\OptionImageController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -198,10 +200,25 @@ Route::post('farmers/qtyupdate', [FarmersController::class, 'updateQty'])->name(
     Route::get('/ExpertiseCategory/updateexpertise_categoryStatus/{idd}/{t}', [ExpertiseCategoryController::class, 'updateExpertiseCategoryStatus'])->name('admin.expertise_category.update_status');
     Route::post('/ExpertiseCategory/delete_expertise_category/{idd}', [ExpertiseCategoryController::class, 'deleteExpertiseCategory'])->name('admin.expertise_category.delete');
 
+    //////optionImage
+    Route::get('/OptionImageController/View_slider', [OptionImageController::class, 'viewSlider'])->name('admin.option_image.view');
+    Route::get('/OptionImageController/add_slider', [OptionImageController::class, 'addSlider'])->name('admin.option_image.add');
+    Route::post('/OptionImageController/add_slider_data/{t}/{iw?}', [OptionImageController::class, 'addSliderData'])->name('admin.option_image.add_data');
+    Route::get('/OptionImageController/update_slider/{idd}', [OptionImageController::class, 'updateSlider'])->name('admin.option_image.update');
+    Route::post('/OptionImageController/delete_slider/{idd}', [OptionImageController::class, 'deleteSlider'])->name('admin.option_image.delete');
+    Route::get('/OptionImageController/updatesliderStatus/{idd}/{t}', [OptionImageController::class, 'updateSliderStatus'])->name('admin.option_image.update_status');
+
+
+
+
+
+
+
+
+
+
+
 });
-
-
-
 
 });
 
