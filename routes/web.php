@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\SalePurchaseSliderController;
 use App\Http\Controllers\Admin\VendorSliderController;
 use App\Http\Controllers\Admin\ManagerController;
 use App\Http\Controllers\Admin\GiftcardController;
+use App\Http\Controllers\Admin\ExpertiseCategoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -188,6 +189,14 @@ Route::post('farmers/qtyupdate', [FarmersController::class, 'updateQty'])->name(
     Route::get('/Giftcard/updateGiftCardStatus/{idd}/{t}', [GiftcardController::class, 'updateGiftCardStatus'])->name('admin.giftcard.update_status');
     Route::get('/Giftcard/allocated/{alt_id}', [GiftcardController::class, 'allocated'])->name('admin.giftcard.allocated');
 
+
+    ////////ExpertiseCategory
+    Route::get('/ExpertiseCategory/view_expertise_category', [ExpertiseCategoryController::class, 'viewExpertiseCategory'])->name('admin.expertise_category.view');
+    Route::get('/ExpertiseCategory/add_expertise_category', [ExpertiseCategoryController::class, 'addExpertiseCategory'])->name('admin.expertise_category.add');
+    Route::get('/ExpertiseCategory/update_expertise_category/{idd}', [ExpertiseCategoryController::class, 'updateExpertiseCategory'])->name('admin.expertise_category.update');
+    Route::post('/ExpertiseCategory/add_expertise_category_data/{t}/{iw?}', [ExpertiseCategoryController::class, 'addExpertiseCategoryData'])->name('admin.expertise_category.add_data');
+    Route::get('/ExpertiseCategory/updateexpertise_categoryStatus/{idd}/{t}', [ExpertiseCategoryController::class, 'updateExpertiseCategoryStatus'])->name('admin.expertise_category.update_status');
+    Route::post('/ExpertiseCategory/delete_expertise_category/{idd}', [ExpertiseCategoryController::class, 'deleteExpertiseCategory'])->name('admin.expertise_category.delete');
 
 });
 

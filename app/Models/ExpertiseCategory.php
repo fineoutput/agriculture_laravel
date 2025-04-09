@@ -7,8 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 class ExpertiseCategory extends Model
 {
     protected $table = 'tbl_expertise_category';
-    protected $fillable = ['name', 'is_active']; // Adjust based on your actual columns
-    protected $casts = [
-        'is_active' => 'boolean'
-    ];
+    protected $fillable = ['name', 'image', 'image_hindi', 'image_punjabi', 'ip', 'added_by', 'is_active', 'date'];
+    protected $casts = ['is_active' => 'boolean'];
 }

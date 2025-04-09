@@ -206,6 +206,9 @@
                         <li>
                             <a href="{{route('admin.giftcard.index')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Gift Card</span></a>
                         </li>
+                        <li>
+                            <a href="{{route('admin.expertise_category.view')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Expertise Category</span></a>
+                        </li>
                         
                         <?php
                         $admin_services = Session::get('services');
