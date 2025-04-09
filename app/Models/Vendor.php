@@ -1,0 +1,11 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Vendor extends Model
+{
+    protected $table = 'tbl_vendor';
+    protected $fillable = ['refer_code']; // Add other fields as needed
+}

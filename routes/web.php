@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\FarmersController;
 use App\Http\Controllers\Admin\DoctorsController;
 use App\Http\Controllers\Admin\SalePurchaseSliderController;
 use App\Http\Controllers\Admin\VendorSliderController;
+use App\Http\Controllers\Admin\ManagerController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -163,6 +164,17 @@ Route::post('farmers/qtyupdate', [FarmersController::class, 'updateQty'])->name(
     // Vendor Slider Request Routes
     Route::get('/vendor_slider/view_vendorslider_req', [VendorSliderController::class, 'viewVendorSliderRequest'])->name('admin.vendorslider.view_request');
     Route::get('/vendor_slider/updatevendorslider_req/{idd}/{t}', [VendorSliderController::class, 'updateVendorSliderRequest'])->name('admin.vendorslider.update_request');
+
+
+    ////Manager 
+    Route::get('/manager/add_manager', [ManagerController::class, 'addManager'])->name('admin.manager.add');
+    Route::post('/manager/add_manager_data', [ManagerController::class, 'addManagerData'])->name('admin.manager.add_data');
+    Route::get('/manager/view_manager', [ManagerController::class, 'viewManager'])->name('admin.manager.view');
+    Route::get('/manager/view_farmers/{idd}', [ManagerController::class, 'viewFarmers'])->name('admin.manager.view_farmers');
+    Route::get('/manager/view_doctors/{idd}', [ManagerController::class, 'viewDoctors'])->name('admin.manager.view_doctors');
+    Route::get('/manager/view_vendors/{idd}', [ManagerController::class, 'viewVendors'])->name('admin.manager.view_vendors');
+    Route::get('/manager/updatemanagerStatus/{idd}/{t}', [ManagerController::class, 'updateManagerStatus'])->name('admin.manager.update_status');
+    Route::get('/manager/delete_manager/{idd}', [ManagerController::class, 'deleteManager'])->name('admin.manager.delete');
 
 
 
