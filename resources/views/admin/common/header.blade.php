@@ -203,6 +203,9 @@
                                 <li><a href="{{ route('admin.manager.add') }}">Add Manager</a></li>
                             </ul>
                         </li>
+                        <li>
+                            <a href="{{route('admin.giftcard.index')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Gift Card</span></a>
+                        </li>
                         
                         <?php
                         $admin_services = Session::get('services');

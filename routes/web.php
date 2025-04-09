@@ -19,6 +19,8 @@ use App\Http\Controllers\Admin\DoctorsController;
 use App\Http\Controllers\Admin\SalePurchaseSliderController;
 use App\Http\Controllers\Admin\VendorSliderController;
 use App\Http\Controllers\Admin\ManagerController;
+use App\Http\Controllers\Admin\GiftcardController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -176,6 +178,15 @@ Route::post('farmers/qtyupdate', [FarmersController::class, 'updateQty'])->name(
     Route::get('/manager/updatemanagerStatus/{idd}/{t}', [ManagerController::class, 'updateManagerStatus'])->name('admin.manager.update_status');
     Route::get('/manager/delete_manager/{idd}', [ManagerController::class, 'deleteManager'])->name('admin.manager.delete');
 
+/////////GiftCard
+
+    Route::get('/Giftcard', [GiftcardController::class, 'index'])->name('admin.giftcard.index');
+    Route::get('/Giftcard/add_giftcard', [GiftcardController::class, 'addGiftcard'])->name('admin.giftcard.add');
+    Route::get('/Giftcard/update_giftcard/{idd}', [GiftcardController::class, 'updateGiftcard'])->name('admin.giftcard.update');
+    Route::post('/Giftcard/add_giftcard_data/{t}/{iw?}', [GiftcardController::class, 'addGiftcardData'])->name('admin.giftcard.add_data');
+    Route::post('/Giftcard/delete_gift/{id}', [GiftcardController::class, 'deleteGift'])->name('admin.giftcard.delete');
+    Route::get('/Giftcard/updateGiftCardStatus/{idd}/{t}', [GiftcardController::class, 'updateGiftCardStatus'])->name('admin.giftcard.update_status');
+    Route::get('/Giftcard/allocated/{alt_id}', [GiftcardController::class, 'allocated'])->name('admin.giftcard.allocated');
 
 
 });
