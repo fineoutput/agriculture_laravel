@@ -212,6 +212,9 @@
                         <li>
                             <a href="{{route('admin.option_image.view')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Option Image</span></a>
                         </li>
+                        <li>
+                            <a href="{{route('admin.doctor_slider.view')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Doctor Slider</span></a>
+                        </li>
                         
                         <?php
                         $admin_services = Session::get('services');

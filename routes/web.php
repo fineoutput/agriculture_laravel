@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\ManagerController;
 use App\Http\Controllers\Admin\GiftcardController;
 use App\Http\Controllers\Admin\ExpertiseCategoryController;
 use App\Http\Controllers\Admin\OptionImageController;
+use App\Http\Controllers\Admin\DoctorSliderController;
 
 
 /*
@@ -208,6 +209,13 @@ Route::post('farmers/qtyupdate', [FarmersController::class, 'updateQty'])->name(
     Route::post('/OptionImageController/delete_slider/{idd}', [OptionImageController::class, 'deleteSlider'])->name('admin.option_image.delete');
     Route::get('/OptionImageController/updatesliderStatus/{idd}/{t}', [OptionImageController::class, 'updateSliderStatus'])->name('admin.option_image.update_status');
 
+    /////DoctorSlider
+    Route::get('/doctor_slider/view_doctorslider', [DoctorSliderController::class, 'viewDoctorSlider'])->name('admin.doctor_slider.view');
+    Route::get('/doctor_slider/add_doctorslider', [DoctorSliderController::class, 'addDoctorSlider'])->name('admin.doctor_slider.add');
+    Route::post('/doctor_slider/add_doctorslider_data/{t}/{iw?}', [DoctorSliderController::class, 'addDoctorSliderData'])->name('admin.doctor_slider.add_data');
+    Route::get('/doctor_slider/update_doctorslider/{idd}', [DoctorSliderController::class, 'updateDoctorSlider'])->name('admin.doctor_slider.update');
+    Route::post('/doctor_slider/delete_doctorslider/{idd}', [DoctorSliderController::class, 'deleteDoctorSlider'])->name('admin.doctor_slider.delete');
+    Route::get('/doctor_slider/updatedoctorsliderStatus/{idd}/{t}', [DoctorSliderController::class, 'updateDoctorSliderStatus'])->name('admin.doctor_slider.update_status');
 
 
 
