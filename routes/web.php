@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\GiftcardController;
 use App\Http\Controllers\Admin\ExpertiseCategoryController;
 use App\Http\Controllers\Admin\OptionImageController;
 use App\Http\Controllers\Admin\DoctorSliderController;
+use App\Http\Controllers\Admin\VendorController;
 
 
 /*
@@ -217,6 +218,18 @@ Route::post('farmers/qtyupdate', [FarmersController::class, 'updateQty'])->name(
     Route::post('/doctor_slider/delete_doctorslider/{idd}', [DoctorSliderController::class, 'deleteDoctorSlider'])->name('admin.doctor_slider.delete');
     Route::get('/doctor_slider/updatedoctorsliderStatus/{idd}/{t}', [DoctorSliderController::class, 'updateDoctorSliderStatus'])->name('admin.doctor_slider.update_status');
 
+    /////Vendors
+   Route::get('/Vendor/new_vendors', [VendorController::class, 'newVendors'])->name('admin.vendor.new');
+    Route::get('/Vendor/accepted_vendors', [VendorController::class, 'acceptedVendors'])->name('admin.vendor.accepted');
+    Route::get('/Vendor/rejected_vendors', [VendorController::class, 'rejectedVendors'])->name('admin.vendor.rejected');
+    Route::post('/Vendor/add_vendor_data/{t}/{iw?}', [VendorController::class, 'addVendorData'])->name('admin.vendor.add_data');
+    Route::post('/Vendor/store_cod_data', [VendorController::class, 'storeCodData'])->name('admin.vendor.store_cod');
+    Route::post('/Vendor/delete_vendor/{idd}', [VendorController::class, 'deleteVendor'])->name('admin.vendor.delete');
+    Route::get('/Vendor/updateVendorStatus/{idd}/{t}', [VendorController::class, 'updateVendorStatus'])->name('admin.vendor.update_status');
+    Route::get('/Vendor/update_vendor/{idd}', [VendorController::class, 'updateVendor'])->name('admin.vendor.update');
+    Route::get('/Vendor/set_comission_vendor/{idd}', [VendorController::class, 'setCommissionVendor'])->name('admin.vendor.set_commission');
+    Route::post('/Vendor/add_vendor_data2/{idd}', [VendorController::class, 'addVendorData2'])->name('admin.vendor.add_data2');
+    Route::post('/Vendor/qtyupdate', [VendorController::class, 'qtyUpdate'])->name('admin.vendor.qty_update');
 
 
 

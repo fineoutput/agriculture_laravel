@@ -215,7 +215,13 @@
                         <li>
                             <a href="{{route('admin.doctor_slider.view')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Doctor Slider</span></a>
                         </li>
-                        
+                        <li>
+                            <a href="javascript:void(0);" class="waves-effect"><i class="bi bi-sliders"></i><span>Vendor <span class="float-right menu-arrow"><i class="mdi mdi-plus"></i></span> </span></a>
+                            <ul class="submenu">
+                                <li><a href="{{ route('admin.vendor.new') }}">View Vendor</a></li>
+                                <li><a href="{{ route('admin.manager.add') }}">Add Manager</a></li>
+                            </ul>
+                        </li>
                         <?php
                         $admin_services = Session::get('services');
                         $ser = json_decode($admin_services);
