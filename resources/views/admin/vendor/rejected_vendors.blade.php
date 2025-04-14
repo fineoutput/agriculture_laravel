@@ -7,10 +7,10 @@
         <div class="row">
             <div class="col-sm-12">
                 <div class="page-title-box">
-                    <h4 class="page-title">All {{ $heading }} Vendors</h4>
+                    <h4 class="page-title">All Rejected Vendors</h4>
                     <ol class="breadcrumb">
                         {{-- <li class="breadcrumb-item"><a href="{{ route('admin_index') }}">Home</a></li> --}}
-                        <li class="breadcrumb-item active">View {{ $heading }} Vendors</li>
+                        <li class="breadcrumb-item active">Rejected Vendors</li>
                     </ol>
                 </div>
             </div>
@@ -41,7 +41,7 @@
                             @endif
                             <!-- End Messages -->
 
-                            <h4 class="mt-0 header-title"><i class="fa fa-users"></i> View {{ $heading }} Vendors</h4>
+                            <h4 class="mt-0 header-title"><i class="fa fa-users"></i> Rejected Vendors</h4>
                             <hr style="margin-bottom: 50px; background-color: darkgrey;">
 
                             <div class="table-rep-plugin">
@@ -103,10 +103,10 @@
                                                     <td>{{ $data->email }}</td>
                                                     <td>{{ $data->account ? '₹' . $data->account : '₹0' }}</td>
                                                     <td>
-                                                        <input type="checkbox" class="mycheckbox" data-id="{{ $data->id }}" name="checkbox" {{ $data->cod ? 'checked' : '' }}>
+                                                        <input type="checkbox" class="mycheckbox" data-id="{{ $data->id }}" name="checkbox" {{ $data->cod ? 'checked' : '' }} disabled>
                                                     </td>
                                                     <td>
-                                                        <input type="text" class="qtydiscount" data-id="{{ $data->id }}" name="qty_discount" value="{{ $data->qty_discount ?? '' }}" style="width: 100px;">
+                                                        <input type="text" class="qtydiscount" data-id="{{ $data->id }}" name="qty_discount" value="{{ $data->qty_discount ?? '' }}" style="width: 100px;" disabled>
                                                     </td>
                                                     <td>
                                                         @if($data->is_active)
@@ -116,30 +116,14 @@
                                                         @endif
                                                     </td>
                                                     <td>
-                                                        @if($data->is_approved != 2)
-                                                            <div class="btn-group" id="btns{{ $i - 1 }}">
-                                                                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
-                                                                    Action <span class="caret"></span>
-                                                                </button>
-                                                                <ul class="dropdown-menu" role="menu">
-                                                                    @if($data->is_approved == 0)
-                                                                        <li><a href="{{ route('admin.vendor.update_status', [base64_encode($data->id), 'approve']) }}">Approve</a></li>
-                                                                        <li><a href="{{ route('admin.vendor.update_status', [base64_encode($data->id), 'reject']) }}">Reject</a></li>
-                                                                    @elseif($data->is_approved == 1)
-                                                                        @if($data->is_active)
-                                                                            <li><a href="{{ route('admin.vendor.update_status', [base64_encode($data->id), 'inactive']) }}">Blocked</a></li>
-                                                                        @else
-                                                                            <li><a href="{{ route('admin.vendor.update_status', [base64_encode($data->id), 'active']) }}">Unblocked</a></li>
-                                                                        @endif
-                                                                        <li><a href="{{ route('admin.vendor.set_commission', base64_encode($data->id)) }}">Update Commission(%)</a></li>
-                                                                        {{-- <li><a href="{{ route('admin.payments.vendor_txn', base64_encode($data->id)) }}">Payment Transactions</a></li> --}}
-                                                                        <li><a href="{{ route('admin.vendor.update', base64_encode($data->id)) }}">Edit</a></li>
-                                                                    @endif
-                                                                </ul>
-                                                            </div>
-                                                        @else
-                                                            <span>NA</span>
-                                                        @endif
+                                                        <div class="btn-group">
+                                                            <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                                                                Action <span class="caret"></span>
+                                                            </button>
+                                                            <ul class="dropdown-menu" role="menu">
+                                                                <li><a href="{{ route('admin.vendor.update_status', [base64_encode($data->id), 'approve']) }}">Approve</a></li>
+                                                            </ul>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             @endforeach
@@ -171,91 +155,5 @@
 <script src="https://cdn.datatables.net/buttons/1.6.1/js/buttons.html5.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/1.6.1/js/buttons.print.min.js"></script>
 
-<script type="text/javascript">
-$(document).ready(function() {
-    $('#dataTable').DataTable({
-        responsive: true,
-        "bStateSave": true,
-        "fnStateSave": function(oSettings, oData) {
-            localStorage.setItem('offersDataTables', JSON.stringify(oData));
-        },
-        "fnStateLoad": function(oSettings) {
-            return JSON.parse(localStorage.getItem('offersDataTables'));
-        },
-        dom: 'Bfrtip',
-        buttons: [
-            {
-                extend: 'copyHtml5',
-                exportOptions: { columns: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] }
-            },
-            {
-                extend: 'csvHtml5',
-                exportOptions: { columns: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] }
-            },
-            {
-                extend: 'excelHtml5',
-                exportOptions: { columns: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] }
-            },
-            {
-                extend: 'pdfHtml5',
-                exportOptions: { columns: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] }
-            },
-            {
-                extend: 'print',
-                exportOptions: { columns: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] }
-            }
-        ]
-    });
 
-    // COD Checkbox AJAX
-    if ($('.mycheckbox').length) {
-        $('.mycheckbox').on('change', function() {
-            var isChecked = $(this).prop('checked');
-            var userId = $(this).data('id');
-
-            $.ajax({
-                type: 'POST',
-                url: '{{ route("admin.vendor.store_cod") }}',
-                data: {
-                    userId: userId,
-                    isChecked: isChecked,
-                    _token: '{{ csrf_token() }}'
-                },
-                success: function(response) {
-                    alert('Successfully updated');
-                    console.log(response);
-                },
-                error: function(xhr) {
-                    console.error(xhr.responseText);
-                }
-            });
-        });
-    }
-
-    // Quantity Discount AJAX
-    if ($('.qtydiscount').length) {
-        $('.qtydiscount').on('change', function() {
-            var qtyDiscount = $(this).val() || '0';
-            var userId = $(this).data('id');
-
-            $.ajax({
-                type: 'POST',
-                url: '{{ route("admin.vendor.qty_update") }}',
-                data: {
-                    userId: userId,
-                    qtyDiscount: qtyDiscount,
-                    _token: '{{ csrf_token() }}'
-                },
-                success: function(response) {
-                    alert('Successfully updated');
-                    console.log(response);
-                },
-                error: function(xhr) {
-                    console.error(xhr.responseText);
-                }
-            });
-        });
-    }
-});
-</script>
 @endpush

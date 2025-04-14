@@ -7,10 +7,10 @@
         <div class="row">
             <div class="col-sm-12">
                 <div class="page-title-box">
-                    <h4 class="page-title">All {{ $heading }} Vendors</h4>
+                    <h4 class="page-title">All Accepted Vendors</h4>
                     <ol class="breadcrumb">
                         {{-- <li class="breadcrumb-item"><a href="{{ route('admin_index') }}">Home</a></li> --}}
-                        <li class="breadcrumb-item active">View {{ $heading }} Vendors</li>
+                        <li class="breadcrumb-item active">Accepted Vendors</li>
                     </ol>
                 </div>
             </div>
@@ -41,7 +41,7 @@
                             @endif
                             <!-- End Messages -->
 
-                            <h4 class="mt-0 header-title"><i class="fa fa-users"></i> View {{ $heading }} Vendors</h4>
+                            <h4 class="mt-0 header-title"><i class="fa fa-users"></i> Accepted Vendors</h4>
                             <hr style="margin-bottom: 50px; background-color: darkgrey;">
 
                             <div class="table-rep-plugin">
@@ -116,30 +116,31 @@
                                                         @endif
                                                     </td>
                                                     <td>
-                                                        @if($data->is_approved != 2)
-                                                            <div class="btn-group" id="btns{{ $i - 1 }}">
-                                                                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
-                                                                    Action <span class="caret"></span>
-                                                                </button>
-                                                                <ul class="dropdown-menu" role="menu">
-                                                                    @if($data->is_approved == 0)
-                                                                        <li><a href="{{ route('admin.vendor.update_status', [base64_encode($data->id), 'approve']) }}">Approve</a></li>
-                                                                        <li><a href="{{ route('admin.vendor.update_status', [base64_encode($data->id), 'reject']) }}">Reject</a></li>
-                                                                    @elseif($data->is_approved == 1)
-                                                                        @if($data->is_active)
-                                                                            <li><a href="{{ route('admin.vendor.update_status', [base64_encode($data->id), 'inactive']) }}">Blocked</a></li>
-                                                                        @else
-                                                                            <li><a href="{{ route('admin.vendor.update_status', [base64_encode($data->id), 'active']) }}">Unblocked</a></li>
-                                                                        @endif
-                                                                        <li><a href="{{ route('admin.vendor.set_commission', base64_encode($data->id)) }}">Update Commission(%)</a></li>
-                                                                        {{-- <li><a href="{{ route('admin.payments.vendor_txn', base64_encode($data->id)) }}">Payment Transactions</a></li> --}}
-                                                                        <li><a href="{{ route('admin.vendor.update', base64_encode($data->id)) }}">Edit</a></li>
-                                                                    @endif
-                                                                </ul>
-                                                            </div>
-                                                        @else
-                                                            <span>NA</span>
-                                                        @endif
+                                                        <div class="btn-group" id="btns{{ $i - 1 }}">
+                                                            <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                                                                Action <span class="caret"></span>
+                                                            </button>
+                                                            <ul class="dropdown-menu" role="menu">
+                                                                @if($data->is_active)
+                                                                    <li><a href="{{ route('admin.vendor.update_status', [base64_encode($data->id), 'inactive']) }}">Block</a></li>
+                                                                @else
+                                                                    <li><a href="{{ route('admin.vendor.update_status', [base64_encode($data->id), 'active']) }}">Unblock</a></li>
+                                                                @endif
+                                                                <li><a href="{{ route('admin.vendor.set_commission', base64_encode($data->id)) }}">Update Commission(%)</a></li>
+                                                                {{-- <li><a href="{{ route('admin.payments.vendor_txn', base64_encode($data->id)) }}">Payment Transactions</a></li> --}}
+                                                                <li><a href="{{ route('admin.vendor.update', base64_encode($data->id)) }}">Edit</a></li>
+                                                                <li><a href="javascript:;" class="dCnf" data-mydata="{{ $i - 1 }}">Delete</a></li>
+                                                            </ul>
+                                                        </div>
+                                                        <div style="display:none" id="cnfbox{{ $i - 1 }}" class="confirmation-box">
+                                                            <p>Are you sure you want to delete this?</p>
+                                                            <form action="{{ route('admin.vendor.delete', base64_encode($data->id)) }}" method="POST" style="display: inline;">
+                                                                @csrf
+                                                                @method('POST')
+                                                                <button type="submit" class="btn btn-danger btn-sm">Yes</button>
+                                                            </form>
+                                                            <button class="btn btn-default btn-sm cans" data-mydatas="{{ $i - 1 }}">No</button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             @endforeach
@@ -205,6 +206,19 @@ $(document).ready(function() {
                 exportOptions: { columns: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] }
             }
         ]
+    });
+
+    // Delete Confirmation
+    $(document.body).on('click', '.dCnf', function() {
+        var i = $(this).data('mydata');
+        $("#btns" + i).hide();
+        $("#cnfbox" + i).show();
+    });
+
+    $(document.body).on('click', '.cans', function() {
+        var i = $(this).data('mydatas');
+        $("#btns" + i).show();
+        $("#cnfbox" + i).hide();
     });
 
     // COD Checkbox AJAX

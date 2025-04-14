@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\ExpertiseCategoryController;
 use App\Http\Controllers\Admin\OptionImageController;
 use App\Http\Controllers\Admin\DoctorSliderController;
 use App\Http\Controllers\Admin\VendorController;
+use App\Http\Controllers\Admin\CategoryImagesController;
 
 
 /*
@@ -225,13 +226,17 @@ Route::post('farmers/qtyupdate', [FarmersController::class, 'updateQty'])->name(
     Route::post('/Vendor/add_vendor_data/{t}/{iw?}', [VendorController::class, 'addVendorData'])->name('admin.vendor.add_data');
     Route::post('/Vendor/store_cod_data', [VendorController::class, 'storeCodData'])->name('admin.vendor.store_cod');
     Route::post('/Vendor/delete_vendor/{idd}', [VendorController::class, 'deleteVendor'])->name('admin.vendor.delete');
-    Route::get('/Vendor/updateVendorStatus/{idd}/{t}', [VendorController::class, 'updateVendorStatus'])->name('admin.vendor.update_status');
+    Route::get('/Vendor/updateVendorStatus/{idd}/{t}', [VendorController::class, 'updateVendorStatus'])->name(  'admin.vendor.update_status');
     Route::get('/Vendor/update_vendor/{idd}', [VendorController::class, 'updateVendor'])->name('admin.vendor.update');
     Route::get('/Vendor/set_comission_vendor/{idd}', [VendorController::class, 'setCommissionVendor'])->name('admin.vendor.set_commission');
     Route::post('/Vendor/add_vendor_data2/{idd}', [VendorController::class, 'addVendorData2'])->name('admin.vendor.add_data2');
     Route::post('/Vendor/qtyupdate', [VendorController::class, 'qtyUpdate'])->name('admin.vendor.qty_update');
 
-
+    /////////Category_image
+        Route::get('/Category_images/View_categoryimages', [CategoryImagesController::class, 'viewCategoryImages'])->name('admin.category_images.view');
+        Route::post('/Category_images/add_Categoryimages_data/{t}/{iw?}', [CategoryImagesController::class, 'addCategoryImagesData'])->name('admin.category_images.add_data');
+        Route::get('/Category_images/update_Categoryimages/{idd}', [CategoryImagesController::class, 'updateCategoryImages'])->name('admin.category_images.update');
+        Route::get('/Category_images/updateCategoryimagesStatus/{idd}/{t}', [CategoryImagesController::class, 'updateCategoryImagesStatus'])->name('admin.category_images.update_status');
 
 
 
