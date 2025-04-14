@@ -25,6 +25,9 @@ use App\Http\Controllers\Admin\OptionImageController;
 use App\Http\Controllers\Admin\DoctorSliderController;
 use App\Http\Controllers\Admin\VendorController;
 use App\Http\Controllers\Admin\CategoryImagesController;
+use App\Http\Controllers\Admin\SubcategoryImagesController;
+use App\Http\Controllers\Admin\EquipmentSalePurchaseController;
+use App\Http\Controllers\Admin\VendorAppOrdersController;
 
 
 /*
@@ -238,10 +241,31 @@ Route::post('farmers/qtyupdate', [FarmersController::class, 'updateQty'])->name(
         Route::get('/Category_images/update_Categoryimages/{idd}', [CategoryImagesController::class, 'updateCategoryImages'])->name('admin.category_images.update');
         Route::get('/Category_images/updateCategoryimagesStatus/{idd}/{t}', [CategoryImagesController::class, 'updateCategoryImagesStatus'])->name('admin.category_images.update_status');
 
+    /////////Sub-cat image
+        Route::get('/Subcategory_images/View_subcategoryimages', [SubcategoryImagesController::class, 'viewSubcategoryImages'])->name('admin.subcategory_images.view');
+        Route::post('/Subcategory_images/add_subcategoryimages_data/{t}/{iw?}', [SubcategoryImagesController::class, 'addSubcategoryImagesData'])->name('admin.subcategory_images.add_data');
+        Route::get('/Subcategory_images/update_subcategoryimages/{idd}', [SubcategoryImagesController::class, 'updateSubcategoryImages'])->name('admin.subcategory_images.update');
 
 
+    //////Equipement sale purchase
+        Route::get('/Equipment_Sale_purchase/view_salepurchase', [EquipmentSalePurchaseController::class, 'viewSalePurchase'])->name('admin.equipment_sale_purchase.view');
+        Route::get('/Equipment_Sale_purchase/farmer_salepurchse_pending', [EquipmentSalePurchaseController::class, 'farmerSalePurchasePending'])->name('admin.equipment_sale_purchase.pending');
+        Route::get('/Equipment_Sale_purchase/farmer_salepurchse_accepted', [EquipmentSalePurchaseController::class, 'farmerSalePurchaseAccepted'])->name('admin.equipment_sale_purchase.accepted');
+        Route::get('/Equipment_Sale_purchase/farmer_salepurchse_completed', [EquipmentSalePurchaseController::class, 'farmerSalePurchaseCompleted'])->name('admin.equipment_sale_purchase.completed');
+        Route::get('/Equipment_Sale_purchase/farmer_salepurchse_rejected', [EquipmentSalePurchaseController::class, 'farmerSalePurchaseRejected'])->name('admin.equipment_sale_purchase.rejected');
+        Route::get('/Equipment_Sale_purchase/updatesalepurchaseStatus/{idd}/{t}', [EquipmentSalePurchaseController::class, 'updateSalePurchaseStatus'])->name('admin.equipment_sale_purchase.update_status');
 
-
+    ////////Vendor App orders
+        Route::get('/VendorAppOrders/new_order', [VendorAppOrdersController::class, 'newOrder'])->name('admin.vendorapporders.new');
+        Route::get('/VendorAppOrders/accepted_order', [VendorAppOrdersController::class, 'acceptedOrder'])->name('admin.vendorapporders.accepted');
+        Route::get('/VendorAppOrders/dispatched_order', [VendorAppOrdersController::class, 'dispatchedOrder'])->name('admin.vendorapporders.dispatched');
+        Route::get('/VendorAppOrders/completed_order', [VendorAppOrdersController::class, 'completedOrder'])->name('admin.vendorapporders.completed');
+        Route::get('/VendorAppOrders/cancelled_order', [VendorAppOrdersController::class, 'cancelledOrder'])->name('admin.vendorapporders.cancelled');
+        Route::get('/VendorAppOrders/rejected_order', [VendorAppOrdersController::class, 'rejectedOrder'])->name('admin.vendorapporders.rejected');
+        Route::get('/VendorAppOrders/updateorderStatus/{idd}/{t}', [VendorAppOrdersController::class, 'updateOrderStatus'])->name('admin.vendorapporders.update_status');
+        Route::get('/VendorAppOrders/order_detail/{idd}/{t?}', [VendorAppOrdersController::class, 'orderDetail'])->name('admin.vendorapporders.detail');
+        Route::get('/VendorAppOrders/view_bill/{idd}', [VendorAppOrdersController::class, 'viewBill'])->name('admin.vendorapporders.view_bill');
+    
 
 
 });

@@ -226,7 +226,31 @@
                         <li>
                             <a href="{{route('admin.category_images.view')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Category Images</span></a>
                         </li>
-                        
+                        <li>
+                            <a href="{{route('admin.subcategory_images.view')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Sub-Category Images</span></a>
+                        </li>
+                        {{-- <li>
+                            <a href="{{route('admin.equipment_sale_purchase.view')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Equipement Sale Purchase</span></a>
+                        </li> --}}
+                        <li>
+                            <a href="javascript:void(0);" class="waves-effect"><i class="bi bi-sliders"></i><span>Equipement Sale Purchase <span class="float-right menu-arrow"><i class="mdi mdi-plus"></i></span> </span></a>
+                            <ul class="submenu">
+                                <li><a href="{{ route('admin.equipment_sale_purchase.pending') }}">view</a></li>
+                                <li><a href="{{ route('admin.equipment_sale_purchase.accepted') }}">Accepted</a></li>
+                                <li><a href="{{ route('admin.equipment_sale_purchase.rejected') }}">Rejected Sale Purchase</a></li>
+                                <li><a href="{{ route('admin.vendor.rejected') }}">Completed Sale Purchase</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0);" class="waves-effect"><i class="bi bi-sliders"></i><span>Vendor App Orders <span class="float-right menu-arrow"><i class="mdi mdi-plus"></i></span> </span></a>
+                            <ul class="submenu">
+                                <li><a href="{{ route('admin.vendorapporders.new') }}">New Orders</a></li>
+                                <li><a href="{{ route('admin.vendorapporders.accepted') }}">Accepted Orders</a></li>
+                                <li><a href="{{ route('admin.vendorapporders.dispatched') }}">Dispatched Orders</a></li>
+                                <li><a href="{{ route('admin.vendorapporders.completed') }}">Completed Orders</a></li>
+                                <li><a href="{{ route('admin.vendorapporders.rejected') }}">Rejected Orders</a></li>
+                            </ul>
+                        </li>
                         <?php
                         $admin_services = Session::get('services');
                         $ser = json_decode($admin_services);

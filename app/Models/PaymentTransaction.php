@@ -7,7 +7,13 @@ use Illuminate\Database\Eloquent\Model;
 class PaymentTransaction extends Model
 {
     protected $table = 'tbl_payment_txn';
-    protected $fillable = ['req_id', 'doctor_id', 'cr'];
+    protected $fillable = ['id',
+    'req_id',
+    'admin_id',
+    'doctor_id',
+    'vendor_id',
+    'dr',
+    'cr',];
 
     public function doctorRequest()
     {
