@@ -28,6 +28,7 @@ use App\Http\Controllers\Admin\CategoryImagesController;
 use App\Http\Controllers\Admin\SubcategoryImagesController;
 use App\Http\Controllers\Admin\EquipmentSalePurchaseController;
 use App\Http\Controllers\Admin\VendorAppOrdersController;
+use App\Http\Controllers\Admin\AnimalSalePurchaseController;
 
 
 /*
@@ -266,6 +267,13 @@ Route::post('farmers/qtyupdate', [FarmersController::class, 'updateQty'])->name(
         Route::get('/VendorAppOrders/order_detail/{idd}/{t?}', [VendorAppOrdersController::class, 'orderDetail'])->name('admin.vendorapporders.detail');
         Route::get('/VendorAppOrders/view_bill/{idd}', [VendorAppOrdersController::class, 'viewBill'])->name('admin.vendorapporders.view_bill');
     
+    /////animal_sale_purchase
+        Route::get('/Animal_Sale_purchase/view_salepurchase', [AnimalSalePurchaseController::class, 'viewSalePurchase'])->name('admin.animal_sale_purchase.view');
+        Route::get('/Animal_Sale_purchase/farmer_salepurchse_pending', [AnimalSalePurchaseController::class, 'farmerSalePurchasePending'])->name('admin.animal_sale_purchase.pending');
+        Route::get('/Animal_Sale_purchase/farmer_salepurchse_accepted', [AnimalSalePurchaseController::class, 'farmerSalePurchaseAccepted'])->name('admin.animal_sale_purchase.accepted');
+        Route::get('/Animal_Sale_purchase/farmer_salepurchse_completed', [AnimalSalePurchaseController::class, 'farmerSalePurchaseCompleted'])->name('admin.animal_sale_purchase.completed');
+        Route::get('/Animal_Sale_purchase/farmer_salepurchse_rejected', [AnimalSalePurchaseController::class, 'farmerSalePurchaseRejected'])->name('admin.animal_sale_purchase.rejected');
+        Route::get('/Animal_Sale_purchase/updatesalepurchaseStatus/{idd}/{t}', [AnimalSalePurchaseController::class, 'updateSalePurchaseStatus'])->name('admin.animal_sale_purchase.update_status');
 
 
 });

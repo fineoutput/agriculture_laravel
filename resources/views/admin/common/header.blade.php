@@ -251,6 +251,16 @@
                                 <li><a href="{{ route('admin.vendorapporders.rejected') }}">Rejected Orders</a></li>
                             </ul>
                         </li>
+                        <li>
+                            <a href="javascript:void(0);" class="waves-effect"><i class="bi bi-sliders"></i><span>Animal Sale Purchase <span class="float-right menu-arrow"><i class="mdi mdi-plus"></i></span> </span></a>
+                            <ul class="submenu">
+                                <li><a href="{{ route('admin.animal_sale_purchase.pending') }}">Pending Sale Purchase</a></li>
+                                <li><a href="{{ route('admin.animal_sale_purchase.accepted') }}">Accepted Sale Purchase</a></li>
+                                {{-- <li><a href="{{ route('admin.vendorapporders.dispatched') }}">Dispatched Orders</a></li> --}}
+                                <li><a href="{{ route('admin.animal_sale_purchase.completed') }}">Completed Sale Purchase</a></li>
+                                <li><a href="{{ route('admin.animal_sale_purchase.rejected') }}">Rejected Sale Purchase</a></li>
+                            </ul>
+                        </li>
                         <?php
                         $admin_services = Session::get('services');
                         $ser = json_decode($admin_services);
