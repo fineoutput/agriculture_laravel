@@ -55,6 +55,7 @@
                                                 <th>Image (Hindi)</th>
                                                 <th>Image (Punjabi)</th>
                                                 <th>Image (Marathi)</th>
+                                                <th>Image (Gujrati)</th>
                                                 <th>Edit</th>
                                             </tr>
                                         </thead>
@@ -88,6 +89,13 @@
                                                     <td>
                                                         @if($data->image_marathi)
                                                             <img src="{{ asset($data->image_marathi) }}" height="50" width="100" alt="Marathi Image">
+                                                        @else
+                                                            <span>Sorry No Image Found</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @if($data->image_gujrati)
+                                                            <img src="{{ asset($data->image_gujrati) }}" height="50" width="100" alt="Gujrati Image">
                                                         @else
                                                             <span>Sorry No Image Found</span>
                                                         @endif

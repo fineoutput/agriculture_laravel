@@ -46,6 +46,7 @@ class CategoryImagesController extends Controller
                 'image_hindi' => 'nullable|image|mimes:jpg,jpeg,png|max:25000',
                 'image_punjabi' => 'nullable|image|mimes:jpg,jpeg,png|max:25000',
                 'image_marathi' => 'nullable|image|mimes:jpg,jpeg,png|max:25000',
+                'image_gujrati' => 'nullable|image|mimes:jpg,jpeg,png|max:25000',
             ]);
 
             if ($validator->fails()) {
@@ -57,6 +58,7 @@ class CategoryImagesController extends Controller
             $image_hindi = $this->uploadImage($request, 'image_hindi', 'category_images', $category_image->image_hindi ?? null, 'CategoryImagesHindi');
             $image_punjabi = $this->uploadImage($request, 'image_punjabi', 'category_images', $category_image->image_punjabi ?? null, 'CategoryImagesPunjabi');
             $image_marathi = $this->uploadImage($request, 'image_marathi', 'category_images', $category_image->image_marathi ?? null, 'CategoryImagesMarathi');
+            $image_gujrati = $this->uploadImage($request, 'image_gujrati', 'category_images', $category_image->image_gujrati ?? null, 'CategoryImagesGujrati');
 
             // Prepare data
             $data = [
@@ -64,6 +66,7 @@ class CategoryImagesController extends Controller
                 'image_hindi' => $image_hindi,
                 'image_punjabi' => $image_punjabi,
                 'image_marathi' => $image_marathi,
+                'image_gujrati' => $image_gujrati,
                 'updated_at' => now(),
             ];
 
