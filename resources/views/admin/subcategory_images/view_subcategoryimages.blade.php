@@ -61,6 +61,7 @@
                                             @forelse($subcategory_images_data as $data)
                                                 <tr>
                                                     <td>{{ $i++ }}</td>
+                                                    <td>{{ $data->name }}</td>
                                                     <td>
                                                         @if($data->image)
                                                             <img src="{{ asset($data->image) }}" height="50" width="100" alt="English Image">
