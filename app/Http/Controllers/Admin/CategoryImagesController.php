@@ -123,21 +123,37 @@ class CategoryImagesController extends Controller
     /**
      * Helper method to handle image uploads.
      */
-    private function uploadImage(Request $request, $field, $directory, $existing = null, $prefix = 'CategoryImages')
-    {
-        if ($request->hasFile($field) && $request->file($field)->isValid()) {
-            $file = $request->file($field);
-            $new_file_name = $prefix . date('YmdHis') . '.' . $file->getClientOriginalExtension();
-            $path = $file->storeAs("uploads/{$directory}", $new_file_name, 'public');
+    /**
+ * Helper method to handle image uploads.
+ */
+private function uploadImage(Request $request, $field, $directory, $existing = null, $prefix = 'CategoryImages')
+{
+    if ($request->hasFile($field) && $request->file($field)->isValid()) {
+        $file = $request->file($field);
+        $fileName = $prefix . '_' . time() . '_' . $file->getClientOriginalName();
 
-            // Delete old image if exists
-            if ($existing && Storage::disk('public')->exists($existing)) {
-                Storage::disk('public')->delete($existing);
-            }
+        // Define the destination path in the public directory
+        $destinationPath = public_path($directory);
 
-            return "storage/{$path}";
+        // Create the directory if it doesn't exist
+        if (!file_exists($destinationPath)) {
+            mkdir($destinationPath, 0755, true);
         }
 
-        return $existing;
+        // Move the file to the destination path
+        $file->move($destinationPath, $fileName);
+
+        // Return the relative path to store in the database
+        $newFilePath = $directory . '/' . $fileName;
+
+        // Delete old image if it exists
+        if ($existing && file_exists(public_path($existing))) {
+            unlink(public_path($existing));
+        }
+
+        return $newFilePath;
     }
+
+    return $existing;
+}
 }
