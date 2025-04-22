@@ -11,6 +11,7 @@ class CategoryImages extends Model
         'image',
         'image_hindi',
         'image_punjabi',
+        'image_marathi',
         'is_active',
     ];
 }

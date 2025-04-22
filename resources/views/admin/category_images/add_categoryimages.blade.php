@@ -89,6 +89,18 @@
                                             @error('image_punjabi') <span class="text-danger">{{ $message }}</span> @enderror
                                         </div>
                                     </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="image_marathi"><strong>Image (Marathi)</strong></label>
+                                            <input type="file" name="image_marathi" id="image_marathi" class="form-control" accept="image/jpeg,image/png" />
+                                            @if($category_images->image_marathi)
+                                                <img src="{{ asset($category_images->image_marathi) }}" height="50" width="100" alt="Marathi Image" style="margin-top: 10px;">
+                                            @else
+                                                <span style="margin-top: 10px; display: block;">No Image</span>
+                                            @endif
+                                            @error('image_marathi') <span class="text-danger">{{ $message }}</span> @enderror
+                                        </div>
+                                    </div>
                                     <div class="col-md-12">
                                         <button type="submit" class="btn btn-success">Save</button>
                                     </div>
