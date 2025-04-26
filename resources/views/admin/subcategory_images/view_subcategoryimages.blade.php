@@ -50,6 +50,8 @@
                                         <thead>
                                             <tr>
                                                 <th>#</th>
+                                                <th>Category Name</th>
+                                                <th>Name</th>
                                                 <th>Image (English)</th>
                                                 <th>Image (Hindi)</th>
                                                 <th>Image (Punjabi)</th>
@@ -61,6 +63,13 @@
                                             @forelse($subcategory_images_data as $data)
                                                 <tr>
                                                     <td>{{ $i++ }}</td>
+                                                    <td>
+                                                        @php
+                                                            $category = App\Models\CategoryImages::where('id', $data->category_id)->first();
+                                                        @endphp
+                                                        {{ $category ? $category->name : 'No Category Found' }}
+                                                        name
+                                                    </td>
                                                     <td>{{ $data->name }}</td>
                                                     <td>
                                                         @if($data->image)

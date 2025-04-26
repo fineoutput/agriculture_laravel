@@ -8,6 +8,8 @@ class CategoryImages extends Model
 {
     protected $table = 'tbl_category_images';
     protected $fillable = [
+        'id',
+        'name',
         'image',
         'image_hindi',
         'image_punjabi',

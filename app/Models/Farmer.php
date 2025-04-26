@@ -12,7 +12,7 @@ class Farmer extends Model
     protected $table = 'tbl_farmers';
     protected $fillable = [
         'name', 'village', 'state', 'district', 'city', 'pincode',
-        'no_animals', 'phone', 'date', 'is_active', 'giftcard_id',
+        'no_animals', 'phone','doc_type', 'date', 'is_active', 'giftcard_id',
         'cod', 'qty_discount'
     ];
 }
