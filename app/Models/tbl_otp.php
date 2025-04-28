@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class tbl_otp extends Model
 {
     use HasFactory;
-
+    protected $table = 'tbl_otp';
     protected $fillable = [
         'phone',
         'otp',

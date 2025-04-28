@@ -4,6 +4,8 @@ namespace App\Http\Controllers\ApiControllers;
 
 use App\Models\Farmer;
 use App\Models\User;
+use App\Models\Doctor;
+use App\Models\tbl_otp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
@@ -125,91 +127,97 @@ class UserloginController extends Controller
      * Farmer Register OTP Verify
      */
     public function farmer_register_otp_verify(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'phone' => 'required|string',
-            'otp' => 'required|string',
-        ]);
+{
+    $validator = Validator::make($request->all(), [
+        'phone' => 'required|string',
+        'otp' => 'required|string',
+    ]);
 
-        if ($validator->fails()) {
+    if ($validator->fails()) {
+        return response()->json([
+            'status' => false,
+            'message' => $validator->errors()->first(),
+        ], 422);
+    }
+
+    try {
+        $otpRecord = tbl_otp::where('phone', $request->phone)
+            ->where('otp', $request->otp)
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if (!$otpRecord) {
             return response()->json([
                 'status' => false,
-                'message' => $validator->errors()->first(),
-            ], 422);
+                'message' => 'Invalid or expired OTP',
+            ], 400);
         }
 
-        try {
-            $otpRecord = DB::table('tbl_otp')
-                ->where('phone', $request->phone)
-                ->where('otp', $request->otp)
-                ->where('expires_at', '>', now())
-                ->first();
+        $farmerData = $otpRecord->data;
 
-            if (!$otpRecord) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Invalid or expired OTP',
-                ], 400);
-            }
 
-            $farmerData = json_decode($otpRecord->data, true);
+        $farmer = new Farmer();
+        $farmer->name = $farmerData['name'];
+        $farmer->village = $farmerData['village'];
+        $farmer->district = $farmerData['district'];
+        $farmer->city = $farmerData['city'];
+        $farmer->state = $farmerData['state'];
+        $farmer->pincode = $farmerData['pincode'];
+        $farmer->refer_code = $farmerData['refer_code'];
+        $farmer->phone = $farmerData['phone'];
+        $farmer->email = $farmerData['email'];
+        $farmer->image = $farmerData['image'];
+        $farmer->doc_type = $farmerData['doc_type'];
+        $farmer->degree = $farmerData['degree'];
+        $farmer->experience = $farmerData['experience'];
+        $farmer->shop_name = $farmerData['shop_name'];
+        $farmer->address = $farmerData['address'];
+        $farmer->gst_no = $farmerData['gst_no'];
+        $farmer->aadhar_no = $farmerData['aadhar_no'];
+        $farmer->pan_no = $farmerData['pan_no'];
+        $farmer->type = $farmerData['type'];
+        $farmer->latitude = $farmerData['latitude'];
+        $farmer->longitude = $farmerData['longitude'];
+        $farmer->no_of_animals = $farmerData['no_of_animals'];
+        $farmer->expert_category = $farmerData['expert_category'];
 
-            $farmer = new Farmer();
-            $farmer->name = $farmerData['name'];
-            $farmer->village = $farmerData['village'];
-            $farmer->district = $farmerData['district'];
-            $farmer->city = $farmerData['city'];
-            $farmer->state = $farmerData['state'];
-            $farmer->pincode = $farmerData['pincode'];
-            $farmer->refer_code = $farmerData['refer_code'];
-            $farmer->phone = $farmerData['phone'];
-            $farmer->email = $farmerData['email'];
-            $farmer->image = $farmerData['image'];
-            $farmer->doc_type = $farmerData['doc_type'];
-            $farmer->degree = $farmerData['degree'];
-            $farmer->experience = $farmerData['experience'];
-            $farmer->shop_name = $farmerData['shop_name'];
-            $farmer->address = $farmerData['address'];
-            $farmer->gst_no = $farmerData['gst_no'];
-            $farmer->aadhar_no = $farmerData['aadhar_no'];
-            $farmer->pan_no = $farmerData['pan_no'];
-            $farmer->type = $farmerData['type'];
-            $farmer->latitude = $farmerData['latitude'];
-            $farmer->longitude = $farmerData['longitude'];
-            $farmer->no_of_animals = $farmerData['no_of_animals'];
-            $farmer->expert_category = $farmerData['expert_category'];
+        if ($farmer->save()) {
+            // Use Eloquent Model instead of DB::table to delete OTP
+            tbl_otp::where('id', $otpRecord->id)->delete();
 
-            if ($farmer->save()) {
-                DB::table('tbl_otp')->where('id', $otpRecord->id)->delete();
+            $msg = "आदरणीय {$farmerData['name']} जी, आपका पंजीकरण सफल हुआ, DAIRY MUNEEM में आपका स्वागत है। कुछ देर में आप की आईडी एक्टिव हो जाएगी। व्हाट्सएप द्वारा हमसे जुड़ने के लिए क्लिक करें bit.ly/dairy_muneem। अधिक जानकारी के लिए 7891029090 पर कॉल करें। धन्यवाद! – DAIRY MUNEEM";
+            $this->sendSmsMsg91($farmerData['phone'], $msg, env('DLT_CODE'));
 
-                $msg = "आदरणीय {$farmerData['name']} जी, आपका पंजीकरण सफल हुआ, DAIRY MUNEEM में आपका स्वागत है। कुछ देर में आप की आईडी एक्टिव हो जाएगी। व्हाट्सएप द्वारा हमसे जुड़ने के लिए क्लिक करें bit.ly/dairy_muneem। अधिक जानकारी के लिए 7891029090 पर कॉल करें। धन्यवाद! – DAIRY MUNEEM";
-                $this->sendSmsMsg91($farmerData['phone'], $msg, env('DLT_CODE'));
+            Log::info('Farmer registered successfully', [
+                'phone' => $farmerData['phone'],
+                'farmer_id' => $farmer->id,
+            ]);
 
-                Log::info('Farmer registered successfully', ['phone' => $farmerData['phone'], 'farmer_id' => $farmer->id]);
-
-                return response()->json([
-                    'status' => true,
-                    'message' => 'Farmer registered successfully',
-                    'farmer_id' => $farmer->id,
-                ]);
-            } else {
-                Log::error('Failed to save farmer data', ['phone' => $farmerData['phone']]);
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Failed to save farmer data',
-                ], 500);
-            }
-        } catch (\Exception $e) {
-            Log::error('Error in farmer_register_otp_verify', [
-                'phone' => $request->phone,
-                'error' => $e->getMessage(),
+            return response()->json([
+                'status' => true,
+                'message' => 'Farmer registered successfully',
+                'farmer_id' => $farmer->id,
+            ]);
+        } else {
+            Log::error('Failed to save farmer data', [
+                'phone' => $farmerData['phone'],
             ]);
             return response()->json([
                 'status' => false,
-                'message' => 'Error during OTP verification: ' . $e->getMessage(),
+                'message' => 'Failed to save farmer data',
             ], 500);
         }
+    } catch (\Exception $e) {
+        Log::error('Error in farmer_register_otp_verify', [
+            'phone' => $request->phone,
+            'error' => $e->getMessage(),
+        ]);
+        return response()->json([
+            'status' => false,
+            'message' => 'Error during OTP verification: ' . $e->getMessage(),
+        ], 500);
     }
+}
 
     /**
      * Farmer Login Process
@@ -239,7 +247,8 @@ class UserloginController extends Controller
             $otp = rand(100000, 999999);
             $expiresAt = now()->addMinutes(10);
 
-            DB::table('tbl_otp')->insert([
+            // Use Otp model to store OTP
+            $otpRecord = tbl_otp::create([
                 'phone' => $request->phone,
                 'otp' => $otp,
                 'type' => $farmer->type,
@@ -247,15 +256,22 @@ class UserloginController extends Controller
                 'created_at' => now(),
             ]);
 
+            Log::info('OTP insert attempted', [
+                'phone' => $request->phone,
+                'otp' => $otp,
+                'otp_record_id' => $otpRecord->id,
+            ]);
+
             $msg = "Your OTP for DAIRY MUNEEM login is: $otp. Valid for 10 minutes.";
-            $this->sendSmsMsg91($request->phone, $msg, env('DLT_CODE'));
+            $this->sendSmsMsg91($request->phone, $msg, env('DLT_CODE', 'DEFAULT_DLT_CODE'));
 
             Log::info('OTP sent for farmer login', ['phone' => $request->phone]);
 
             return response()->json([
                 'status' => true,
                 'message' => 'OTP sent for farmer login',
-                'data' => ['phone' => $request->phone],
+                'data' => ['phone' => $request->phone,
+                            'name' => $request->name],
             ]);
         } catch (\Exception $e) {
             Log::error('Error in farmer_login_process', [
@@ -268,6 +284,7 @@ class UserloginController extends Controller
             ], 500);
         }
     }
+
 
     /**
      * Farmer Login OTP Verify
@@ -311,7 +328,7 @@ class UserloginController extends Controller
             }
 
             // Log in the farmer (custom logic or use Auth)
-            Auth::guard('farmer')->login($farmer);
+            // Auth::guard('farmer')->login($farmer);
 
             DB::table('tbl_otp')->where('id', $otpRecord->id)->delete();
 
@@ -342,7 +359,7 @@ class UserloginController extends Controller
         $validator = Validator::make($request->all(), [
             'name'            => 'required|string',
             'village'         => 'nullable|string',
-            'district'        => 'nullable|string',
+            'district'        => 'nullable|string', 
             'city'            => 'nullable|string',
             'state'           => 'nullable|string',
             'pincode'         => 'nullable|string',
@@ -456,7 +473,7 @@ class UserloginController extends Controller
 
             $userData = json_decode($otpRecord->data, true);
 
-            $user = new User();
+            $user = new Doctor();
             $user->name = $userData['name'];
             $user->phone = $userData['phone'];
             $user->type = $userData['type'];
@@ -753,363 +770,5 @@ class UserloginController extends Controller
     /**
      * Farmer Register OTP Verification
      */
-    private function farmerRegisterWithOtpVerify($data)
-    {
-        try {
-            $otp = rand(100000, 999999);
-            $expiresAt = now()->addMinutes(10);
-
-            DB::table('tbl_otp')->insert([
-                'phone' => $data['phone'],
-                'otp' => $otp,
-                'type' => $data['type'],
-                'data' => json_encode($data),
-                'expires_at' => $expiresAt,
-                'created_at' => now(),
-            ]);
-
-            $msg = "Your OTP for DAIRY MUNEEM registration is: $otp. Valid for 10 minutes.";
-            $dlt = env('DLT_CODE', 'DEFAULT_DLT_CODE');
-            $smsResponse = $this->sendSmsMsg91($data['phone'], $msg, $dlt);
-
-            Log::info('SMS sent for farmer registration', [
-                'phone' => $data['phone'],
-                'sms_response' => $smsResponse,
-            ]);
-
-            return [
-                'status' => true,
-                'message' => 'OTP sent for farmer registration',
-                'data' => ['phone' => $data['phone']],
-            ];
-        } catch (\Exception $e) {
-            Log::error('Error in farmerRegisterWithOtpVerify', [
-                'phone' => $data['phone'],
-                'error' => $e->getMessage(),
-            ]);
-            return [
-                'status' => false,
-                'message' => 'Failed to send OTP: ' . $e->getMessage(),
-            ];
-        }
-    }
-
-    /**
-     * Farmer Login OTP
-     */
-    private function farmerLoginWithOtp($phone)
-    {
-        try {
-            $farmer = Farmer::where('phone', $phone)->first();
-            if (!$farmer) {
-                return [
-                    'status' => false,
-                    'message' => 'Farmer not found',
-                ];
-            }
-
-            $otp = rand(100000, 999999);
-            $expiresAt = now()->addMinutes(10);
-
-            DB::table('tbl_otp')->insert([
-                'phone' => $phone,
-                'otp' => $otp,
-                'type' => $farmer->type,
-                'expires_at' => $expiresAt,
-                'created_at' => now(),
-            ]);
-
-            $msg = "Your OTP for DAIRY MUNEEM login is: $otp. Valid for 10 minutes.";
-            $this->sendSmsMsg91($phone, $msg, env('DLT_CODE'));
-
-            Log::info('OTP sent for farmer login', ['phone' => $phone]);
-
-            return [
-                'status' => true,
-                'message' => 'OTP sent for farmer login',
-                'data' => ['phone' => $phone],
-            ];
-        } catch (\Exception $e) {
-            Log::error('Error in farmerLoginWithOtp', [
-                'phone' => $phone,
-                'error' => $e->getMessage(),
-            ]);
-            return [
-                'status' => false,
-                'message' => 'Failed to send OTP: ' . $e->getMessage(),
-            ];
-        }
-    }
-
-    /**
-     * Farmer Login OTP Verification
-     */
-    private function farmerLoginOtpVerify($phone, $otp, $type)
-    {
-        try {
-            $otpRecord = DB::table('tbl_otp')
-                ->where('phone', $phone)
-                ->where('otp', $otp)
-                ->where('type', $type)
-                ->where('expires_at', '>', now())
-                ->first();
-
-            if (!$otpRecord) {
-                return [
-                    'status' => false,
-                    'message' => 'Invalid or expired OTP',
-                ];
-            }
-
-            $farmer = Farmer::where('phone', $phone)->where('type', $type)->first();
-            if (!$farmer) {
-                return [
-                    'status' => false,
-                    'message' => 'Farmer not found',
-                ];
-            }
-
-            Auth::guard('farmer')->login($farmer);
-
-            DB::table('tbl_otp')->where('id', $otpRecord->id)->delete();
-
-            Log::info('Farmer login verified', ['phone' => $phone, 'farmer_id' => $farmer->id]);
-
-            return [
-                'status' => true,
-                'message' => 'Farmer login verified successfully',
-                'farmer_id' => $farmer->id,
-            ];
-        } catch (\Exception $e) {
-            Log::error('Error in farmerLoginOtpVerify', [
-                'phone' => $phone,
-                'error' => $e->getMessage(),
-            ]);
-            return [
-                'status' => false,
-                'message' => 'Error during OTP verification: ' . $e->getMessage(),
-            ];
-        }
-    }
-
-    /**
-     * Doctor/Vendor Register OTP
-     */
-    private function registerWithOtp($data)
-    {
-        try {
-            $otp = rand(100000, 999999);
-            $expiresAt = now()->addMinutes(10);
-
-            DB::table('tbl_otp')->insert([
-                'phone' => $data['phone'],
-                'otp' => $otp,
-                'type' => $data['type'],
-                'data' => json_encode($data),
-                'expires_at' => $expiresAt,
-                'created_at' => now(),
-            ]);
-
-            $msg = "Your OTP for DAIRY MUNEEM registration is: $otp. Valid for 10 minutes.";
-            $smsResponse = $this->sendSmsMsg91($data['phone'], $msg, env('DLT_CODE'));
-
-            Log::info('SMS sent for user registration', [
-                'phone' => $data['phone'],
-                'sms_response' => $smsResponse,
-            ]);
-
-            return [
-                'status' => true,
-                'message' => 'OTP sent for registration',
-                'data' => ['phone' => $data['phone']],
-            ];
-        } catch (\Exception $e) {
-            Log::error('Error in registerWithOtp', [
-                'phone' => $data['phone'],
-                'error' => $e->getMessage(),
-            ]);
-            return [
-                'status' => false,
-                'message' => 'Failed to send OTP: ' . $e->getMessage(),
-            ];
-        }
-    }
-
-    /**
-     * Doctor/Vendor Register OTP Verification
-     */
-    private function registerOtpVerify($phone, $otp)
-    {
-        try {
-            $otpRecord = DB::table('tbl_otp')
-                ->where('phone', $phone)
-                ->where('otp', $otp)
-                ->where('expires_at', '>', now())
-                ->first();
-
-            if (!$otpRecord) {
-                return [
-                    'status' => false,
-                    'message' => 'Invalid or expired OTP',
-                ];
-            }
-
-            $userData = json_decode($otpRecord->data, true);
-
-            $user = new User();
-            $user->name = $userData['name'];
-            $user->phone = $userData['phone'];
-            $user->type = $userData['type'];
-            $user->village = $userData['village'];
-            $user->district = $userData['district'];
-            $user->city = $userData['city'];
-            $user->state = $userData['state'];
-            $user->pincode = $userData['pincode'];
-            $user->refer_code = $userData['refer_code'];
-            $user->email = $userData['email'];
-            $user->image = $userData['image'];
-            $user->doc_type = $userData['doc_type'];
-            $user->degree = $userData['degree'];
-            $user->experience = $userData['experience'];
-            $user->shop_name = $userData['shop_name'];
-            $user->address = $userData['address'];
-            $user->gst_no = $userData['gst_no'];
-            $user->aadhar_no = $userData['aadhar_no'];
-            $user->pan_no = $userData['pan_no'];
-            $user->latitude = $userData['latitude'];
-            $user->longitude = $userData['longitude'];
-            $user->no_of_animals = $userData['no_of_animals'];
-            $user->expert_category = $userData['expert_category'];
-
-            if ($user->save()) {
-                DB::table('tbl_otp')->where('id', $otpRecord->id)->delete();
-
-                $msg = "आदरणीय {$userData['name']} जी, आपका पंजीकरण सफल हुआ, DAIRY MUNEEM में आपका स्वागत है। कुछ देर में आप की आईडी एक्टिव हो जाएगी। व्हाट्सएप द्वारा हमसे जुड़ने के लिए क्लिक करें bit.ly/dairy_muneem। अधिक जानकारी के लिए 7891029090 पर कॉल करें। धन्यवाद! – DAIRY MUNEEM";
-                $this->sendSmsMsg91($userData['phone'], $msg, env('DLT_CODE'));
-
-                Log::info('User registered successfully', ['phone' => $userData['phone'], 'user_id' => $user->id]);
-
-                return [
-                    'status' => true,
-                    'message' => 'Registration verified successfully',
-                    'user_id' => $user->id,
-                ];
-            } else {
-                Log::error('Failed to save user data', ['phone' => $userData['phone']]);
-                return [
-                    'status' => false,
-                    'message' => 'Failed to save user data',
-                ];
-            }
-        } catch (\Exception $e) {
-            Log::error('Error in registerOtpVerify', [
-                'phone' => $phone,
-                'error' => $e->getMessage(),
-            ]);
-            return [
-                'status' => false,
-                'message' => 'Error during OTP verification: ' . $e->getMessage(),
-            ];
-        }
-    }
-
-    /**
-     * Doctor/Vendor Login OTP
-     */
-    private function loginWithOtp($phone, $type)
-    {
-        try {
-            $user = User::where('phone', $phone)->where('type', $type)->first();
-            if (!$user) {
-                return [
-                    'status' => false,
-                    'message' => 'User not found',
-                ];
-            }
-
-            $otp = rand(100000, 999999);
-            $expiresAt = now()->addMinutes(10);
-
-            DB::table('tbl_otp')->insert([
-                'phone' => $phone,
-                'otp' => $otp,
-                'type' => $type,
-                'expires_at' => $expiresAt,
-                'created_at' => now(),
-            ]);
-
-            $msg = "Your OTP for DAIRY MUNEEM login is: $otp. Valid for 10 minutes.";
-            $smsResponse = $this->sendSmsMsg91($phone, $msg, env('DLT_CODE'));
-
-            Log::info('SMS sent for user login', [
-                'phone' => $phone,
-                'sms_response' => $smsResponse,
-            ]);
-
-            return [
-                'status' => true,
-                'message' => 'OTP sent for login',
-                'data' => ['phone' => $phone],
-            ];
-        } catch (\Exception $e) {
-            Log::error('Error in loginWithOtp', [
-                'phone' => $phone,
-                'error' => $e->getMessage(),
-            ]);
-            return [
-                'status' => false,
-                'message' => 'Failed to send OTP: ' . $e->getMessage(),
-            ];
-        }
-    }
-
-    /**
-     * Doctor/Vendor Login OTP Verification
-     */
-    private function loginOtpVerify($phone, $otp)
-    {
-        try {
-            $otpRecord = DB::table('tbl_otp')
-                ->where('phone', $phone)
-                ->where('otp', $otp)
-                ->where('expires_at', '>', now())
-                ->first();
-
-            if (!$otpRecord) {
-                return [
-                    'status' => false,
-                    'message' => 'Invalid or expired OTP',
-                ];
-            }
-
-            $user = User::where('phone', $phone)->first();
-            if (!$user) {
-                return [
-                    'status' => false,
-                    'message' => 'User not found',
-                ];
-            }
-
-            Auth::login($user);
-
-            DB::table('tbl_otp')->where('id', $otpRecord->id)->delete();
-
-            Log::info('User login verified', ['phone' => $phone, 'user_id' => $user->id]);
-
-            return [
-                'status' => true,
-                'message' => 'Login verified successfully',
-                'user_id' => $user->id,
-            ];
-        } catch (\Exception $e) {
-            Log::error('Error in loginOtpVerify', [
-                'phone' => $phone,
-                'error' => $e->getMessage(),
-            ]);
-            return [
-                'status' => false,
-                'message' => 'Error during OTP verification: ' . $e->getMessage(),
-            ];
-        }
-    }
+   
 }

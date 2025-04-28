@@ -16,7 +16,7 @@ use App\Http\Controllers\ApiControllers\UserloginController;
 Route::post('/msgtest', [UserloginController::class, 'msgtest']);
 Route::post('farmerRegister', [UserloginController::class, 'farmer_register_process']);
 Route::post('farmerlogin', [UserloginController::class, 'farmer_login_process']);
-Route::post('/farmer/login/otp-verify', [UserloginController::class, 'farmer_login_otp_verify']);
+Route::post('farmerLoginOtp-verify', [UserloginController::class, 'farmer_login_otp_verify']);
 Route::post('/register', [UserloginController::class, 'register_process']);
 Route::post('registerotpverify', [UserloginController::class, 'farmer_register_otp_verify']);
 Route::post('/login', [UserloginController::class, 'login_process']);
