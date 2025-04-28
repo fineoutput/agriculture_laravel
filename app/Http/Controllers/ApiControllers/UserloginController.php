@@ -4,12 +4,14 @@ namespace App\Http\Controllers\ApiControllers;
 
 use App\Models\Farmer;
 use App\Models\User;
+use App\Models\Vendor;
 use App\Models\Doctor;
 use App\Models\tbl_otp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RequestFacade;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Log;
@@ -354,32 +356,32 @@ class UserloginController extends Controller
     /**
      * Doctor/Vendor Registration Process
      */
-    public function register_process(Request $request)
+    public function registerWithOtp(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name'            => 'required|string',
-            'village'         => 'nullable|string',
-            'district'        => 'nullable|string', 
-            'city'            => 'nullable|string',
-            'state'           => 'nullable|string',
-            'pincode'         => 'nullable|string',
-            'phone'           => 'required|string',
-            'type'            => 'required|string',
-            'email'           => 'nullable|email',
-            'doc_type'        => 'nullable|string',
-            'degree'          => 'nullable|string',
-            'experience'      => 'nullable|string',
-            'shop_name'       => 'nullable|string',
-            'address'         => 'nullable|string',
-            'gst_no'          => 'nullable|string',
-            'aadhar_no'       => 'nullable|string',
-            'pan_no'          => 'nullable|string',
-            'latitude'        => 'nullable|string',
-            'longitude'       => 'nullable|string',
-            'no_of_animals'   => 'nullable|string',
+            'name' => 'required|string',
+            'phone' => 'required|string',
+            'type' => 'required|string|in:farmer,doctor,vendor',
+            'village' => 'nullable|string',
+            'district' => 'nullable|string',
+            'city' => 'nullable|string',
+            'state' => 'nullable|string',
+            'pincode' => 'nullable|string',
+            'refer_code' => 'nullable|string',
+            'email' => 'nullable|email',
+            'image' => 'nullable|string',
+            'doc_type' => 'nullable|string',
+            'degree' => 'nullable|string',
+            'experience' => 'nullable|string',
+            'shop_name' => 'nullable|string',
+            'address' => 'nullable|string',
+            'gst_no' => 'nullable|string',
+            'aadhar_no' => 'nullable|string',
+            'pan_no' => 'nullable|string',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'no_of_animals' => 'nullable|integer',
             'expert_category' => 'nullable|string',
-            'image'           => 'nullable|image|mimes:jpg,jpeg,png|max:25000',
-            'refer_code'      => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -389,60 +391,109 @@ class UserloginController extends Controller
             ], 422);
         }
 
-        // Handle image upload
-        $imagePath = null;
-        if ($request->hasFile('image')) {
-            $image = $request->file('image');
-            $imageName = 'image_' . date('YmdHis') . '.' . $image->getClientOriginalExtension();
-            $imagePath = $image->storeAs('uploads/aadhar', $imageName, 'public');
-            $imagePath = 'assets/' . $imagePath;
-        }
-
-        // Prepare data for OTP verification
-        $userData = [
-            'name'            => $request->name,
-            'village'         => $request->village,
-            'district'        => $request->district,
-            'city'            => $request->city,
-            'state'           => $request->state,
-            'pincode'         => $request->pincode,
-            'refer_code'      => $request->refer_code,
-            'phone'           => $request->phone,
-            'email'           => $request->email,
-            'image'           => $imagePath,
-            'doc_type'        => $request->doc_type,
-            'degree'          => $request->degree,
-            'experience'      => $request->experience,
-            'shop_name'       => $request->shop_name,
-            'address'         => $request->address,
-            'gst_no'          => $request->gst_no,
-            'aadhar_no'       => $request->aadhar_no,
-            'pan_no'          => $request->pan_no,
-            'type'            => $request->type,
-            'latitude'        => $request->latitude,
-            'longitude'       => $request->longitude,
-            'no_of_animals'   => $request->no_of_animals,
-            'expert_category' => $request->expert_category,
-        ];
-
         try {
-            $otpResponse = $this->registerWithOtp($userData);
-            return response()->json($otpResponse);
+            $phone = $request->phone;
+            $type = $request->type;
+
+            // Check if user exists in farmers, doctors, or vendors
+            $farmer = Farmer::where('phone', $phone)->first();
+            if ($farmer) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'User Already Exist!',
+                ], 400);
+            }
+
+            $doctor = Doctor::where('phone', $phone)->first();
+            if ($doctor) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'User Already Exist!',
+                ], 400);
+            }
+
+            $vendor = Vendor::where('phone', $phone)->first();
+            if ($vendor) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'User Already Exist!',
+                ], 400);
+            }
+
+            // Prepare data for OTP table
+            $data = [
+                'name' => $request->name,
+                'village' => $request->village,
+                'district' => $request->district,
+                'city' => $request->city,
+                'state' => $request->state,
+                'pincode' => $request->pincode,
+                'refer_code' => $request->refer_code,
+                'phone' => $phone,
+                'email' => $request->email,
+                'image' => $request->image,
+                'doc_type' => $request->doc_type,
+                'degree' => $request->degree,
+                'experience' => $request->experience,
+                'shop_name' => $request->shop_name,
+                'address' => $request->address,
+                'gst_no' => $request->gst_no,
+                'aadhar_no' => $request->aadhar_no,
+                'pan_no' => $request->pan_no,
+                'type' => $type,
+                'latitude' => $request->latitude,
+                'longitude' => $request->longitude,
+                'no_of_animals' => $request->no_of_animals,
+                'expert_category' => $request->expert_category,
+                // 'ip' => RequestFacade::ip(),
+                'date' => now()->toDateTimeString(),
+            ];
+
+            $otp = rand(100000, 999999);
+            $expiresAt = now()->addMinutes(10);
+
+            // Store OTP and data
+            $otpRecord = tbl_otp::create([
+                'phone' => $phone,
+                'otp' => $otp,
+                'type' => $type,
+                'data' => $data,
+                'expires_at' => $expiresAt,
+                'created_at' => now(),
+            ]);
+
+            Log::info('OTP stored for registration', [
+                'phone' => $phone,
+                'otp' => $otp,
+                'otp_record_id' => $otpRecord->id,
+            ]);
+
+            $msg = "Your OTP for DAIRY MUNEEM registration is: $otp. Valid for 10 minutes.";
+            $this->sendSmsMsg91($phone, $msg, env('DLT_CODE', '645ca6f9d6fc057295695743'));
+
+            Log::info('OTP sent for registration', ['phone' => $phone]);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Please enter OTP sent to your registered mobile number',
+                'data' => ['phone' => $phone],
+            ], 200);
         } catch (\Exception $e) {
-            Log::error('Error in register_process', [
+            Log::error('Error in registerWithOtp', [
                 'phone' => $request->phone,
                 'error' => $e->getMessage(),
             ]);
             return response()->json([
                 'status' => false,
-                'message' => 'Error during registration: ' . $e->getMessage(),
+                'message' => 'Some error occurred: ' . $e->getMessage(),
             ], 500);
         }
     }
 
+
     /**
      * Doctor/Vendor Register OTP Verify
-     */
+     */ 
     public function register_otp_verify(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -454,12 +505,11 @@ class UserloginController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => $validator->errors()->first(),
-            ], 422);
+            ], 422);    
         }
 
         try {
-            $otpRecord = DB::table('tbl_otp')
-                ->where('phone', $request->phone)
+            $otpRecord = tbl_otp::where('phone', $request->phone)
                 ->where('otp', $request->otp)
                 ->where('expires_at', '>', now())
                 ->first();
@@ -471,48 +521,70 @@ class UserloginController extends Controller
                 ], 400);
             }
 
-            $userData = json_decode($otpRecord->data, true);
+            $userData = $otpRecord->data;
+            $type = $userData['type'];
 
-            $user = new Doctor();
-            $user->name = $userData['name'];
-            $user->phone = $userData['phone'];
-            $user->type = $userData['type'];
-            $user->village = $userData['village'];
-            $user->district = $userData['district'];
-            $user->city = $userData['city'];
-            $user->state = $userData['state'];
-            $user->pincode = $userData['pincode'];
-            $user->refer_code = $userData['refer_code'];
-            $user->email = $userData['email'];
-            $user->image = $userData['image'];
-            $user->doc_type = $userData['doc_type'];
-            $user->degree = $userData['degree'];
-            $user->experience = $userData['experience'];
-            $user->shop_name = $userData['shop_name'];
-            $user->address = $userData['address'];
-            $user->gst_no = $userData['gst_no'];
-            $user->aadhar_no = $userData['aadhar_no'];
-            $user->pan_no = $userData['pan_no'];
-            $user->latitude = $userData['latitude'];
-            $user->longitude = $userData['longitude'];
-            $user->no_of_animals = $userData['no_of_animals'];
-            $user->expert_category = $userData['expert_category'];
+            // Determine model based on type
+            switch ($type) {
+                case 'farmer':
+                    $model = new Farmer();
+                    break;
+                case 'doctor':
+                    $model = new Doctor();
+                    break;
+                case 'vendor':
+                    $model = new Vendor();
+                    break;
+                default:
+                    throw new \Exception('Invalid user type');
+            }
+            
+            
 
-            if ($user->save()) {
-                DB::table('tbl_otp')->where('id', $otpRecord->id)->delete();
+            // Assign data to model
+            $model->name = $userData['name'];
+            $model->village = $userData['village'];
+            $model->district = $userData['district'];
+            $model->city = $userData['city'];
+            $model->state = $userData['state'];
+            $model->pincode = $userData['pincode'];
+            $model->refer_code = $userData['refer_code'];
+            $model->phone = $userData['phone'];
+            $model->email = $userData['email'];
+            $model->image = $userData['image'];
+            $model->doc_type = $userData['doc_type'];
+            $model->degree = $userData['degree'];
+            $model->experience = $userData['experience'];
+            $model->shop_name = $userData['shop_name'];
+            $model->address = $userData['address'];
+            $model->gst_no = $userData['gst_no'];
+            $model->aadhar_no = $userData['aadhar_no'];
+            $model->pan_no = $userData['pan_no'];
+            $model->type = $userData['type'];
+            $model->latitude = $userData['latitude'];
+            $model->longitude = $userData['longitude'];
+            $model->no_of_animals = $userData['no_of_animals'];
+            $model->expert_category = $userData['expert_category'];
+
+            if ($model->save()) {
+                $otpRecord->delete();
 
                 $msg = "आदरणीय {$userData['name']} जी, आपका पंजीकरण सफल हुआ, DAIRY MUNEEM में आपका स्वागत है। कुछ देर में आप की आईडी एक्टिव हो जाएगी। व्हाट्सएप द्वारा हमसे जुड़ने के लिए क्लिक करें bit.ly/dairy_muneem। अधिक जानकारी के लिए 7891029090 पर कॉल करें। धन्यवाद! – DAIRY MUNEEM";
-                $this->sendSmsMsg91($userData['phone'], $msg, env('DLT_CODE'));
+                $this->sendSmsMsg91($userData['phone'], $msg, env('DLT_CODE', '645ca6f9d6fc057295695743'));
 
-                Log::info('User registered successfully', ['phone' => $userData['phone'], 'user_id' => $user->id]);
+                Log::info('User registered successfully', [
+                    'phone' => $userData['phone'],
+                    'user_id' => $model->id,
+                    'type' => $type,
+                ]);
 
                 return response()->json([
                     'status' => true,
                     'message' => 'Registration verified successfully',
-                    'user_id' => $user->id,
-                ]);
+                    'user_id' => $model->id,
+                ], 200);
             } else {
-                Log::error('Failed to save user data', ['phone' => $userData['phone']]);
+                Log::error('Failed to save user data', ['phone' => $userData['phone'], 'type' => $type]);
                 return response()->json([
                     'status' => false,
                     'message' => 'Failed to save user data',
