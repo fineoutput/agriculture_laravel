@@ -36,6 +36,22 @@ return [
     */
 
     'guards' => [
+        'farmer' => [
+        'driver' => 'session',
+        'provider' => 'farmers',
+    ],
+    'doctor' => [
+        'driver' => 'session',
+        'provider' => 'doctors',
+    ],
+    'vendor' => [
+        'driver' => 'session',
+        'provider' => 'vendors',
+    ],
+    'api' => [
+        'driver' => 'jwt',
+        'provider' => 'users',
+    ],
         'web' => [
             'driver' => 'session',
             'provider' => 'users',
@@ -64,6 +80,22 @@ return [
     */
 
     'providers' => [
+        'farmers' => [
+        'driver' => 'eloquent',
+        'model' => App\Models\Farmer::class,
+    ],
+    'doctors' => [
+        'driver' => 'eloquent',
+        'model' => App\Models\Doctor::class,
+    ],
+    'vendors' => [
+        'driver' => 'eloquent',
+        'model' => App\Models\Vendor::class,
+    ],
+    'users' => [
+        'driver' => 'eloquent',
+        'model' => App\Models\Farmer::class, // Default, overridden dynamically
+    ],
         'users' => [
             'driver' => 'eloquent',
             'model' => App\Models\User::class,

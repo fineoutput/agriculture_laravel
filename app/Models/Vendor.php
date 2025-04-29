@@ -15,4 +15,14 @@ class Vendor extends Model
         'cod', 'comission', 'qty_discount'
     ];
     protected $casts = ['is_active' => 'boolean', 'is_approved' => 'integer', 'cod' => 'boolean'];
+
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+
+    public function getJWTCustomClaims()
+    {
+        return ['type' => 'vendor'];
+    }
 }

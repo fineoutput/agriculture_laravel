@@ -15,4 +15,13 @@ class Farmer extends Model
         'no_animals', 'phone','doc_type', 'date', 'is_active', 'giftcard_id',
         'cod', 'qty_discount'
     ];
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+
+    public function getJWTCustomClaims()
+    {
+        return ['type' => 'farmer'];
+    }
 }

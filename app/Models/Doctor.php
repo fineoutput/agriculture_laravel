@@ -33,4 +33,14 @@ class Doctor extends Model
     {
         return $this->hasManyThrough(PaymentTransaction::class, DoctorRequest::class, 'doctor_id', 'req_id');
     }
+
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+
+    public function getJWTCustomClaims()
+    {
+        return ['type' => 'doctor'];
+    }
 }
