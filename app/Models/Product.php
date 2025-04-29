@@ -9,7 +9,7 @@ class Product extends Model
 {
     protected $table = 'tbl_products';
     protected $fillable = [
-        'name_english', 'name_hindi', 'name_punjabi', 'description_english', 'description_hindi',
+        'id', 'name_english', 'name_hindi', 'name_punjabi', 'description_english', 'description_hindi',
         'description_punjabi', 'image', 'video', 'mrp', 'selling_price', 'gst', 'gst_price',
         'selling_price_wo_gst', 'inventory', 'suffix', 'tranding_products', 'offer', 'ip',
         'added_by', 'is_active', 'is_admin', 'is_approved', 'show_product', 'vendor_min_qty',

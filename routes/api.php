@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ApiControllers\FarmerController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiControllers\UserloginController;
@@ -22,16 +23,16 @@ Route::post('register', [UserloginController::class, 'registerWithOtp']);
 Route::post('userRegisterOtpVerify', [UserloginController::class, 'register_otp_verify']);
 Route::post('/login', [UserloginController::class, 'login_process']);
 Route::post('/login/otp-verify', [UserloginController::class, 'login_otp_verify']);
-Route::middleware(['auth:api', 'dynamic.jwt'])->group(function () {
-Route::post('/profile/update', [UserloginController::class, 'update_profile']);
-Route::post('/logout', [UserloginController::class, 'logout']);
     // Add e-commerce routes here
     // Route::get('/products', [ProductController::class, 'index']);
-});
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-
+Route::middleware(['auth:farmer'])->group(function () {
+    Route::post('/profile/update', [UserloginController::class, 'update_profile']);
+    Route::post('/logout', [UserloginController::class, 'logout']);
+    // Route::get('/products', [ProductController::class, 'index']);
+    Route::post('AddtoCart', [FarmerController::class, 'addToCart']);
+    Route::get('GetCart', [FarmerController::class, 'getCart']);
+    Route::post('UpdateCart', [FarmerController::class, 'updateCart']);
 });
 
 
