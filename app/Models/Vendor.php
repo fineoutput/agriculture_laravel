@@ -3,10 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-
-class Vendor extends Model
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
+use Tymon\JWTAuth\Contracts\JWTSubject;
+class Vendor extends Model implements Authenticatable, JWTSubject
 {
     protected $table = 'tbl_vendor';
+
+    use AuthenticatableTrait;
     protected $fillable = [
         'name', 'hi_name', 'pn_name', 'shop_name', 'shop_hi_name', 'shop_pn_name',
         'address', 'hi_address', 'pn_address', 'district', 'hi_district', 'pn_district',

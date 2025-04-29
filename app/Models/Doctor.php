@@ -4,11 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
-class Doctor extends Model
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
+use Tymon\JWTAuth\Contracts\JWTSubject; 
+class Doctor extends Model implements Authenticatable, JWTSubject
 {
     use HasFactory;
-
+    use AuthenticatableTrait;
     protected $table = 'tbl_doctor';
     protected $fillable = [
         'name', 'hi_name', 'pn_name', 'email', 'type', 'degree', 'experience',

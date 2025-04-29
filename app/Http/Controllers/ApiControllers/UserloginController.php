@@ -223,9 +223,9 @@ class UserloginController extends Controller
                 $msg = "आदरणीय {$farmerData['name']} जी, आपका पंजीकरण सफल हुआ, DAIRY MUNEEM में आपका स्वागत है। कुछ देर में आप की आईडी एक्टिव हो जाएगी। व्हाट्सएप द्वारा हमसे जुड़ने के लिए क्लिक करें bit.ly/dairy_muneem। अधिक जानकारी के लिए 7891029090 पर कॉल करें। धन्यवाद! – DAIRY MUNEEM";
                 $this->sendSmsMsg91($farmerData['phone'], $msg, env('DLT_CODE', '645ca6f9d6fc057295695743'));
 
-                // Generate JWT token
                 $token = JWTAuth::fromUser($farmer);
-
+                $farmer->auth = $token;
+                $farmer->save();
                 Log::info('Farmer registered successfully', [
                     'phone' => $farmerData['phone'],
                     'farmer_id' => $farmer->id,
@@ -365,7 +365,8 @@ class UserloginController extends Controller
             Auth::guard('farmer')->login($farmer);
 
             $token = JWTAuth::fromUser($farmer);
-
+            $farmer->auth = $token;
+            $farmer->save();
             $otpRecord->delete();
 
             Log::info('Farmer login verified', [
@@ -611,7 +612,8 @@ class UserloginController extends Controller
                 $this->sendSmsMsg91($userData['phone'], $msg, env('DLT_CODE', '645ca6f9d6fc057295695743'));
 
                 $token = JWTAuth::fromUser($model);
-
+                $model->auth = $token;
+                $model->save();
                 Log::info('User registered successfully', [
                     'phone' => $userData['phone'],
                     'user_id' => $model->id,
@@ -796,7 +798,8 @@ class UserloginController extends Controller
             Auth::guard($guard)->login($user);
 
             $token = JWTAuth::fromUser($user);
-
+            $user->auth = $token;
+            $user->save();
             $otpRecord->delete();
 
             Log::info('User login verified', [
