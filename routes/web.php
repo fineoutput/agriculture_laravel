@@ -29,6 +29,7 @@ use App\Http\Controllers\Admin\SubcategoryImagesController;
 use App\Http\Controllers\Admin\EquipmentSalePurchaseController;
 use App\Http\Controllers\Admin\VendorAppOrdersController;
 use App\Http\Controllers\Admin\AnimalSalePurchaseController;
+use App\Http\Controllers\Admin\Admin_orders;
 
 
 /*
@@ -275,7 +276,18 @@ Route::post('farmers/qtyupdate', [FarmersController::class, 'updateQty'])->name(
         Route::get('/Animal_Sale_purchase/farmer_salepurchse_rejected', [AnimalSalePurchaseController::class, 'farmerSalePurchaseRejected'])->name('admin.animal_sale_purchase.rejected');
         Route::get('/Animal_Sale_purchase/updatesalepurchaseStatus/{idd}/{t}', [AnimalSalePurchaseController::class, 'updateSalePurchaseStatus'])->name('admin.animal_sale_purchase.update_status');
 
-
+    ///////////adminOrders
+    Route::get('/orders/all', [Admin_orders::class, 'allOrder'])->name('admin.orders.all');
+    Route::get('/orders/new', [Admin_orders::class, 'newOrder'])->name('admin.orders.new');
+    Route::get('/orders/accepted', [Admin_orders::class, 'acceptedOrder'])->name('admin.orders.accepted');
+    Route::get('/orders/today', [Admin_orders::class, 'todayOrder'])->name('admin.orders.today');
+    Route::get('/orders/dispatched', [Admin_orders::class, 'dispatchedOrder'])->name('admin.orders.dispatched');
+    Route::get('/orders/completed', [Admin_orders::class, 'completedOrder'])->name('admin.orders.completed');
+    Route::get('/orders/cancelled', [Admin_orders::class, 'cancelledOrder'])->name('admin.orders.cancelled');
+    Route::get('/orders/rejected', [Admin_orders::class, 'rejectedOrder'])->name('admin.orders.rejected');
+    Route::get('/orders/update-status/{idd}/{t}', [Admin_orders::class, 'updateOrderStatus'])->name('admin.orders.update_status');
+    Route::get('/orders/detail/{idd}/{t?}', [Admin_orders::class, 'orderDetail'])->name('admin.orders.detail');
+    Route::get('/orders/view-bill/{idd}', [Admin_orders::class, 'viewBill'])->name('admin.orders.view_bill');
 });
 
 });
