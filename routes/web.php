@@ -30,6 +30,7 @@ use App\Http\Controllers\Admin\EquipmentSalePurchaseController;
 use App\Http\Controllers\Admin\VendorAppOrdersController;
 use App\Http\Controllers\Admin\AnimalSalePurchaseController;
 use App\Http\Controllers\Admin\Admin_orders;
+use App\Http\Controllers\Admin\VendorOrderController;
 
 
 /*
@@ -288,7 +289,16 @@ Route::post('farmers/qtyupdate', [FarmersController::class, 'updateQty'])->name(
     Route::get('/orders/update-status/{idd}/{t}', [Admin_orders::class, 'updateOrderStatus'])->name('admin.orders.update_status');
     Route::get('/orders/detail/{idd}/{t?}', [Admin_orders::class, 'orderDetail'])->name('admin.orders.detail');
     Route::get('/orders/view-bill/{idd}', [Admin_orders::class, 'viewBill'])->name('admin.orders.view_bill');
-});
+
+    // Vendor Orders Routes
+    Route::get('/vendor-orders/new', [VendorOrderController::class, 'newOrder'])->name('admin.vendor_orders.new');
+    Route::get('/vendor-orders/accepted', [VendorOrderController::class, 'acceptedOrder'])->name('admin.vendor_orders.accepted');
+    Route::get('/vendor-orders/dispatched', [VendorOrderController::class, 'dispatchedOrder'])->name('admin.vendor_orders.dispatched');
+    Route::get('/vendor-orders/completed', [VendorOrderController::class, 'completedOrder'])->name('admin.vendor_orders.completed');
+    Route::get('/vendor-orders/cancelled', [VendorOrderController::class, 'cancelledOrder'])->name('admin.vendor_orders.cancelled');
+    Route::get('/vendor-orders/rejected', [VendorOrderController::class, 'rejectedOrder'])->name('admin.vendor_orders.rejected');
+
+});             
 
 });
 

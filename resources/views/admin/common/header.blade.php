@@ -272,6 +272,18 @@
                                 <li><a href="{{ route('admin.orders.completed') }}">Completed Orders</a></li>
                             </ul>
                         </li>
+                        <li>
+                            <a href="javascript:void(0);" class="waves-effect"><i class="bi bi-sliders"></i><span>Vendor Orders <span class="float-right menu-arrow"><i class="mdi mdi-plus"></i></span> </span></a>
+                            <ul class="submenu">
+                                <li><a href="{{ route('admin.vendor_orders.new') }}">All orders</a></li>
+                                <li><a href="{{ route('admin.vendor_orders.accepted') }}">Accepted orders</a></li>
+                                {{-- <li><a href="{{ route('admin.vendorapporders.dispatched') }}">Dispatched Orders</a></li> --}}
+                                <li><a href="{{ route('admin.vendor_orders.dispatched') }}">Dispatched orders</a></li>
+                                <li><a href="{{ route('admin.vendor_orders.rejected') }}">Rejected Orders</a></li>
+                                <li><a href="{{ route('admin.vendor_orders.cancelled') }}">Canceled Orders</a></li>
+                                <li><a href="{{ route('admin.vendor_orders.completed') }}">Completed Orders</a></li>
+                            </ul>
+                        </li>
                         <?php
                         $admin_services = Session::get('services');
                         $ser = json_decode($admin_services);
