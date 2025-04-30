@@ -32,7 +32,8 @@ Route::middleware(['auth:farmer'])->group(function () {
     // Route::get('/products', [ProductController::class, 'index']);
     Route::post('AddtoCart', [FarmerController::class, 'addToCart']);
     Route::get('GetCart', [FarmerController::class, 'getCart']);
-    Route::post('UpdateCart', [FarmerController::class, 'updateCart']);
+    Route::post('UpdateCartItems', [FarmerController::class, 'updateCart']);
+    Route::post('RemoveCartItems', [FarmerController::class, 'removeCart']);
 });
 
 

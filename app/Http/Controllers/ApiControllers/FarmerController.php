@@ -391,4 +391,73 @@ class FarmerController extends Controller
             ], 500);
         }
     }
+
+    public function removeCart(Request $request)
+    {
+        // Validate input
+        $validator = Validator::make($request->all(), [
+            'product_id' => 'required|integer',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
+
+        try {
+            // Authenticate user using 'farmer' guard
+            $user = auth('farmer')->user();
+            Log::info('RemoveCart auth attempt', [
+                'user_id' => $user ? $user->id : null,
+                'is_active' => $user ? ($user->is_active ?? 'missing') : null,
+                'request_token' => $request->bearerToken(),
+            ]);
+
+            if (!$user || !$user->is_active) {
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            $product_id = $request->input('product_id');
+
+            // Delete cart item
+            $deleted = Cart::where('farmer_id', $user->id)
+                ->where('product_id', $product_id)
+                ->delete();
+
+            // Get updated cart count
+            $count = Cart::where('farmer_id', $user->id)->count();
+
+            Log::info('Cart item removed', [
+                'farmer_id' => $user->id,
+                'product_id' => $product_id,
+                'deleted' => $deleted,
+                'cart_count' => $count,
+            ]);
+
+            return response()->json([
+                'message' => 'Success!',
+                'status' => 200,
+                'data' => $count,
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Error in removeCart', [
+                'product_id' => $request->input('product_id'),
+                'farmer_id' => auth('farmer')->id() ?? null,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Error removing cart item: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
+
+    
 }
