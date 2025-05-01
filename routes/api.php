@@ -24,7 +24,7 @@ Route::post('farmerLoginOtp-verify', [UserloginController::class, 'farmer_login_
 Route::post('register', [UserloginController::class, 'registerWithOtp']);
 Route::post('userRegisterOtpVerify', [UserloginController::class, 'register_otp_verify']);
 Route::post('login', [UserloginController::class, 'login_process']);
-Route::post('/login/otp-verify', [UserloginController::class, 'login_otp_verify']);
+Route::post('LoginOtpVerify', [UserloginController::class, 'login_otp_verify']);
     // Add e-commerce routes here
     // Route::get('/products', [ProductController::class, 'index']);
 
@@ -53,6 +53,15 @@ Route::middleware(['auth:farmer'])->group(function () {
     ///////FeedController
     Route::post('WeightCalculate', [FeedController::class, 'calculateWeight']);
     Route::post('DMIcalculator', [FeedController::class, 'dmiCalculator']);
+    Route::post('FeedTest', [FeedController::class, 'feedTest']);
+    Route::post('FeedCalculator', [FeedController::class, 'feedCalculator']);
+    Route::post('AnimalRequirement', [FeedController::class, 'animalRequirements']);
+    Route::post('checkMyFeed', [FeedController::class, 'checkMyFeed']);
+    Route::get('DairyMart', [FeedController::class, 'dairyMart']);
+    Route::get('DoctorOnCall', [FeedController::class, 'doctorOnCall']);
+    Route::get('ExpertAdvice', [FeedController::class, 'expertAdvice']);
+    Route::get('RadiusVendor', [FeedController::class, 'radiusVendor']);
+    Route::post('BuyFeed', [FeedController::class, 'buyFeed']);
 });
 
 Route::post('paymentSuccess', [FarmerController::class, 'paymentSuccess'])->name('payment.success');
