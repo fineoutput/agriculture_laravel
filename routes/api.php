@@ -5,6 +5,7 @@ use App\Http\Controllers\ApiControllers\BreedController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiControllers\UserloginController;
+use App\Http\Controllers\ApiControllers\FeedController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -48,6 +49,10 @@ Route::middleware(['auth:farmer'])->group(function () {
     Route::get('ViewHealth', [BreedController::class, 'viewHealthInfo']);
     Route::post('BreedingRecord', [BreedController::class, 'breedingRecord']);
     Route::get('ViewRecord', [BreedController::class, 'viewBreedingRecord']);
+
+    ///////FeedController
+    Route::post('WeightCalculate', [FeedController::class, 'calculateWeight']);
+    Route::post('DMIcalculator', [FeedController::class, 'dmiCalculator']);
 });
 
 Route::post('paymentSuccess', [FarmerController::class, 'paymentSuccess'])->name('payment.success');
