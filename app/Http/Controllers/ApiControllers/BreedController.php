@@ -12,6 +12,7 @@ use App\Models\Group;
 use App\Models\HealthInfo;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Tymon\JWTAuth\Facades\JWTAuth;
 class BreedController extends Controller
 {
     public function healthInfo(Request $request)

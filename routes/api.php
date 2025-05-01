@@ -22,7 +22,7 @@ Route::post('farmerlogin', [UserloginController::class, 'farmer_login_process'])
 Route::post('farmerLoginOtp-verify', [UserloginController::class, 'farmer_login_otp_verify']);
 Route::post('register', [UserloginController::class, 'registerWithOtp']);
 Route::post('userRegisterOtpVerify', [UserloginController::class, 'register_otp_verify']);
-Route::post('/login', [UserloginController::class, 'login_process']);
+Route::post('login', [UserloginController::class, 'login_process']);
 Route::post('/login/otp-verify', [UserloginController::class, 'login_otp_verify']);
     // Add e-commerce routes here
     // Route::get('/products', [ProductController::class, 'index']);
@@ -31,6 +31,10 @@ Route::middleware(['auth:farmer'])->group(function () {
     Route::post('/profile/update', [UserloginController::class, 'update_profile']);
     Route::post('/logout', [UserloginController::class, 'logout']);
     // Route::get('/products', [ProductController::class, 'index']);
+
+
+
+    //////////FarmerController
     Route::post('AddtoCart', [FarmerController::class, 'addToCart']);
     Route::get('GetCart', [FarmerController::class, 'getCart']);
     Route::post('UpdateCartItems', [FarmerController::class, 'updateCart']);
