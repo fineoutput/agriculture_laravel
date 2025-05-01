@@ -42,6 +42,8 @@ Route::middleware(['auth:farmer'])->group(function () {
     //////BreedController
     Route::post('healthInfo', [BreedController::class, 'healthInfo']);
     Route::get('ViewHealth', [BreedController::class, 'viewHealthInfo']);
+    Route::post('BreedingRecord', [BreedController::class, 'breedingRecord']);
+    Route::get('ViewRecord', [BreedController::class, 'viewBreedingRecord']);
 });
 
 Route::post('paymentSuccess', [FarmerController::class, 'paymentSuccess'])->name('payment.success');
