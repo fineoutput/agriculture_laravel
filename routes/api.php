@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ApiControllers\FarmerController;
+use App\Http\Controllers\ApiControllers\BreedController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiControllers\UserloginController;
@@ -36,6 +37,11 @@ Route::middleware(['auth:farmer'])->group(function () {
     Route::post('RemoveCartItems', [FarmerController::class, 'removeCart']);
     Route::get('Calculate', [FarmerController::class, 'calculate']);
     Route::post('CheckOut', [FarmerController::class, 'checkout']);
+
+
+    //////BreedController
+    Route::post('healthInfo', [BreedController::class, 'healthInfo']);
+    Route::get('ViewHealth', [BreedController::class, 'viewHealthInfo']);
 });
 
 Route::post('paymentSuccess', [FarmerController::class, 'paymentSuccess'])->name('payment.success');
