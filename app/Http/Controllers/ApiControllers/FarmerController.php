@@ -5,6 +5,11 @@ namespace App\Http\Controllers\ApiControllers;
 use App\Http\Controllers\Controller;
 use App\Models\Farmer;
 use App\Models\Order2;
+use App\Models\Vendor;
+use App\Models\InventoryTxn;
+use App\Models\VendorNotification;
+use App\Models\PaymentTransaction;
+use App\Models\State;
 use App\Models\Order1;
 use App\Models\Product;
 use App\Models\Cart;
@@ -12,7 +17,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Log;
-
+use Illuminate\Support\Facades\Mail;
+use Razorpay\Api\Api; // Add this import
+use GuzzleHttp\Client;
 class FarmerController extends Controller
 {
     public function addToCart(Request $request)
@@ -629,5 +636,412 @@ class FarmerController extends Controller
                 'status' => 201,
             ], 500);
         }
+    }
+
+    public function checkout(Request $request)
+    {
+        try {
+            // Authenticate user using 'farmer' guard
+            $user = auth('farmer')->user();
+            Log::info('Checkout auth attempt', [
+                'user_id' => $user ? $user->id : null,
+                'is_active' => $user ? ($user->is_active ?? 'missing') : null,
+                'request_token' => $request->bearerToken(),
+            ]);
+
+            if (!$user || !$user->is_active) {
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            // Validate input
+            $validator = Validator::make($request->all(), [
+                'order_id' => 'required|integer',
+                'name' => 'required|string',
+                'address' => 'required|string',
+                'city' => 'required|string',
+                'state' => 'required|integer',
+                'district' => 'required|string',
+                'pincode' => 'required|string',
+                'phone' => 'required|string',
+                'cod' => 'required|in:0,1,2',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'status' => 201,
+                ], 422);
+            }
+
+            // Fetch cart items
+            $cartItems = Cart::where('farmer_id', $user->id)->get();
+            if ($cartItems->isEmpty()) {
+                Cart::where('farmer_id', $user->id)->delete();
+                $count = Cart::where('farmer_id', $user->id)->count();
+                return response()->json([
+                    'message' => 'Cart is empty!',
+                    'status' => 201,
+                    'data' => [],
+                    'count' => $count,
+                ], 200);
+            }
+
+            // Validate cart items
+            foreach ($cartItems as $cart) {
+                $product = Product::where('id', $cart->product_id)
+                    ->where('is_active', 1)
+                    ->first();
+
+                if (!$product) {
+                    Cart::where('farmer_id', $user->id)
+                        ->where('product_id', $cart->product_id)
+                        ->delete();
+                    continue;
+                }
+
+                if ($product->inventory < $cart->qty) {
+                    return response()->json([
+                        'message' => "{$product->name_english} is out of stock. Please remove this from cart!",
+                        'status' => 201,
+                    ], 200);
+                }
+
+                if ($product->min_qty && $cart->qty < $product->min_qty) {
+                    return response()->json([
+                        'message' => "{$product->name_english} minimum quantity should be {$product->min_qty}",
+                        'status' => 201,
+                        'data' => [],
+                    ], 200);
+                }
+            }
+
+            // Fetch state details
+            $state = State::find($request->state);
+            $state_detail = $state ? preg_replace('/\s*\[.*?\]/', '', $state->state_name) : '';
+
+            $order_id = $request->order_id;
+            $name = $request->name;
+            $address = $request->address;
+            $city = $request->city;
+            $district = $request->district;
+            $pincode = $request->pincode;
+            $phone = $request->phone;
+            $cod = $request->cod;
+
+            $order1 = Order1::find($order_id);
+            if (!$order1 || $order1->farmer_id != $user->id) {
+                return response()->json([
+                    'message' => 'Invalid order ID!',
+                    'status' => 201,
+                ], 404);
+            }
+
+            $success_url = route('payment.success');
+            $fail_url = route('payment.failed');
+
+            if ($cod == 0) {
+                // CC Avenue
+                $txn_id = mt_rand(999999, 999999999999);
+                $order1->update([
+                    'txn_id' => $txn_id,
+                    'name' => $name,
+                    'address' => $address,
+                    'city' => $city,
+                    'state' => $state_detail,
+                    'district' => $district,
+                    'pincode' => $pincode,
+                    'phone' => $phone,
+                    'gateway' => 'CC Avenue',
+                ]);
+
+                $post = [
+                    'txn_id' => $txn_id,
+                    'merchant_id' => config('constants.MERCHAND_ID'),
+                    'order_id' => $order_id,
+                    'amount' => $order1->final_amount,
+                    'currency' => 'INR',
+                    'redirect_url' => $success_url,
+                    'cancel_url' => $fail_url,
+                    'billing_name' => $name,
+                    'billing_address' => $address,
+                    'billing_city' => $city,
+                    'billing_state' => $state_detail,
+                    'billing_zip' => $pincode,
+                    'billing_country' => 'India',
+                    'billing_tel' => $phone,
+                    'billing_email' => '',
+                    'merchant_param1' => 'Order Payment',
+                ];
+
+                $merchant_data = '';
+                $working_key = config('constants.WORKING_KEY');
+                $access_code = config('constants.ACCESS_CODE');
+
+                foreach ($post as $key => $value) {
+                    $merchant_data .= $key . '=' . $value . '&';
+                }
+
+                $key = pack('H*', md5($working_key));
+                $initVector = pack('C*', 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f);
+                $encrypted_data = bin2hex(openssl_encrypt($merchant_data, 'AES-128-CBC', $key, OPENSSL_RAW_DATA, $initVector));
+
+                $send = [
+                    'order_id' => $order_id,
+                    'access_code' => $access_code,
+                    'redirect_url' => $success_url,
+                    'cancel_url' => $fail_url,
+                    'enc_val' => $encrypted_data,
+                    'plain' => $merchant_data,
+                    'merchant_param1' => 'Order Payment',
+                ];
+
+                return response()->json([
+                    'message' => 'Success!',
+                    'status' => 200,
+                    'data' => $send,
+                ], 200);
+            } elseif ($cod == 2) {
+                // Razorpay
+                $txn_id = mt_rand(999999, 999999999999);
+                $order1->update([
+                    'txn_id' => $txn_id,
+                    'name' => $name,
+                    'address' => $address,
+                    'city' => $city,
+                    'state' => $state_detail,
+                    'district' => $district,
+                    'pincode' => $pincode,
+                    'phone' => $phone,
+                    'gateway' => 'Razorpay',
+                ]);
+
+                $api = new Api(config('services.razorpay.key_id'), config('services.razorpay.key_secret'));
+
+                $orderData = [
+                    'receipt' => (string) $txn_id,
+                    'amount' => $order1->final_amount * 100,
+                    'currency' => 'INR',
+                    'payment_capture' => 1,
+                ];
+
+                $razorpayOrder = $api->order->create($orderData);
+                $razorpay_order_id = $razorpayOrder['id'];
+
+                $send = [
+                    'order_id' => $razorpay_order_id,
+                    'amount' => $order1->final_amount,
+                    'currency' => 'INR',
+                    'name' => $name,
+                    'email' => '',
+                    'contact' => $phone,
+                    'address' => $address,
+                    'city' => $city,
+                    'state' => $state_detail,
+                    'zip' => $pincode,
+                    'success_url' => $success_url,
+                    'failure_url' => $fail_url,
+                    'merchant_param1' => 'Order Payment',
+                    'razorpay_key' => config('services.razorpay.key_id'),
+                    'razorpay_order_id' => $razorpay_order_id,
+                ];
+
+                return response()->json([
+                    'message' => 'Success!',
+                    'status' => 200,
+                    'data' => $send,
+                ], 200);
+            } else {
+                // COD
+                if (!$user->cod) {
+                    return response()->json([
+                        'message' => 'Orders cannot be placed with COD!',
+                        'status' => 201,
+                    ], 403);
+                }
+
+                $order1->update([
+                    'name' => $name,
+                    'address' => $address,
+                    'city' => $city,
+                    'state' => $state_detail,
+                    'district' => $district,
+                    'pincode' => $pincode,
+                    'phone' => $phone,
+                ]);
+
+                if ($order1->payment_status != 0) {
+                    return response()->json([
+                        'message' => 'Order already processed!',
+                        'status' => 201,
+                    ], 400);
+                }
+
+                // Generate invoice
+                $now = now()->format('y');
+                $next = now()->addYear()->format('y');
+                $invoice_year = "$now-$next";
+                $last_order = Order1::where('payment_status', 2)
+                    ->where('invoice_year', $invoice_year)
+                    ->orderBy('id', 'desc')
+                    ->first();
+
+                $invoice_no = $last_order ? $last_order->invoice_no + 1 : 1;
+
+                $order1->update([
+                    'payment_status' => 2,
+                    'order_status' => 1,
+                    'invoice_year' => $invoice_year,
+                    'invoice_no' => $invoice_no,
+                ]);
+
+                // Update inventory
+                $order2_items = Order2::where('main_id', $order_id)->get();
+                foreach ($order2_items as $item) {
+                    $product = Product::where('id', $item->product_id)
+                        ->where('is_active', 1)
+                        ->first();
+
+                    if ($product) {
+                        $new_inventory = $product->inventory - $item->qty;
+                        InventoryTxn::create([
+                            'order_id' => $order_id,
+                            'at_time' => $product->inventory,
+                            'less_inventory' => $item->qty,
+                            'updated_inventory' => $new_inventory,
+                            'date' => now(),
+                        ]);
+
+                        $product->update(['inventory' => $new_inventory]);
+                    }
+                }
+
+                // Handle vendor/admin logic
+                if ($order1->is_admin == 0) {
+                    $vendor = Vendor::find($order1->vendor_id);
+                    if ($vendor && $vendor->comission) {
+                        $amt = $order1->total_amount * $vendor->comission / 100;
+                        PaymentTransaction::create([
+                            'req_id' => $order_id,
+                            'vendor_id' => $order1->vendor_id,
+                            'cr' => $order1->total_amount - $amt,
+                            'date' => now(),
+                        ]);
+
+                        $vendor->update([
+                            'account' => $vendor->account + $order1->total_amount - $amt,
+                        ]);
+
+                        if ($vendor->fcm_token) {
+                            $client = new Client();
+                            $response = $client->post('https://fcm.googleapis.com/fcm/send', [
+                                'headers' => [
+                                    'Authorization' => 'key=' . config('services.fcm.server_key'),
+                                    'Content-Type' => 'application/json',
+                                ],
+                                'json' => [
+                                    'to' => $vendor->fcm_token,
+                                    'notification' => [
+                                        'title' => 'New Order',
+                                        'body' => "New order #{$order_id} received with the amount of ₹{$order1->final_amount}",
+                                        'sound' => 'default',
+                                    ],
+                                    'priority' => 'high',
+                                ],
+                            ]);
+
+                            VendorNotification::create([
+                                'vendor_id' => $order1->vendor_id,
+                                'name' => 'New Order',
+                                'dsc' => "New order #{$order_id} received with the amount of ₹{$order1->final_amount}",
+                                'date' => now(),
+                            ]);
+                        }
+                    }
+                } else {
+                    // Send email to admin
+                    Mail::send([], [], function ($message) use ($order1) {
+                        $message->to(config('mail.to.address'), 'Dairy Muneem')
+                            ->subject('New Order received')
+                            ->setBody(
+                                "Hello Admin<br/><br/>You have received new Order and below are the details<br/><br/>" .
+                                "<b>Order ID</b> - {$order1->id}<br/>" .
+                                "<b>Amount</b> - Rs.{$order1->final_amount}<br/>",
+                                'text/html'
+                            );
+                    });
+
+                    // Placeholder for WhatsApp message
+                    $this->sendWhatsAppMsgAdmin($order1, $user);
+                }
+
+                // Clear cart
+                Cart::where('farmer_id', $user->id)->delete();
+
+                $send = [
+                    'order_id' => $order_id,
+                    'final_amount' => $order1->final_amount,
+                ];
+
+                Log::info('Checkout completed', [
+                    'farmer_id' => $user->id,
+                    'order_id' => $order_id,
+                    'payment_method' => 'COD',
+                    'final_amount' => $order1->final_amount,
+                ]);
+
+                return response()->json([
+                    'message' => 'Success',
+                    'status' => 200,
+                    'data' => $send,
+                ], 200);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error in checkout', [
+                'farmer_id' => auth('farmer')->id() ?? null,
+                'order_id' => $request->order_id ?? null,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Error processing checkout: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
+
+    protected function sendWhatsAppMsgAdmin($order1, $user)
+    {
+        // Implement WhatsApp API integration here
+        Log::info('WhatsApp message placeholder', [
+            'order_id' => $order1->id,
+            'farmer_id' => $user->id,
+        ]);
+    }
+
+    public function paymentSuccess(Request $request)
+    {
+        Log::info('Payment success callback', [
+            'request' => $request->all(),
+        ]);
+        // Implement CC Avenue/Razorpay verification
+        return response()->json([
+            'message' => 'Payment success callback received',
+            'status' => 200,
+        ], 200);
+    }
+
+    public function paymentFailed(Request $request)
+    {
+        Log::info('Payment failed callback', [
+            'request' => $request->all(),
+        ]);
+        // Handle failure
+        return response()->json([
+            'message' => 'Payment failed callback received',
+            'status' => 201,
+        ], 200);
     }
 }
