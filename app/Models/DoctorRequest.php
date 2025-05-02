@@ -10,7 +10,20 @@ class DoctorRequest extends Model
 
     use HasFactory; 
     protected $table = 'tbl_doctor_req';
-    protected $fillable = ['doctor_id', 'payment_status', 'fees'];
+    protected $fillable = ['doctor_id',
+        'farmer_id',
+        'reason',
+        'description',
+        'is_expert',
+        'fees',
+        'image1',
+        'image2',
+        'image3',
+        'image4',
+        'image5',
+        'status',
+        'payment_status',
+        'date',];
     protected $casts = [
         'payment_status' => 'integer'
     ];

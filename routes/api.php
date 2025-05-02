@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiControllers\UserloginController;
 use App\Http\Controllers\ApiControllers\FeedController;
+use App\Http\Controllers\ApiControllers\DoctorController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -62,6 +63,12 @@ Route::middleware(['auth:farmer'])->group(function () {
     Route::get('ExpertAdvice', [FeedController::class, 'expertAdvice']);
     Route::get('RadiusVendor', [FeedController::class, 'radiusVendor']);
     Route::post('BuyFeed', [FeedController::class, 'buyFeed']);
+
+
+
+    ///////////DoctorController
+    Route::get('GetRequests', [DoctorController::class, 'getRequests']);
+    
 });
 
 Route::post('paymentSuccess', [FarmerController::class, 'paymentSuccess'])->name('payment.success');
