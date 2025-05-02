@@ -34,12 +34,11 @@ return [
     | Supported: "session"
     |
     */
-
     'guards' => [
-        'farmer' => [
-        'driver' => 'session',
-        'provider' => 'farmers',
-    ],
+    //     'farmer' => [
+    //     'driver' => 'session',
+    //     'provider' => 'farmers',
+    // ],
     'doctor' => [
         'driver' => 'jwt',
         'provider' => 'doctors',

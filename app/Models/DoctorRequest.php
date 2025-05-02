@@ -5,10 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-class DoctorRequest extends Model
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
+use Tymon\JWTAuth\Contracts\JWTSubject; 
+class DoctorRequest extends Model implements Authenticatable, JWTSubject
+
 {
 
     use HasFactory; 
+    
+    use AuthenticatableTrait;
     protected $table = 'tbl_doctor_req';
     protected $fillable = ['doctor_id',
         'farmer_id',
@@ -36,5 +42,15 @@ class DoctorRequest extends Model
     public function paymentTransactions()
     {
         return $this->hasMany(PaymentTransaction::class, 'req_id');
+    }
+
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+
+    public function getJWTCustomClaims()
+    {
+        return ['type' => 'doctor'];
     }
 }

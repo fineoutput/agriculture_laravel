@@ -63,12 +63,16 @@ Route::middleware(['auth:farmer'])->group(function () {
     Route::get('ExpertAdvice', [FeedController::class, 'expertAdvice']);
     Route::get('RadiusVendor', [FeedController::class, 'radiusVendor']);
     Route::post('BuyFeed', [FeedController::class, 'buyFeed']);
+      
+});
 
+///////////DoctorController
 
-
-    ///////////DoctorController
-    Route::get('GetRequests', [DoctorController::class, 'getRequests']);
-    
+Route::middleware(['auth:doctor'])->group(function () {
+Route::get('GetRequests', [DoctorController::class, 'getRequests']);
+Route::post('doctor/requests/{id}/complete', [DoctorController::class, 'reqMarkComplete']);
+Route::get('Profile', [DoctorController::class, 'getProfile']);
+Route::post('UpdateProf', [DoctorController::class, 'updateProfile']);
 });
 
 Route::post('paymentSuccess', [FarmerController::class, 'paymentSuccess'])->name('payment.success');
