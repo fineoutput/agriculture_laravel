@@ -4,6 +4,11 @@ namespace App\Http\Controllers\ApiControllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Doctor;
+use App\Models\DoctorTank;
+use App\Models\DoctorSemenTransaction;
+use App\Models\PaymentsReq;
+use App\Models\DoctorCanister;
+use App\Models\PaymentTransaction;
 use App\Models\DoctorRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -322,5 +327,711 @@ switch ($doc_type) {
         }
     }
 
+    public function updateBankInfo(Request $request)
+    {
+        try {
+            if (!$request->hasAny(['bank_name', 'bank_phone', 'bank_ac', 'ifsc', 'upi'])) {
+                return response()->json([
+                    'message' => 'Please Insert Data',
+                    'status' => 201,
+                ], 422);
+            }
+
+            $doctor = auth('doctor')->user();
+            Log::info('UpdateBankInfo auth attempt', [
+                'doctor_id' => $doctor ? $doctor->id : null,
+                'is_active' => $doctor ? ($doctor->is_active ?? 'missing') : null,
+                'is_approved' => $doctor ? ($doctor->is_approved ?? 'missing') : null,
+                'request_token' => $request->bearerToken(),
+            ]);
+
+            if (!$doctor || !$doctor->is_active || !$doctor->is_approved) {
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'bank_name' => 'required|string|max:255',
+                'bank_phone' => 'required|string|max:15',
+                'bank_ac' => 'required|string|max:50',
+                'ifsc' => 'required|string|max:11',
+                'upi' => 'nullable|string|max:255',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'status' => 201,
+                ], 422);
+            }
+
+            $data = $request->only([
+                'bank_name',
+                'bank_phone',
+                'bank_ac',
+                'ifsc',
+                'upi',
+            ]);
+
+        
+
+                $updated = $doctor->update($data);
+            
+
+            if ($updated) { 
+                return response()->json([
+                    'message' => 'Success',
+                    'status' => 200,
+                    'data' => [$data],
+                ], 200);
+            } else {
+                return response()->json([
+                    'message' => 'Some error occurred!',
+                    'status' => 201,
+                ], 400);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Error in updateBankInfo', [
+                'doctor_id' => auth('doctor')->id() ?? null,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Error updating bank info: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
+
+    public function updateLocation(Request $request)
+    {
+        try {
+            if (!$request->hasAny(['latitude', 'longitude', 'fcm_token'])) {
+                return response()->json([
+                    'message' => 'Please Insert Data',
+                    'status' => 201,
+                ], 422);
+            }
+
+            // /** @var \App\Models\Doctor $doctor */
+            $doctor = auth('doctor')->user();
+            Log::info('UpdateLocation auth attempt', [
+                'doctor_id' => $doctor ? $doctor->id : null,
+                'is_active' => $doctor ? ($doctor->is_active ?? 'missing') : null,
+                'is_approved' => $doctor ? ($doctor->is_approved ?? 'missing') : null,
+                'request_token' => $request->bearerToken(),
+            ]);
+
+            if (!$doctor || !$doctor->is_active || !$doctor->is_approved) {
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'latitude' => 'required|numeric',
+                'longitude' => 'required|numeric',
+                'fcm_token' => 'required|string|max:255',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'status' => 201,
+                ], 422);
+            }
+
+            $data = $request->only([
+                'latitude',
+                'longitude',
+                'fcm_token',
+            ]);
+
+            $data['updated_at'] = now();
+
+            $doctor->update($data);
+
+            return response()->json([
+                'message' => 'Success',
+                'status' => 200,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error in updateLocation', [
+                'doctor_id' => auth('doctor')->id() ?? null,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Error updating location: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
+
+    public function paymentInfo(Request $request)
+    {
+        try {
+            // /** @var \App\Models\Doctor $doctor */
+            $doctor = auth('doctor')->user();
+            Log::info('PaymentInfo auth attempt', [
+                'doctor_id' => $doctor ? $doctor->id : null,
+                'is_active' => $doctor ? ($doctor->is_active ?? 'missing') : null,
+                'is_approved' => $doctor ? ($doctor->is_approved ?? 'missing') : null,
+                'request_token' => $request->bearerToken(),
+            ]);
+
+            if (!$doctor || !$doctor->is_active || !$doctor->is_approved) {
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            $transactions = PaymentTransaction::where('doctor_id', $doctor->id)
+                ->whereNotNull('req_id')
+                ->orderBy('id', 'desc')
+                ->take(20)
+                ->get();
+
+            $data = $transactions->map(function ($txn) {
+                return [
+                    'req_id' => $txn->req_id,
+                    'cr' => $txn->cr,
+                    'date' => (new \DateTime($txn->date))->format('d/m/Y'),
+                ];
+            })->toArray();
+
+            return response()->json([
+                'message' => 'Success!',
+                'status' => 200,
+                'data' => $data,
+                'account' => $doctor->account,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error in paymentInfo', [
+                'doctor_id' => auth('doctor')->id() ?? null,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Error fetching payment info: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
+
+    public function adminPaymentInfo(Request $request)
+    {
+        try {
+            // /** @var \App\Models\Doctor $doctor */
+            $doctor = auth('doctor')->user();
+            Log::info('AdminPaymentInfo auth attempt', [
+                'doctor_id' => $doctor ? $doctor->id : null,
+                'is_active' => $doctor ? ($doctor->is_active ?? 'missing') : null,
+                'is_approved' => $doctor ? ($doctor->is_approved ?? 'missing') : null,
+                'request_token' => $request->bearerToken(),
+            ]);
+
+            if (!$doctor || !$doctor->is_active || !$doctor->is_approved) {
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            $paymentRequests = PaymentsReq::where('doctor_id', $doctor->id)
+                ->orderBy('id', 'desc')
+                ->take(20)
+                ->get();
+
+            $data = $paymentRequests->map(function ($req) {
+                switch ($req->status) {
+                    case 0:
+                        $status = 'Pending';
+                        break;
+                    case 1:
+                        $status = 'Completed';
+                        break;
+                    case 2:
+                        $status = 'Rejected';
+                        break;
+                    default:
+                        $status = 'Unknown';
+                }
+                
+
+                switch ($req->status) {
+                    case 0:
+                        $bgColor = '#65bcd7';
+                        break;
+                    case 1:
+                        $bgColor = '#139c49';
+                        break;
+                    case 2:
+                        $bgColor = '#dc4c64';
+                        break;
+                    default:
+                        $bgColor = '#000000';
+                }
+                
+
+                return [
+                    'req_id' => $req->id,
+                    'amount' => $req->amount,
+                    'status' => $status,
+                    'bg_color' => $bgColor,
+                    'date' => (new \DateTime($req->date))->format('d/m/Y'),
+                ];
+            })->toArray();
+
+            return response()->json([
+                'message' => 'Success!',
+                'status' => 200,
+                'data' => $data,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error in adminPaymentInfo', [
+                'doctor_id' => auth('doctor')->id() ?? null,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Error fetching admin payment info: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
+
+    public function semenTanks(Request $request)
+    {
+        try {
+            // /** @var \App\Models\Doctor $doctor */
+            $doctor = auth('doctor')->user();
+            Log::info('SemenTanks auth attempt', [
+                'doctor_id' => $doctor ? $doctor->id : null,
+                'is_active' => $doctor ? ($doctor->is_active ?? 'missing') : null,
+                'is_approved' => $doctor ? ($doctor->is_approved ?? 'missing') : null,
+                'request_token' => $request->bearerToken(),
+            ]);
+
+            if (!$doctor || !$doctor->is_active || !$doctor->is_approved) {
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            $tanks = DoctorTank::where('doctor_id', $doctor->id)
+                ->with('canisters')
+                ->get();
+
+            $data = $tanks->map(function ($tank, $index) {
+                return [
+                    's_no' => $index + 1,
+                    'name' => $tank->name,
+                    'tank_id' => $tank->id,
+                    'canister' => $tank->canisters->toArray(),
+                ];
+            })->toArray();
+
+            return response()->json([
+                'message' => 'Success!',
+                'status' => 200,
+                'data' => $data,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error in semenTanks', [
+                'doctor_id' => auth('doctor')->id() ?? null,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Error fetching semen tanks: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
+
+    public function deleteSemenTank(Request $request, $id)
+    {
+        try {
+            // /** @var \App\Models\Doctor $doctor */
+            $doctor = auth('doctor')->user();
+            Log::info('DeleteSemenTank auth attempt', [
+                'doctor_id' => $doctor ? $doctor->id : null,
+                'is_active' => $doctor ? ($doctor->is_active ?? 'missing') : null,
+                'is_approved' => $doctor ? ($doctor->is_approved ?? 'missing') : null,
+                'tank_id' => $id,
+                'request_token' => $request->bearerToken(),
+                'ip_address' => $request->ip(),
+            ]);
+
+            if (!$doctor || !$doctor->is_active || !$doctor->is_approved) {
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            $tank = DoctorTank::where('doctor_id', $doctor->id)
+                ->where('id', $id)
+                ->first();
+
+            if (!$tank) {
+                return response()->json([
+                    'message' => 'Some error occurred!',
+                    'status' => 201,
+                ], 404);
+            }
+
+            DoctorCanister::where('doctor_id', $doctor->id)
+                ->where('tank_id', $id)
+                ->delete();
+
+            $tank->delete();
+
+            return response()->json([
+                'message' => 'Tank Successfully Deleted!',
+                'status' => 200,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error in deleteSemenTank', [
+                'doctor_id' => auth('doctor')->id() ?? null,
+                'tank_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Error deleting semen tank: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
+
+    public function addSemenTank(Request $request)
+    {
+        try {
+            if (!$request->has('name')) {
+                return response()->json([
+                    'message' => 'Please Insert Data',
+                    'status' => 201,
+                ], 422);
+            }
+
+            // /** @var \App\Models\Doctor $doctor */
+            $doctor = auth('doctor')->user();
+            Log::info('AddSemenTank auth attempt', [
+                'doctor_id' => $doctor ? $doctor->id : null,
+                'is_active' => $doctor ? ($doctor->is_active ?? 'missing') : null,
+                'is_approved' => $doctor ? ($doctor->is_approved ?? 'missing') : null,
+                'name' => $request->input('name'),
+                'request_token' => $request->bearerToken(),
+                'ip_address' => $request->ip(),
+            ]);
+
+            if (!$doctor || !$doctor->is_active || !$doctor->is_approved) {
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'name' => 'required|string|max:255',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'status' => 201,
+                ], 422);
+            }
+
+            $name = $request->input('name');
+
+            $existingTank = DoctorTank::where('doctor_id', $doctor->id)
+                ->where('name', $name)
+                ->first();
+
+            if ($existingTank) {
+                return response()->json([
+                    'message' => 'Tank name already exist!',
+                    'status' => 201,
+                ], 422);
+            }
+
+            $tank = DoctorTank::create([
+                'doctor_id' => $doctor->id,
+                'name' => $name,
+                'date' => now(),
+            ]);
+
+            for ($i = 0; $i < 6; $i++) {
+                DoctorCanister::create([
+                    'doctor_id' => $doctor->id,
+                    'tank_id' => $tank->id,
+                    'date' => now(),
+                ]);
+            }
+
+            return response()->json([
+                'message' => 'Record Successfully Inserted!',
+                'status' => 200,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error in addSemenTank', [
+                'doctor_id' => auth('doctor')->id() ?? null,
+                'name' => $request->input('name'),
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Error adding semen tank: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
+
+    public function updateCanister(Request $request, $canister_id)
+    {
+        try {
+            // /** @var \App\Models\Doctor $doctor */
+            $doctor = auth('doctor')->user();
+            Log::info('UpdateCanister auth attempt', [
+                'doctor_id' => $doctor ? $doctor->id : null,
+                'is_active' => $doctor ? ($doctor->is_active ?? 'missing') : null,
+                'is_approved' => $doctor ? ($doctor->is_approved ?? 'missing') : null,
+                'canister_id' => $canister_id,
+                'request_token' => $request->bearerToken(),
+                'ip_address' => $request->ip(),
+            ]);
+
+            if (!$doctor || !$doctor->is_active || !$doctor->is_approved) {
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'bull_name' => 'nullable|string|max:255',
+                'company_name' => 'nullable|string|max:255',
+                'no_of_units' => 'nullable|numeric|min:0',
+                'milk_production_of_mother' => 'nullable|string|max:255',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'status' => 201,
+                ], 422);
+            }
+
+            $canister = DoctorCanister::where('id', $canister_id)
+                ->where('doctor_id', $doctor->id)
+                ->first();
+
+            if (!$canister) {
+                return response()->json([
+                    'message' => 'Some error occurred!',
+                    'status' => 201,
+                ], 404);
+            }
+
+            $data = array_filter([
+                'bull_name' => $request->input('bull_name'),
+                'company_name' => $request->input('company_name'),
+                'no_of_units' => $request->input('no_of_units'),
+                'milk_production_of_mother' => $request->input('milk_production_of_mother'),
+                'date' => now(),
+            ], fn($value) => !is_null($value));
+
+            $canister->update($data);
+
+            return response()->json([
+                'message' => 'Record Successfully Updated!',
+                'status' => 200,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error in updateCanister', [
+                'doctor_id' => auth('doctor')->id() ?? null,
+                'canister_id' => $canister_id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Error updating canister: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
+
+    public function sellSemen(Request $request)
+    {
+        try {
+            if (!$request->hasAny(['tank_id', 'canister', 'quantity', 'farmer_name', 'farmer_phone', 'address'])) {
+                return response()->json([
+                    'message' => 'Please Insert Data',
+                    'status' => 201,
+                ], 422);
+            }
+
+            // /** @var \App\Models\Doctor $doctor */
+            $doctor = auth('doctor')->user();
+            Log::info('SellSemen auth attempt', [
+                'doctor_id' => $doctor ? $doctor->id : null,
+                'is_active' => $doctor ? ($doctor->is_active ?? 'missing') : null,
+                'is_approved' => $doctor ? ($doctor->is_approved ?? 'missing') : null,
+                'tank_id' => $request->input('tank_id'),
+                'canister' => $request->input('canister'),
+                'quantity' => $request->input('quantity'),
+                'request_token' => $request->bearerToken(),
+                'ip_address' => $request->ip(),
+            ]);
+
+            if (!$doctor || !$doctor->is_active || !$doctor->is_approved) {
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'tank_id' => 'required|numeric|exists:tbl_doctor_tank,id',
+                'canister' => 'required|numeric|exists:tbl_doctor_canister,id',
+                'quantity' => 'required|numeric|min:1',
+                'farmer_name' => 'required|string|max:255',
+                'farmer_phone' => 'required|string|max:15',
+                'address' => 'required|string|max:500',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'status' => 201,
+                ], 422);
+            }
+
+            $tank_id = $request->input('tank_id');
+            $canister_id = $request->input('canister');
+            $quantity = $request->input('quantity');
+
+            $canister = DoctorCanister::where('id', $canister_id)
+                ->where('doctor_id', $doctor->id)
+                ->where('tank_id', $tank_id)
+                ->first();
+
+            if (!$canister) {
+                return response()->json([
+                    'message' => 'Some error occurred!',
+                    'status' => 201,
+                ], 404);
+            }
+
+            $available_units = $canister->no_of_units ?? 0;
+            if ($available_units < $quantity) {
+                return response()->json([
+                    'message' => "Available semen unit is {$available_units}",
+                    'status' => 201,
+                ], 422);
+            }
+
+            DoctorSemenTransaction::create([
+                'doctor_id' => $doctor->id,
+                'tank_id' => $tank_id,
+                'canister' => $canister_id,
+                'bull_name' => $canister->bull_name,
+                'company_name' => $canister->company_name,
+                'no_of_units' => $canister->no_of_units,
+                'sell_unit' => $quantity,
+                'milk_production_of_mother' => $canister->milk_production_of_mother,
+                'farmer_name' => $request->input('farmer_name'),
+                'farmer_phone' => $request->input('farmer_phone'),
+                'address' => $request->input('address'),
+                'date' => now(),
+            ]);
+
+            $canister->update([
+                'no_of_units' => $canister->no_of_units - $quantity,
+            ]);
+
+            return response()->json([
+                'message' => 'Record Successfully saved!',
+                'status' => 200,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error in sellSemen', [
+                'doctor_id' => auth('doctor')->id() ?? null,
+                'tank_id' => $request->input('tank_id'),
+                'canister' => $request->input('canister'),
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Error recording semen sale: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
+
+    public function getSemenTransactions(Request $request)
+    {
+        try {
+            // /** @var \App\Models\Doctor $doctor */
+            $doctor = auth('doctor')->user();
+            Log::info('GetSemenTransactions auth attempt', [
+                'doctor_id' => $doctor ? $doctor->id : null,
+                'is_active' => $doctor ? ($doctor->is_active ?? 'missing') : null,
+                'is_approved' => $doctor ? ($doctor->is_approved ?? 'missing') : null,
+                'request_token' => $request->bearerToken(),
+                'ip_address' => $request->ip(),
+            ]);
+
+            if (!$doctor || !$doctor->is_active || !$doctor->is_approved) {
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            $transactions = DoctorSemenTransaction::where('doctor_id', $doctor->id)
+                ->orderBy('id', 'desc')
+                ->with('tank')
+                ->get();
+
+            $data = $transactions->map(function ($transaction, $index) {
+                return [
+                    's_no' => $index + 1,
+                    'tank' => $transaction->tank ? $transaction->tank->name : 'Unknown Tank',
+                    'canister' => 'Canister ' . $transaction->canister,
+                    'sell_unit' => $transaction->sell_unit,
+                    'farmer_name' => $transaction->farmer_name,
+                    'farmer_phone' => $transaction->farmer_phone,
+                    'address' => $transaction->address,
+                    'date' => (new \DateTime($transaction->date))->format('d/m/Y'),
+                ];
+            })->toArray();
+
+            return response()->json([
+                'message' => 'Success!',
+                'status' => 200,
+                'data' => $data,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error in getSemenTransactions', [
+                'doctor_id' => auth('doctor')->id() ?? null,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Error fetching semen transactions: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
     
 }

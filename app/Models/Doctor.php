@@ -15,8 +15,8 @@ class Doctor extends Model implements Authenticatable, JWTSubject
     protected $fillable = [
         'name', 'hi_name', 'pn_name', 'email', 'type', 'degree', 'experience',
         'district', 'hi_district', 'pn_district', 'state', 'city', 'hi_city',
-        'pn_city', 'pincode', 'aadhar_no', 'expert_category', 'image',
-        'is_approved', 'is_expert', 'is_active', 'commission', 'fees', 'is_active2'
+        'pn_city', 'pincode', 'aadhar_no', 'expert_category', 'image','bank_name','bank_phone','bank_ac','ifsc','upi',  
+        'is_approved', 'is_expert', 'is_active', 'commission', 'fees', 'is_active2','longitude', 'latitude','fcm_token'
     ];
     protected $casts = [
         'expert_category' => 'array',

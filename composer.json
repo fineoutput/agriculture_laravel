@@ -13,7 +13,8 @@
         "laravel/tinker": "^2.5",
         "razorpay/razorpay": "^2.9",
         "tymon/jwt-auth": "^1.0",
-        "phpoffice/phpspreadsheet": "^1.29"
+        "phpoffice/phpspreadsheet": "^1.18",
+        "barryvdh/laravel-dompdf": "^2.2"
     },
     "require-dev": {
         "facade/ignition": "^2.5",

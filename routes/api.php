@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiControllers\UserloginController;
 use App\Http\Controllers\ApiControllers\FeedController;
 use App\Http\Controllers\ApiControllers\DoctorController;
+use App\Http\Controllers\ApiControllers\ToolsController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -63,7 +64,21 @@ Route::middleware(['auth:farmer'])->group(function () {
     Route::get('ExpertAdvice', [FeedController::class, 'expertAdvice']);
     Route::get('RadiusVendor', [FeedController::class, 'radiusVendor']);
     Route::post('BuyFeed', [FeedController::class, 'buyFeed']);
-      
+
+
+    /////////toolsController
+    Route::post('SilageMaking', [ToolsController::class, 'silageMaking']);
+    Route::post('project-requirements', [ToolsController::class, 'projectRequirements']);
+    Route::post('project-test', [ToolsController::class, 'projectTest']);
+    Route::post('pregnancy-calculator', [ToolsController::class, 'pregnancyCalculator']);
+    Route::post('snf-calculator', [ToolsController::class, 'snfCalculator']);
+    Route::post('products-all', [ToolsController::class, 'allProducts']);
+    Route::post('calculate-distance', [ToolsController::class, 'calculateDistance']);
+    Route::post('doctor-call', [ToolsController::class, 'doctorOnCall']);
+    Route::post('expert-advice', [ToolsController::class, 'expertAdvice']);
+    Route::post('ReqDoc', [ToolsController::class, 'requestDoctor']);
+    Route::get('expert-category', [ToolsController::class, 'expertCategory']);
+    // The above api wont work beacuse of false CC avenue key
 });
 
 ///////////DoctorController
@@ -73,7 +88,22 @@ Route::get('GetRequests', [DoctorController::class, 'getRequests']);
 Route::post('doctor/requests/{id}/complete', [DoctorController::class, 'reqMarkComplete']);
 Route::get('Profile', [DoctorController::class, 'getProfile']);
 Route::post('UpdateProf', [DoctorController::class, 'updateProfile']);
+Route::post('bank-info', [DoctorController::class, 'updateBankInfo']);
+Route::post('LocationUpd', [DoctorController::class, 'updateLocation']);
+Route::get('PaymentInfo', [DoctorController::class, 'paymentInfo']);
+Route::get('AdminPay', [DoctorController::class, 'adminPaymentInfo']);
+Route::get('Tank', [DoctorController::class, 'semenTanks']);
+Route::post('Add', [DoctorController::class, 'addSemenTank']);
+Route::delete('doctor/semen-tanks/{id}', [DoctorController::class, 'deleteSemenTank']);
+Route::put('doctor/canisters/{canister_id}', [DoctorController::class, 'updateCanister']);
+Route::post('SellSemen', [DoctorController::class, 'sellSemen']);
+Route::get('SemenTransaction', [DoctorController::class, 'getSemenTransactions']);
 });
 
+
+
+Route::middleware(['auth:vendor'])->group(function () {
+    Route::post('products-all', [ToolsController::class, 'vendorAllProducts']);
+});
 Route::post('paymentSuccess', [FarmerController::class, 'paymentSuccess'])->name('payment.success');
 Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('payment.failed');
