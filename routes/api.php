@@ -104,6 +104,7 @@ Route::get('SemenTransaction', [DoctorController::class, 'getSemenTransactions']
 
 Route::middleware(['auth:vendor'])->group(function () {
     Route::post('products-all', [ToolsController::class, 'vendorAllProducts']);
+    Route::post('Vendors', [ToolsController::class, 'getVendors']);
 });
 Route::post('paymentSuccess', [FarmerController::class, 'paymentSuccess'])->name('payment.success');
 Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('payment.failed');

@@ -7,6 +7,7 @@ use App\Models\Farmer;
 use App\Models\Doctor;
 use App\Models\ExpertiseCategory;
 use App\Models\Cart;
+use App\Models\Vendor;
 use App\Models\ServiceRecord;
 use App\Models\DoctorRequest;
 use App\Models\Product;
@@ -1660,6 +1661,136 @@ class ToolsController extends Controller
         }
     }
 
+
+    public function getVendors(Request $request)
+    {
+        try {
+            // /** @var \App\Models\Farmer $farmer */
+            $farmer = auth('farmer')->user();
+            Log::info('GetVendors auth attempt', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'is_active' => $farmer ? ($farmer->is_active ?? 'missing') : null,
+                'request_token' => $request->bearerToken(),
+                'ip_address' => $request->ip(),
+            ]);
+
+            if (!$farmer || !$farmer->is_active) {
+                Log::warning('GetVendors: Authentication failed or farmer inactive', [
+                    'farmer_id' => $farmer ? $farmer->id : null,
+                    'is_active' => $farmer ? $farmer->is_active : null,
+                ]);
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'latitude' => 'required|numeric|between:-90,90',
+                'longitude' => 'required|numeric|between:-180,180',
+                'radius' => 'required|numeric|min:0|max:60',
+            ]);
+
+            if ($validator->fails()) {
+                Log::warning('GetVendors: Validation failed', ['errors' => $validator->errors()]);
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'status' => 201,
+                ], 422);
+            }
+
+            $latitude = (float) $request->input('latitude');
+            $longitude = (float) $request->input('longitude');
+            $radius = (float) $request->input('radius');
+
+            $vendors = Vendor::where('is_active', 1)
+                            ->where('is_approved', 1)
+                            ->whereNotNull('latitude')
+                            ->whereNotNull('longitude')
+                            ->get();
+
+            $en_data = [];
+            $hi_data = [];
+            $pn_data = [];
+            $mr_data = [];
+
+            foreach ($vendors as $vendor) {
+                $distance = $this->calculateDistanceInKm(
+                    $latitude,
+                    $longitude,
+                    (float) $vendor->latitude,
+                    (float) $vendor->longitude
+                );
+                $formatted_distance = (int) $distance;
+
+                if ($distance <= $radius) {
+                    $state = State::where('id', $vendor->state)->first();
+
+                    $common_data = [
+                        'vendor_id' => $vendor->id,
+                        'address' => $vendor->address,
+                        'district' => $vendor->district,
+                        'city' => $vendor->city,
+                        'state' => $state ? $state->state_name : null,
+                        'pincode' => $vendor->pincode,
+                        'km' => $formatted_distance,
+                    ];
+
+                    $en_data[] = array_merge($common_data, [
+                        'name' => $vendor->name,
+                        'shop_name' => $vendor->shop_name,
+                    ]);
+
+                    $hi_data[] = array_merge($common_data, [
+                        'name' => $vendor->hi_name,
+                        'shop_name' => $vendor->shop_hi_name,
+                    ]);
+
+                    $pn_data[] = array_merge($common_data, [
+                        'name' => $vendor->pn_name,
+                        'shop_name' => $vendor->shop_pn_name,
+                    ]);
+
+                    $mr_data[] = array_merge($common_data, [
+                        'name' => $vendor->mr_name,
+                        'shop_name' => $vendor->shop_mr_name,
+                    ]);
+                }
+            }
+
+            $data = [
+                'en' => $en_data,
+                'hi' => $hi_data,
+                'pn' => $pn_data,
+                'mr' => $mr_data,
+            ];
+
+            Log::info('GetVendors: Query results', [
+                'farmer_id' => $farmer->id,
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+                'radius' => $radius,
+                'vendors_count' => count($en_data),
+            ]);
+
+            return response()->json([
+                'message' => 'Success',
+                'status' => 200,
+                'data' => $data,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error in getVendors', [
+                'farmer_id' => auth('farmer')->id() ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'message' => 'Error retrieving vendors: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
     public function vendorAllProducts(Request $request)
     {
         try {
