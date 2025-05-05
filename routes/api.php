@@ -123,6 +123,8 @@ Route::middleware(['auth:vendor'])->group(function () {
     Route::post('update/vendor-profile', [VendorController::class, 'updateProfile']);
     Route::post('store/slider', [VendorController::class, 'storeSlider']);
     Route::get('view/slider', [VendorController::class, 'viewVendorSliders']);
+    Route::post('delete/slider', [VendorController::class, 'deleteVendorSlider']);
+    Route::delete('delete/vendor', [VendorController::class, 'deleteAccount']);
 });
 Route::post('paymentSuccess', [FarmerController::class, 'paymentSuccess'])->name('payment.success');
 Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('payment.failed');

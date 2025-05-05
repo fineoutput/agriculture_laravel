@@ -1942,6 +1942,201 @@ class VendorController extends Controller
         }
     }
 
+    public function deleteVendorSlider(Request $request)
+    {
+        try {
+            // Validate form data
+            $validator = Validator::make($request->all(), [
+                'id' => 'required|integer|min:1',
+            ]);
+
+            if ($validator->fails()) {
+                Log::warning('DeleteVendorSlider: Validation failed', [
+                    'ip' => $request->ip(),
+                    'errors' => $validator->errors(),
+                    'url' => $request->fullUrl(),
+                ]);
+                return response()->json([
+                    'status' => 201,
+                    'message' => $validator->errors()->first(),
+                ], 422);
+            }
+
+            $sliderId = $request->input('id');
+
+            // Authenticate vendor
+            $vendor = auth('vendor')->user();
+
+            Log::info('DeleteVendorSlider: Auth attempt', [
+                'vendor_id' => $vendor ? $vendor->id : null,
+                'slider_id' => $sliderId,
+                'ip' => $request->ip(),
+                'host' => $request->getHost(),
+                'url' => $request->fullUrl(),
+            ]);
+
+            if (!$vendor) {
+                Log::warning('DeleteVendorSlider: Authentication failed', [
+                    'ip' => $request->ip(),
+                    'slider_id' => $sliderId,
+                ]);
+                return response()->json([
+                    '$i' => 201,
+                    'message' => 'Authentication token not found',
+                ], 401);
+            }
+
+            // Check vendor status
+            if (!$vendor->is_active || !$vendor->is_approved) {
+                Log::warning('DeleteVendorSlider: Vendor inactive or unapproved', [
+                    'vendor_id' => $vendor->id,
+                    'slider_id' => $sliderId,
+                ]);
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            // Find the slider
+            $slider = VendorSlider2::where('id', $sliderId)
+                ->where('vendor_id', $vendor->id)
+                ->first();
+
+            if (!$slider) {
+                Log::info('DeleteVendorSlider: No slider found or unauthorized', [
+                    'vendor_id' => $vendor->id,
+                    'slider_id' => $sliderId,
+                ]);
+                return response()->json([
+                    'status' => 201,
+                    'message' => 'No slider found or unauthorized',
+                ], 404);
+            }
+
+            // Delete the image file
+            if ($slider->image1 && File::exists(public_path($slider->image1))) {
+                File::delete(public_path($slider->image1));
+                Log::info('DeleteVendorSlider: Image deleted', [
+                    'vendor_id' => $vendor->id,
+                    'slider_id' => $sliderId,
+                    'image_path' => $slider->image1,
+                ]);
+            }
+
+            // Delete the slider record
+            $slider->delete();
+
+            Log::info('DeleteVendorSlider: Slider deleted successfully', [
+                'vendor_id' => $vendor->id,
+                'slider_id' => $sliderId,
+            ]);
+
+            return response()->json([
+                'status' => 200,
+                'data' => 'Slider deleted successfully',
+            ], 200);
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('DeleteVendorSlider: Database error', [
+                'vendor_id' => auth('vendor')->id() ?? null,
+                'slider_id' => $sliderId,
+                'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+            ]);
+            return response()->json([
+                'message' => 'Database error: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('DeleteVendorSlider: General error', [
+                'vendor_id' => auth('vendor')->id() ?? null,
+                'slider_id' => $sliderId,
+                'error' => $e->getMessage(),
+            ]);
+            return response()->json([
+                'message' => 'Error processing request: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
+
+    public function deleteAccount(Request $request)
+    {
+        try {
+            // Authenticate vendor
+            $vendor = auth('vendor')->user();
+
+            Log::info('DeleteAccount: Auth attempt', [
+                'vendor_id' => $vendor ? $vendor->id : null,
+                'ip' => $request->ip(),
+                'host' => $request->getHost(),
+                'url' => $request->fullUrl(),
+            ]);
+
+            if (!$vendor) {
+                Log::warning('DeleteAccount: Authentication failed', [
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'status' => 201,
+                    'message' => 'Authentication token not found',
+                ], 401);
+            }
+
+            // Check vendor status
+            if (!$vendor->is_active || !$vendor->is_approved) {
+                Log::warning('DeleteAccount: Vendor inactive or unapproved', [
+                    'vendor_id' => $vendor->id,
+                ]);
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            // Update vendor to deactivate account
+            $updated = $vendor->update(['is_active' => 0]);
+
+            if ($updated) {
+                Log::info('DeleteAccount: Account deactivated successfully', [
+                    'vendor_id' => $vendor->id,
+                ]);
+                return response()->json([
+                    'message' => 'Account successfully deleted!',
+                    'status' => 200,
+                ], 200);
+            } else {
+                Log::warning('DeleteAccount: Update failed', [
+                    'vendor_id' => $vendor->id,
+                ]);
+                return response()->json([
+                    'message' => 'Some error occurred!!',
+                    'status' => 201,
+                ], 500);
+            }
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('DeleteAccount: Database error', [
+                'vendor_id' => auth('vendor')->id() ?? null,
+                'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+            ]);
+            return response()->json([
+                'message' => 'Database error: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('DeleteAccount: General error', [
+                'vendor_id' => auth('vendor')->id() ?? null,
+                'error' => $e->getMessage(),
+            ]);
+            return response()->json([
+                'message' => 'Error processing request: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
 
     protected function createPagination($current_page, $total_pages)
     {
