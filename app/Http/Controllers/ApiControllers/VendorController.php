@@ -1821,18 +1821,18 @@ class VendorController extends Controller
     public function viewVendorSliders(Request $request)
     {
         try {
-            // Authenticate vendor
-            /** @var \App\Models\Vendor $vendor */
+            $farmer = auth('farmer')->user();
             $vendor = auth('vendor')->user();
 
             Log::info('ViewVendorSliders: Auth attempt', [
+                'farmer_id' => $farmer ? $farmer->id : null,
                 'vendor_id' => $vendor ? $vendor->id : null,
                 'ip' => $request->ip(),
                 'host' => $request->getHost(),
                 'url' => $request->fullUrl(),
             ]);
 
-            if (!$vendor) {
+            if (!$farmer && !$vendor) {
                 Log::warning('ViewVendorSliders: Authentication failed', [
                     'ip' => $request->ip(),
                 ]);
@@ -1842,50 +1842,84 @@ class VendorController extends Controller
                 ], 401);
             }
 
-            // Check vendor status
-            if (!$vendor->is_active || !$vendor->is_approved) {
-                Log::warning('ViewVendorSliders: Vendor inactive or unapproved', [
-                    'vendor_id' => $vendor->id,
-                ]);
-                return response()->json([
-                    'message' => 'Permission Denied!',
-                    'status' => 201,
-                ], 403);
-            }
+            if ($farmer) {
+                // Farmers see active sliders
+                $sliders = VendorSlider2::where('is_active', 1)->get();
 
-            // Fetch vendor's sliders
-            $sliders = VendorSlider2::where('vendor_id', $vendor->id)->get();
+                if ($sliders->isEmpty()) {
+                    Log::info('ViewVendorSliders: No sliders found for farmer', [
+                        'farmer_id' => $farmer->id,
+                    ]);
+                    return response()->json([
+                        'status' => 201,
+                        'data' => 'No sliders found',
+                    ], 200);
+                }
 
-            if ($sliders->isEmpty()) {
-                Log::info('ViewVendorSliders: No sliders found for vendor', [
-                    'vendor_id' => $vendor->id,
+                $sliderData = $sliders->map(function ($slide) {
+                    return [
+                        'date' => $slide->date->format('Y-m-d H:i:s'),
+                        'image' => $slide->image1 ? url($slide->image1) : '',
+                    ];
+                })->toArray();
+
+                Log::info('ViewVendorSliders: Sliders retrieved for farmer', [
+                    'farmer_id' => $farmer->id,
+                    'count' => count($sliderData),
                 ]);
+
                 return response()->json([
-                    'status' => 201,
-                    'data' => 'No sliders found',
+                    'status' => 200,
+                    'data' => $sliderData,
                 ], 200);
             }
 
-            $sliderData = $sliders->map(function ($slide) {
-                return [
-                    'id' => $slide->id,
-                    // 'date' => $slide->date->format('Y-m-d H:i:s'),
-                    'image' => $slide->image1 ? url($slide->image1) : '',
-                    'image_size' => $slide->image_size,
-                ];
-            })->toArray();
+            if ($vendor) {
+                // Vendors see their own sliders
+                if (!$vendor->is_active || !$vendor->is_approved) {
+                    Log::warning('ViewVendorSliders: Vendor inactive or unapproved', [
+                        'vendor_id' => $vendor->id,
+                    ]);
+                    return response()->json([
+                        'message' => 'Permission Denied!',
+                        'status' => 201,
+                    ], 403);
+                }
 
-            Log::info('ViewVendorSliders: Sliders retrieved for vendor', [
-                'vendor_id' => $vendor->id,
-                'count' => count($sliderData),
-            ]);
+                $sliders = VendorSlider2::where('vendor_id', $vendor->id)->get();
 
-            return response()->json([
-                'status' => 200,
-                'data' => $sliderData,
-            ], 200);
+                if ($sliders->isEmpty()) {
+                    Log::info('ViewVendorSliders: No sliders found for vendor', [
+                        'vendor_id' => $vendor->id,
+                    ]);
+                    return response()->json([
+                        'status' => 201,
+                        'data' => 'No sliders found',
+                    ], 200);
+                }
+
+                $sliderData = $sliders->map(function ($slide) {
+                    return [
+                        'id' => $slide->id,
+                        'updated_at' => $slide->updated_at->format('Y-m-d H:i:s'),
+                        'image' => $slide->image1 ? url($slide->image1) : '',
+                        'image_size' => $slide->image_size,
+                    ];
+                })->toArray();
+
+                Log::info('ViewVendorSliders: Sliders retrieved for vendor', [
+                    'vendor_id' => $vendor->id,
+                    'count' => count($sliderData),
+                ]);
+
+                return response()->json([
+                    'status' => 200,
+                    'data' => $sliderData,
+                ], 200);
+            }
         } catch (\Illuminate\Database\QueryException $e) {
             Log::error('ViewVendorSliders: Database error', [
+                'farmer_id' => auth('farmer')->id() ?? null,
                 'vendor_id' => auth('vendor')->id() ?? null,
                 'error' => $e->getMessage(),
                 'sql' => $e->getSql(),
@@ -1897,6 +1931,7 @@ class VendorController extends Controller
             ], 500);
         } catch (\Exception $e) {
             Log::error('ViewVendorSliders: General error', [
+                'farmer_id' => auth('farmer')->id() ?? null,
                 'vendor_id' => auth('vendor')->id() ?? null,
                 'error' => $e->getMessage(),
             ]);
@@ -1906,6 +1941,8 @@ class VendorController extends Controller
             ], 500);
         }
     }
+
+
     protected function createPagination($current_page, $total_pages)
     {
         $pagination = [];
