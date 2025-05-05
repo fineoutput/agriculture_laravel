@@ -604,6 +604,7 @@ class UserloginController extends Controller
             $model->longitude = $userData['longitude'];
             $model->no_of_animals = $userData['no_of_animals'];
             $model->expert_category = $userData['expert_category'];
+            $model->is_approved = 0;
 
             if ($model->save()) {
                 $otpRecord->delete();

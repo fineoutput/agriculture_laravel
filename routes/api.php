@@ -8,6 +8,7 @@ use App\Http\Controllers\ApiControllers\UserloginController;
 use App\Http\Controllers\ApiControllers\FeedController;
 use App\Http\Controllers\ApiControllers\DoctorController;
 use App\Http\Controllers\ApiControllers\ToolsController;
+use App\Http\Controllers\ApiControllers\VendorOrderController;
 use App\Http\Controllers\ApiControllers\VendorController;
 /*
 |--------------------------------------------------------------------------
@@ -125,6 +126,10 @@ Route::middleware(['auth:vendor'])->group(function () {
     Route::get('view/slider', [VendorController::class, 'viewVendorSliders']);
     Route::post('delete/slider', [VendorController::class, 'deleteVendorSlider']);
     Route::delete('delete/vendor', [VendorController::class, 'deleteAccount']);
+
+
+    //////////vendorORderController
+    Route::post('add/to/cart', [VendorOrderController::class, 'addToCart']);
 });
 Route::post('paymentSuccess', [FarmerController::class, 'paymentSuccess'])->name('payment.success');
 Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('payment.failed');
