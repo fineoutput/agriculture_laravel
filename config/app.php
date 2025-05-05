@@ -232,4 +232,8 @@ return [
 
     ],
 
+    'vendor_charges' => 5.0, // Charge per unit for vendor products
+    'admin_amount' => 1000.0, // Threshold for admin charges
+    'admin_charges' => 50.0,
+
 ];
