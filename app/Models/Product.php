@@ -50,7 +50,6 @@ class Product extends Model
     ];
 
     protected $casts = [
-        'image' => 'array', // Since images are stored as JSON
         'is_active' => 'boolean',
         'is_admin' => 'boolean',
         'is_approved' => 'integer',

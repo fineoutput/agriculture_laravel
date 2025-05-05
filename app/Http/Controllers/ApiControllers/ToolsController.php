@@ -1957,6 +1957,8 @@ class ToolsController extends Controller
             ], 500);
         }
     }
+
+    
     protected function distance($lat1, $lon1, $lat2, $lon2)
     {
         $latFrom = deg2rad($lat1);

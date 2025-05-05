@@ -8,6 +8,7 @@ use App\Http\Controllers\ApiControllers\UserloginController;
 use App\Http\Controllers\ApiControllers\FeedController;
 use App\Http\Controllers\ApiControllers\DoctorController;
 use App\Http\Controllers\ApiControllers\ToolsController;
+use App\Http\Controllers\ApiControllers\VendorController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -105,6 +106,23 @@ Route::get('SemenTransaction', [DoctorController::class, 'getSemenTransactions']
 Route::middleware(['auth:vendor'])->group(function () {
     Route::post('products-all', [ToolsController::class, 'vendorAllProducts']);
     Route::post('Vendors', [ToolsController::class, 'getVendors']);
+
+    ////vendorController
+    Route::get('vendorordersnew', [VendorController::class, 'newOrders']);
+    Route::get('VendorOrdersAcepted', [VendorController::class, 'acceptedOrders']);
+    Route::get('VendorOrdersDispatched', [VendorController::class, 'dispatchedOrders']);
+    Route::get('CompletedORdes', [VendorController::class, 'completedOrders']);
+    Route::get('CancelORd', [VendorController::class, 'cancelledOrders']);
+    Route::post('update-status', [VendorController::class, 'updateOrderStatus']);
+    Route::get('vendorpayment-info', [VendorController::class, 'paymentInfo']);
+    Route::get('admin-payment-info', [VendorController::class, 'adminPaymentInfo']);
+    Route::post('Product-add', [VendorController::class, 'addVendorProduct']);
+    Route::get('Data-Home', [VendorController::class, 'homeData']);
+    Route::get('vendor/profile', [VendorController::class, 'getVendorProfile']);
+    Route::post('update/Bank-info', [VendorController::class, 'updateBankInfo']);
+    Route::post('update/vendor-profile', [VendorController::class, 'updateProfile']);
+    Route::post('store/slider', [VendorController::class, 'storeSlider']);
+    Route::get('view/slider', [VendorController::class, 'viewVendorSliders']);
 });
 Route::post('paymentSuccess', [FarmerController::class, 'paymentSuccess'])->name('payment.success');
 Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('payment.failed');
