@@ -9,6 +9,7 @@ use App\Http\Controllers\ApiControllers\FeedController;
 use App\Http\Controllers\ApiControllers\DoctorController;
 use App\Http\Controllers\ApiControllers\ToolsController;
 use App\Http\Controllers\ApiControllers\VendorOrderController;
+use App\Http\Controllers\ApiControllers\HomeController;
 use App\Http\Controllers\ApiControllers\VendorController;
 /*
 |--------------------------------------------------------------------------
@@ -81,6 +82,23 @@ Route::middleware(['auth:farmer'])->group(function () {
     Route::post('ReqDoc', [ToolsController::class, 'requestDoctor']);
     Route::get('expert-category', [ToolsController::class, 'expertCategory']);
     // The above api wont work beacuse of false CC avenue key
+
+
+
+
+    //////////////HomeController
+    Route::post('home/create-group', [HomeController::class, 'createGroup']);
+    Route::post('home/Get-/group', [HomeController::class, 'getGroup']);
+    Route::post('home/get-cattle', [HomeController::class, 'getCattle']);
+    Route::post('homeGet/Tag-No', [HomeController::class, 'getTagNo']);
+    Route::post('homeGet/Bull-Tag-No', [HomeController::class, 'getBullTagNo']);
+    Route::post('homeGet/semen', [HomeController::class, 'getSemenBulls']);
+    Route::post('homeAnimal/data', [HomeController::class, 'getAnimalData']);
+    Route::post('homeSubscription/buy', [HomeController::class, 'subscriptionPlan']);
+    Route::post('home/data', [HomeController::class, 'homeData']);
+    Route::get('homeGet/-State', [HomeController::class, 'getState']);
+    Route::post('homeGet/-city', [HomeController::class, 'getCity']);
+    Route::post('homeBuy/plan', [HomeController::class, 'buyPlan']);
 });
 
 ///////////DoctorController
