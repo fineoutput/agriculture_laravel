@@ -99,6 +99,9 @@ Route::middleware(['auth:farmer'])->group(function () {
     Route::get('homeGet/-State', [HomeController::class, 'getState']);
     Route::post('homeGet/-city', [HomeController::class, 'getCity']);
     Route::post('homeBuy/plan', [HomeController::class, 'buyPlan']);
+    Route::post('homePhonePay/buyPlan', [HomeController::class, 'phonePeBuyPlan']);
+    Route::get('homeplan/payment-sucess', [HomeController::class, 'planPaymentSuccess']);
+    Route::get('homePhonePay/payment-sucess', [HomeController::class, 'phonePePlanPaymentSuccess']);
 });
 
 ///////////DoctorController

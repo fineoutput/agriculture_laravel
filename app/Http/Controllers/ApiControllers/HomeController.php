@@ -23,6 +23,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class HomeController extends Controller
 {
@@ -1572,6 +1573,382 @@ class HomeController extends Controller
                 'message' => 'Error processing request: ' . $e->getMessage(),
                 'status' => 201,
             ], 500);
+        }
+    }
+
+    public function phonePeBuyPlan(Request $request)
+    {
+        try {
+            // Check if POST data exists
+            if (!$request->isMethod('post') || empty($request->all())) {
+                Log::warning('PhonePeBuyPlan: Missing POST data', [
+                    'ip' => $request->ip(),
+                    'url' => $request->fullUrl(),
+                ]);
+                return response()->json([
+                    'message' => 'Please Insert Data',
+                    'status' => 201,
+                ], 422);
+            }
+
+            // Validate inputs
+            $validator = Validator::make($request->all(), [
+                'farmer_id' => 'required|integer|exists:tbl_farmers,id',
+                'plan_id' => 'required|integer|exists:tbl_subscription,id',
+                'type' => 'required|string|in:monthly_price,quarterly_price,halfyearly_price,yearly_price',
+                'months' => 'required|integer|min:1',
+            ]);
+
+            if ($validator->fails()) {
+                Log::warning('PhonePeBuyPlan: Validation failed', [
+                    'ip' => $request->ip(),
+                    'errors' => $validator->errors(),
+                    'url' => $request->fullUrl(),
+                ]);
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'status' => 201,
+                ], 422);
+            }
+
+            // Authenticate farmer
+            $farmer = Farmer::where('id', $request->input('farmer_id'))
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$farmer) {
+                Log::warning('PhonePeBuyPlan: Authentication failed', [
+                    'ip' => $request->ip(),
+                    'farmer_id' => $request->input('farmer_id'),
+                ]);
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            // Fetch plan data
+            $plan = Subscription::where('id', $request->input('plan_id'))
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$plan) {
+                Log::warning('PhonePeBuyPlan: Invalid plan', [
+                    'farmer_id' => $farmer->id,
+                    'plan_id' => $request->input('plan_id'),
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'message' => 'Some error occurred!',
+                    'status' => 201,
+                ], 422);
+            }
+
+            // Prepare subscription purchase data
+            $startDate = Carbon::today('Asia/Kolkata')->toDateString();
+            $expiryDate = Carbon::today('Asia/Kolkata')->addMonths($request->input('months'))->toDateString();
+            $txnId = bin2hex(random_bytes(12));
+            $currentDateTime = Carbon::now('Asia/Kolkata')->toDateTimeString();
+
+            $subscriptionData = [
+                'farmer_id' => $farmer->id,
+                'plan_id' => $request->input('plan_id'),
+                'months' => $request->input('months'),
+                'price' => $plan->{$request->input('type')},
+                'animals' => $plan->animals,
+                'doctor_calls' => $plan->doctor_calls,
+                'start_date' => $startDate,
+                'expiry_date' => $expiryDate,
+                'payment_status' => 0,
+                'txn_id' => $txnId,
+                'date' => $currentDateTime,
+                'gateway' => 'Phone Pe',
+            ];
+
+            // Insert subscription purchase
+            $subscriptionBuy = SubscriptionBuy::create($subscriptionData);
+            $reqId = $subscriptionBuy->id;
+
+            // Initiate PhonePe payment
+            $successUrl = url('/api/phone-pe-plan-payment-success');
+            $param1 = 'Plan Payment';
+            $response = $this->initiatePhonePePayment(
+                $txnId,
+                $plan->{$request->input('type')},
+                $farmer->phone ?? '0000000000',
+                $successUrl,
+                $param1
+            );
+
+            if ($response && isset($response->code) && $response->code === 'PAYMENT_INITIATED') {
+                $responseData = [
+                    'url' => $response->data['instrumentResponse']['redirectInfo']['url'],
+                    'redirect_url' => $successUrl,
+                    'merchant_param1' => $param1,
+                    'order_id' => $reqId,
+                ];
+
+                Log::info('PhonePeBuyPlan: Subscription purchase initiated successfully', [
+                    'farmer_id' => $farmer->id,
+                    'plan_id' => $request->input('plan_id'),
+                    'type' => $request->input('type'),
+                    'months' => $request->input('months'),
+                    'txn_id' => $txnId,
+                    'req_id' => $reqId,
+                    'ip' => $request->ip(),
+                ]);
+
+                return response()->json([
+                    'message' => 'Success!',
+                    'status' => 200,
+                    'data' => $responseData,
+                ], 200);
+            }
+
+            Log::warning('PhonePeBuyPlan: PhonePe payment initiation failed', [
+                'farmer_id' => $farmer->id,
+                'plan_id' => $request->input('plan_id'),
+                'txn_id' => $txnId,
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json([
+                'message' => 'Some error occurred!',
+                'status' => 201,
+            ], 422);
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('PhonePeBuyPlan: Database error', [
+                'farmer_id' => $farmer->id ?? null,
+                'plan_id' => $request->input('plan_id') ?? null,
+                'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Database error: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('PhonePeBuyPlan: General error', [
+                'farmer_id' => $farmer->id ?? null,
+                'plan_id' => $request->input('plan_id') ?? null,
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Error processing request: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }   
+
+    public function planPaymentSuccess(Request $request)
+    {
+        try {
+            $encResponse = $request->input('encResp');
+            if (!$encResponse) {
+                Log::warning('PlanPaymentSuccess: Missing encResp', [
+                    'ip' => $request->ip(),
+                    'url' => $request->fullUrl(),
+                ]);
+                return response('Aborted', 400)->header('Content-Type', 'text/plain');
+            }
+
+            $workingKey = config('app.ccavenue_working_key');
+            $rcvdString = $this->decryptCCAvenue($encResponse, $workingKey);
+            if (!$rcvdString) {
+                Log::error('PlanPaymentSuccess: Decryption failed', [
+                    'encResp' => $encResponse,
+                    'ip' => $request->ip(),
+                ]);
+                return response('Aborted', 400)->header('Content-Type', 'text/plain');
+            }
+
+            $currentDateTime = Carbon::now('Asia/Kolkata')->toDateTimeString();
+            $decryptValues = explode('&', $rcvdString);
+            $orderStatus = '';
+            $txnId = '';
+
+            foreach ($decryptValues as $info) {
+                $pair = explode('=', $info, 2);
+                if (count($pair) === 2) {
+                    if ($pair[0] === 'order_status') {
+                        $orderStatus = $pair[1];
+                    } elseif ($pair[0] === 'order_id') {
+                        $txnId = $pair[1];
+                    }
+                }
+            }
+
+            $responseData = [
+                'body' => json_encode($decryptValues),
+                'date' => $currentDateTime,
+                'created_at' => $currentDateTime,
+                'updated_at' => $currentDateTime,
+            ];
+
+            $lastId = DB::table('tbl_ccavenue_response')->insertGetId($responseData);
+
+            Log::info('PlanPaymentSuccess: CCAvenue response logged', [
+                'last_id' => $lastId,
+                'txn_id' => $txnId,
+                'order_status' => $orderStatus,
+                'ip' => $request->ip(),
+            ]);
+
+            if ($orderStatus === 'Success') {
+                $order = SubscriptionBuy::where('txn_id', $txnId)
+                    ->where('payment_status', 0)
+                    ->first();
+
+                if ($order) {
+                    $order->update([
+                        'payment_status' => 1,
+                        'cc_response' => json_encode($decryptValues),
+                    ]);
+
+                    Log::info('PlanPaymentSuccess: Subscription updated', [
+                        'order_id' => $order->id,
+                        'txn_id' => $txnId,
+                        'ip' => $request->ip(),
+                    ]);
+
+                    return response('Success', 200)->header('Content-Type', 'text/plain');
+                }
+
+                Log::warning('PlanPaymentSuccess: Order not found', [
+                    'txn_id' => $txnId,
+                    'ip' => $request->ip(),
+                ]);
+                return response('Aborted', 400)->header('Content-Type', 'text/plain');
+            }
+
+            $statusText = $orderStatus === 'Failure' ? 'Failure' : 'Aborted';
+            Log::warning('PlanPaymentSuccess: Payment not successful', [
+                'txn_id' => $txnId,
+                'order_status' => $orderStatus,
+                'ip' => $request->ip(),
+            ]);
+
+            return response($statusText, 400)->header('Content-Type', 'text/plain');
+        } catch (\Exception $e) {
+            Log::error('PlanPaymentSuccess: General error', [
+                'txn_id' => $txnId ?? null,
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
+            return response('Aborted', 500)->header('Content-Type', 'text/plain');
+        }
+    }
+
+    /**
+     * Handle PhonePe payment success callback.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function phonePePlanPaymentSuccess(Request $request)
+    {
+        try {
+            $responseBase64 = $request->input('response');
+            $xVerify = $request->header('X-VERIFY');
+
+            if (!$responseBase64 || !$xVerify) {
+                Log::warning('PhonePePlanPaymentSuccess: Missing response or X-VERIFY', [
+                    'ip' => $request->ip(),
+                    'url' => $request->fullUrl(),
+                ]);
+                return response('Aborted', 400)->header('Content-Type', 'text/plain');
+            }
+
+            $saltKey = config('app.phonepe.salt_key');
+            $saltIndex = config('app.phonepe.salt_index');
+            $stringToHash = $responseBase64 . '/pg/v1/status' . $saltKey;
+            $expectedXVerify = hash('sha256', $stringToHash) . '###' . $saltIndex;
+
+            if ($xVerify !== $expectedXVerify) {
+                Log::error('PhonePePlanPaymentSuccess: Invalid X-VERIFY', [
+                    'received_x_verify' => $xVerify,
+                    'expected_x_verify' => $expectedXVerify,
+                    'ip' => $request->ip(),
+                ]);
+                return response('Aborted', 400)->header('Content-Type', 'text/plain');
+            }
+
+            $responseJson = base64_decode($responseBase64);
+            $responseData = json_decode($responseJson, true);
+
+            if (!$responseData || !isset($responseData['code']) || !isset($responseData['data']['merchantTransactionId'])) {
+                Log::error('PhonePePlanPaymentSuccess: Invalid response data', [
+                    'response' => $responseJson,
+                    'ip' => $request->ip(),
+                ]);
+                return response('Aborted', 400)->header('Content-Type', 'text/plain');
+            }
+
+            $txnId = $responseData['data']['merchantTransactionId'];
+            $orderStatus = $responseData['code'];
+
+            $currentDateTime = Carbon::now('Asia/Kolkata')->toDateTimeString();
+            $logData = [
+                'body' => json_encode($responseData),
+                'date' => $currentDateTime,
+                'created_at' => $currentDateTime,
+                'updated_at' => $currentDateTime,
+            ];
+
+            $lastId = DB::table('tbl_phonepe_response')->insertGetId($logData);
+
+            Log::info('PhonePePlanPaymentSuccess: PhonePe response logged', [
+                'last_id' => $lastId,
+                'txn_id' => $txnId,
+                'order_status' => $orderStatus,
+                'ip' => $request->ip(),
+            ]);
+
+            if ($orderStatus === 'PAYMENT_SUCCESS') {
+                $order = SubscriptionBuy::where('txn_id', $txnId)
+                    ->where('payment_status', 0)
+                    ->first();
+
+                if ($order) {
+                    $order->update([
+                        'payment_status' => 1,
+                        'phonepe_response' => json_encode($responseData),
+                    ]);
+
+                    Log::info('PhonePePlanPaymentSuccess: Subscription updated', [
+                        'order_id' => $order->id,
+                        'txn_id' => $txnId,
+                        'ip' => $request->ip(),
+                    ]);
+
+                    return response('Success', 200)->header('Content-Type', 'text/plain');
+                }
+
+                Log::warning('PhonePePlanPaymentSuccess: Order not found', [
+                    'txn_id' => $txnId,
+                    'ip' => $request->ip(),
+                ]);
+                return response('Aborted', 400)->header('Content-Type', 'text/plain');
+            }
+
+            $statusText = $orderStatus === 'PAYMENT_ERROR' ? 'Failure' : 'Aborted';
+            Log::warning('PhonePePlanPaymentSuccess: Payment not successful', [
+                'txn_id' => $txnId,
+                'order_status' => $orderStatus,
+                'ip' => $request->ip(),
+            ]);
+
+            return response($statusText, 400)->header('Content-Type', 'text/plain');
+        } catch (\Exception $e) {
+            Log::error('PhonePePlanPaymentSuccess: General error', [
+                'txn_id' => $txnId ?? null,
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
+            return response('Aborted', 500)->header('Content-Type', 'text/plain');
         }
     }
 }
