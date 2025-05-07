@@ -23,4 +23,14 @@ class Canister extends Model
         "milk_production_of_mother",
         "date"
       ];
+
+      public function farmer()
+      {
+          return $this->belongsTo(Farmer::class, 'farmer_id');
+      }
+  
+      public function tank()
+      {
+          return $this->belongsTo(Tank::class, 'tank_id');
+      }
 }

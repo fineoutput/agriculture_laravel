@@ -10,6 +10,7 @@ use App\Http\Controllers\ApiControllers\DoctorController;
 use App\Http\Controllers\ApiControllers\ToolsController;
 use App\Http\Controllers\ApiControllers\VendorOrderController;
 use App\Http\Controllers\ApiControllers\HomeController;
+use App\Http\Controllers\ApiControllers\ManagementController;
 use App\Http\Controllers\ApiControllers\VendorController;
 /*
 |--------------------------------------------------------------------------
@@ -102,6 +103,28 @@ Route::middleware(['auth:farmer'])->group(function () {
     Route::post('homePhonePay/buyPlan', [HomeController::class, 'phonePeBuyPlan']);
     Route::get('homeplan/payment-sucess', [HomeController::class, 'planPaymentSuccess']);
     Route::get('homePhonePay/payment-sucess', [HomeController::class, 'phonePePlanPaymentSuccess']);
+    
+    
+    ///////managementController
+    Route::post('Management/Daily-records', [ManagementController::class, 'dailyRecords']);
+    Route::get('ManagementView/records', [ManagementController::class, 'viewDailyRecords']);
+    Route::post('ManagementMilk/records', [ManagementController::class, 'milkRecords']);
+    Route::get('ManagementView/Milk-records', [ManagementController::class, 'viewMilkRecords']);
+    Route::post('Sale-purchase', [ManagementController::class, 'salePurchase']);
+    Route::get('View/sale-purchase', [ManagementController::class, 'viewSalePurchase']);
+    Route::post('others-sale-purchase-View', [ManagementController::class, 'viewOthersSalePurchase']);
+    Route::post('medical-expenses', [ManagementController::class, 'medicalExpenses']);
+    Route::get('Viewmedical-expenses', [ManagementController::class, 'viewMedicalExpenses']);
+    Route::post('Reportss', [ManagementController::class, 'reports']);
+    Route::get('Disease-Info', [ManagementController::class, 'diseaseInfo']);
+    Route::post('Stock-Handling', [ManagementController::class, 'stockHandling']);
+    Route::get('View-Stock-handling', [ManagementController::class, 'viewStocks']);
+    Route::get('view-Stock-Txn', [ManagementController::class, 'viewStocksTxn']);
+    Route::get('ViewSemen-Tank', [ManagementController::class, 'viewSemenTank']);
+    Route::post('SemenTank-add', [ManagementController::class, 'addSemenTank']);
+    Route::post('Delete-semen-Tank', [ManagementController::class, 'deleteSemenTank']);
+    Route::post('Canister_updates', [ManagementController::class, 'updateCanister']);
+    Route::get('Summary_farm', [ManagementController::class, 'farmSummary']);
 });
 
 ///////////DoctorController

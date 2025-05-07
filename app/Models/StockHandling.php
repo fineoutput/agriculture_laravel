@@ -12,10 +12,25 @@ class StockHandling extends Model
     protected $table = 'tbl_stock_handling';
 
     protected $fillable = [
-        'farmer_id',
-        'feed',
-        'date',
-        'is_txn',
+        "id",
+        "farmer_id",
+        "stock_date",
+        "green_forage",
+        "dry_fodder",
+        "silage",
+        "cake",
+        "grains",
+        "bioproducts",
+        "churi",
+        "oil_seeds",
+        "minerals",
+        "bypass_fat",
+        "toxins",
+        "buffer",
+        "yeast",
+        "calcium",
+        "is_txn",
+        "date"
     ];
 
     public function farmer()
