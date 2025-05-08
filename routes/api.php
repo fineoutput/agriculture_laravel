@@ -125,6 +125,9 @@ Route::middleware(['auth:farmer'])->group(function () {
     Route::post('Delete-semen-Tank', [ManagementController::class, 'deleteSemenTank']);
     Route::post('Canister_updates', [ManagementController::class, 'updateCanister']);
     Route::get('Summary_farm', [ManagementController::class, 'farmSummary']);
+    Route::post('GetMyanimals', [ManagementController::class, 'getAnimals']);
+    Route::post('update-animal-status', [ManagementController::class, 'updateAnimalStatus']);
+    Route::post('sale-purchase-update', [ManagementController::class, 'salePurchaseUpdate']);
 });
 
 ///////////DoctorController

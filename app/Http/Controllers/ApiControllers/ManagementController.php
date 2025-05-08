@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\ApiControllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\AnimalCycle;
 use App\Models\Farmer;
 use App\Models\DailyRecord;
 use App\Models\StockHandling;
@@ -2566,6 +2567,434 @@ class ManagementController extends Controller
             ]);
             return response()->json([
                 'message' => 'Error retrieving summary: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
+
+    public function getAnimals(Request $request)
+    {
+        try {
+            if (!$request->isMethod('post') || empty($request->all())) {
+                Log::warning('GetAnimals: Missing POST data', [
+                    'ip' => $request->ip(),
+                    'url' => $request->fullUrl(),
+                ]);
+                return response()->json([
+                    'message' => 'Please Insert Data',
+                    'status' => 201,
+                ], 422);
+            }
+
+            $authToken = $request->header('Authentication');
+            if (empty($authToken)) {
+                Log::warning('GetAnimals: Missing Authentication header', [
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'message' => 'Authentication token is required',
+                    'status' => 201,
+                ], 403);
+            }
+
+            $farmer = Farmer::where('auth', $authToken)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$farmer) {
+                Log::warning('GetAnimals: Authentication failed', [
+                    'ip' => $request->ip(),
+                    'auth_token' => substr($authToken, 0, 10) . '...',
+                ]);
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'animal_type' => 'nullable|string|in:Bull,Heifer,Milking,Calf',
+                'other' => 'nullable|string|in:inseminate,pregnant,not_pregnant,Open,Dry,repeater',
+                'group_id' => 'nullable|string|regex:/^(\d+|none)$/',
+            ]);
+ 
+            if ($validator->fails()) {
+                Log::warning('GetAnimals: Validation failed', [
+                    'ip' => $request->ip(),
+                    'errors' => $validator->errors(),
+                    'url' => $request->fullUrl(),
+                ]);
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'status' => 201,
+                ], 422);
+            }
+
+            $animalType = $request->input('animal_type');
+            $other = $request->input('other');
+            $groupId = $request->input('group_id');
+
+            $query = MyAnimal::with('group')
+                ->where('farmer_id', $farmer->id)
+                ->orderBy('id', 'desc');
+
+            if (!empty($animalType)) {
+                $query->where('animal_type', $animalType);
+            }
+
+            if (!empty($groupId) && $groupId !== 'none') {
+                $query->where('assign_to_group', $groupId);
+            }
+
+            if (!empty($other)) {
+                if ($other === 'inseminate') {
+                    $query->where('is_inseminated', 'Yes');
+                } elseif ($other === 'pregnant') {
+                    $query->where('is_pregnant', 'Yes');
+                } elseif ($other === 'not_pregnant') {
+                    $query->where('is_pregnant', 'No');
+                } elseif ($other === 'Open') {
+                    $query->whereNull('delivered_date');
+                } elseif ($other === 'Dry') {
+                    $query->whereNotNull('dry_date');
+                } elseif ($other === 'repeater') {
+                    $query->where('id', 0);
+                }
+            }
+
+            $animals = $query->get();
+
+            $data = [];
+            $groups = [['value' => 'none', 'label' => 'None']];
+            $groupLabels = ['None'];
+
+            foreach ($animals as $animal) {
+                $groupName = $animal->group ? $animal->group->name : 'None';
+                if ($animal->group && !in_array($groupName, $groupLabels)) {
+                    $groups[] = [
+                        'value' => $animal->group->id,
+                        'label' => $groupName,
+                    ];
+                    $groupLabels[] = $groupName;
+                }
+
+                $data[] = [
+                    'id' => $animal->id,
+                    'animal_type' => $animal->animal_type,
+                    'assign_to_group' => $groupName,
+                    'animal_name' => $animal->animal_name,
+                    'tag_no' => $animal->tag_no,
+                    'dob' => $animal->dob ? Carbon::parse($animal->dob)->format('Y-m-d') : null,
+                    'father_name' => $animal->father_name,
+                    'mother_name' => $animal->mother_name,
+                    'weight' => $animal->weight,
+                    'age' => $animal->age,
+                    'breed_type' => $animal->breed_type,
+                    'semen_brand' => $animal->semen_brand,
+                    'animal_gender' => $animal->animal_gender,
+                    'is_inseminated' => $animal->is_inseminated,
+                    'insemination_type' => $animal->insemination_type,
+                    'insemination_date' => $animal->insemination_date ? Carbon::parse($animal->insemination_date)->format('Y-m-d H:i:s') : '',
+                    'is_pregnant' => $animal->is_pregnant,
+                    'pregnancy_test_date' => $animal->pregnancy_test_date ? Carbon::parse($animal->pregnancy_test_date)->format('Y-m-d H:i:s') : null,
+                    'service_status' => $animal->service_status,
+                    'in_house' => $animal->in_house,
+                    'lactation' => $animal->lactation,
+                    'calving_date' => $animal->calving_date ? Carbon::parse($animal->calving_date)->format('Y-m-d H:i:s') : null,
+                    'insured_value' => $animal->insured_value,
+                    'insurance_no' => $animal->insurance_no,
+                    'renewal_period' => $animal->renewal_period,
+                    'insurance_date' => $animal->insurance_date ? Carbon::parse($animal->insurance_date)->format('Y-m-d H:i:s') : null,
+                    'dry_date' => $animal->dry_date ? Carbon::parse($animal->dry_date)->format('Y-m-d H:i:s') : null,
+                    'delivered_date' => $animal->delivered_date ? Carbon::parse($animal->delivered_date)->format('Y-m-d H:i:s') : null,
+                    'date' => $animal->created_at ? Carbon::parse($animal->created_at)->format('d/m/Y') : null,
+                ];
+            }
+
+            Log::info('GetAnimals: Animals retrieved successfully', [
+                'farmer_id' => $farmer->id,
+                'animal_count' => count($data),
+                'filters' => [
+                    'animal_type' => $animalType,
+                    'other' => $other,
+                    'group_id' => $groupId,
+                ],
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json([
+                'message' => 'Success!',
+                'status' => 200,
+                'data' => $data,
+                'groups' => $groups,
+                'group_id' => $groupId,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('GetAnimals: Error retrieving animals', [
+                'farmer_id' => $farmer->id ?? null,
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Error retrieving animals: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
+
+    public function updateAnimalStatus(Request $request)
+    {
+        try {
+            if (!$request->isMethod('post') || empty($request->all())) {
+                Log::warning('UpdateAnimalStatus: Missing POST data', [
+                    'ip' => $request->ip(),
+                    'url' => $request->fullUrl(),
+                ]);
+                return response()->json([
+                    'message' => 'Please Insert Data',
+                    'status' => 201,
+                ], 422);
+            }
+
+            $authToken = $request->header('Authentication');
+            if (empty($authToken)) {
+                Log::warning('UpdateAnimalStatus: Missing Authentication header', [
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'message' => 'Authentication token is required',
+                    'status' => 201,
+                ], 403);
+            }
+
+            $farmer = Farmer::where('auth', $authToken)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$farmer) {
+                Log::warning('UpdateAnimalStatus: Authentication failed', [
+                    'ip' => $request->ip(),
+                    'auth_token' => substr($authToken, 0, 10) . '...',
+                ]);
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'id' => 'required|numeric|exists:tbl_my_animal,id,farmer_id,' . $farmer->id,
+                'status' => 'required|string|in:Dry,Delivered,Pregnant,Not Pregnant',
+                'date' => 'required|date',
+            ]);
+
+            if ($validator->fails()) {
+                Log::warning('UpdateAnimalStatus: Validation failed', [
+                    'ip' => $request->ip(),
+                    'errors' => $validator->errors(),
+                    'url' => $request->fullUrl(),
+                ]);
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'status' => 201,
+                ], 422);
+            }
+
+            $animalId = $request->input('id');
+            $status = $request->input('status');
+            $recordDate = $request->input('date');
+            $currentDateTime = Carbon::now('Asia/Kolkata')->toDateTimeString();
+
+            // Prepare animal cycle record
+            $cycleData = [
+                'record_date' => $recordDate,
+                'farmer_id' => $farmer->id,
+                'animal_id' => $animalId,
+                'status' => $status,
+                'date' => $currentDateTime,
+            ];
+
+            // Prepare animal update based on status
+            $updateData = [];
+            if ($status === 'Dry') {
+                $updateData = ['dry_date' => $recordDate];
+            } elseif ($status === 'Delivered') {
+                $updateData = [
+                    'delivered_date' => $recordDate,
+                    'is_pregnant' => 'No',
+                    'pregnancy_test_date' => null,
+                    'dry_date' => null,
+                ];
+            } elseif ($status === 'Pregnant') {
+                $updateData = [
+                    'delivered_date' => null,
+                    'is_pregnant' => 'Yes',
+                    'pregnancy_test_date' => $recordDate,
+                    'dry_date' => null,
+                ];
+            } elseif ($status === 'Not Pregnant') {
+                $updateData = [
+                    'delivered_date' => null,
+                    'is_pregnant' => 'No',
+                    'pregnancy_test_date' => null,
+                    'dry_date' => null,
+                    'calving_date' => $recordDate,
+                ];
+            }
+
+            // Perform updates in a transaction
+            DB::transaction(function () use ($cycleData, $updateData, $animalId, $farmer) {
+                AnimalCycle::create($cycleData);
+                MyAnimal::where('id', $animalId)
+                    ->where('farmer_id', $farmer->id)
+                    ->update($updateData);
+            });
+
+            Log::info('UpdateAnimalStatus: Animal status updated successfully', [
+                'farmer_id' => $farmer->id,
+                'animal_id' => $animalId,
+                'status' => $status,
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json([
+                'message' => 'Record Successfully Updated!',
+                'status' => 200,
+            ], 200);
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('UpdateAnimalStatus: Database error', [
+                'farmer_id' => $farmer->id ?? null,
+                'animal_id' => $animalId ?? null,
+                'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Database error: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('UpdateAnimalStatus: General error', [
+                'farmer_id' => $farmer->id ?? null,
+                'animal_id' => $animalId ?? null,
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Error processing request: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
+
+    public function salePurchaseUpdate(Request $request)
+    {
+        try {
+            if (!$request->isMethod('post') || empty($request->all())) {
+                Log::warning('SalePurchaseUpdate: Missing POST data', [
+                    'ip' => $request->ip(),
+                    'url' => $request->fullUrl(),
+                ]);
+                return response()->json([
+                    'message' => 'Please Insert Data',
+                    'status' => 201,
+                ], 422);
+            }
+
+            $authToken = $request->header('Authentication');
+            if (empty($authToken)) {
+                Log::warning('SalePurchaseUpdate: Missing Authentication header', [
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'message' => 'Authentication token is required',
+                    'status' => 201,
+                ], 403);
+            }
+
+            $farmer = Farmer::where('auth', $authToken)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$farmer) {
+                Log::warning('SalePurchaseUpdate: Authentication failed', [
+                    'ip' => $request->ip(),
+                    'auth_token' => substr($authToken, 0, 10) . '...',
+                ]);
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'id' => [
+                    'required',
+                    'numeric',
+                    function ($attribute, $value, $fail) use ($request, $farmer) {
+                        $type = $request->input('type');
+                        if ($type === 'animal') {
+                            if (!SalePurchase::where('id', $value)->where('farmer_id', $farmer->id)->exists()) {
+                                $fail('The selected id is invalid for animal sale/purchase.');
+                            }
+                        } elseif ($type === 'equipment') {
+                            if (!EquipmentSalePurchase::where('id', $value)->where('farmer_id', $farmer->id)->exists()) {
+                                $fail('The selected id is invalid for equipment sale/purchase.');
+                            }
+                        }
+                    },
+                ],
+                'type' => 'required|string|in:animal,equipment',
+            ]);
+
+            if ($validator->fails()) {
+                Log::warning('SalePurchaseUpdate: Validation failed', [
+                    'ip' => $request->ip(),
+                    'errors' => $validator->errors(),
+                    'url' => $request->fullUrl(),
+                ]);
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'status' => 201,
+                ], 422);
+            }
+
+            $id = $request->input('id');
+            $type = $request->input('type');
+            $updateData = ['status' => 2];
+
+            if ($type === 'animal') {
+                SalePurchase::where('id', $id)
+                    ->where('farmer_id', $farmer->id)
+                    ->update($updateData);
+            } elseif ($type === 'equipment') {
+                EquipmentSalePurchase::where('id', $id)
+                    ->where('farmer_id', $farmer->id)
+                    ->update($updateData);
+            }
+
+            Log::info('SalePurchaseUpdate: Record updated successfully', [
+                'farmer_id' => $farmer->id,
+                'type' => $type,
+                'record_id' => $id,
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json([
+                'message' => 'Success',
+                'status' => 200,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('SalePurchaseUpdate: Error updating record', [
+                'farmer_id' => $farmer->id ?? null,
+                'type' => $type ?? null,
+                'record_id' => $id ?? null,
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Error updating record: ' . $e->getMessage(),
                 'status' => 201,
             ], 500);
         }
