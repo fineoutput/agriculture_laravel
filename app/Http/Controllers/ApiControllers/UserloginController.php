@@ -28,7 +28,7 @@ class UserloginController extends Controller
         $response = $this->sendSmsMsg91($phone, $msg, $dlt);
 
         return response()->json([
-            'status' => true,
+            'status' => 200,
             'message' => 'SMS sent successfully',
             'response' => $response,
         ]);
@@ -67,7 +67,7 @@ class UserloginController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => false,
+                'status' => 201,
                 'message' => $validator->errors()->first(),
             ], 422);
         }
@@ -85,7 +85,7 @@ class UserloginController extends Controller
         $farmer = Farmer::where('phone', $request->phone)->first();
         if ($farmer) {
             return response()->json([
-                'status' => false,
+                'status' => 201,
                 'message' => 'Farmer Already Exist!',
             ], 400);
         }
@@ -143,7 +143,7 @@ class UserloginController extends Controller
             Log::info('OTP sent for farmer registration', ['phone' => $request->phone]);
 
             return response()->json([
-                'status' => true,
+                'status' => 200,
                 'message' => 'Please enter OTP sent to your registered mobile number',
                 'data' => ['phone' => $request->phone],
             ], 200);
@@ -153,7 +153,7 @@ class UserloginController extends Controller
                 'error' => $e->getMessage(),
             ]);
             return response()->json([
-                'status' => false,
+                'status' => 201,
                 'message' => 'Error during registration: ' . $e->getMessage(),
             ], 500);
         }
@@ -171,7 +171,7 @@ class UserloginController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => false,
+                'status' => 201,
                 'message' => $validator->errors()->first(),
             ], 422);
         }
@@ -185,7 +185,7 @@ class UserloginController extends Controller
 
             if (!$otpRecord) {
                 return response()->json([
-                    'status' => false,
+                    'status' => 201,
                     'message' => 'Invalid or expired OTP',
                 ], 400);
             }
@@ -233,7 +233,7 @@ class UserloginController extends Controller
                 ]);
 
                 return response()->json([
-                    'status' => true,
+                    'status' => 200,
                     'message' => 'Farmer registered successfully',
                     'farmer_id' => $farmer->id,
                     'token' => $token,
@@ -243,7 +243,7 @@ class UserloginController extends Controller
                     'phone' => $farmerData['phone'],
                 ]);
                 return response()->json([
-                    'status' => false,
+                    'status' => 201,
                     'message' => 'Failed to save farmer data',
                 ], 500);
             }
@@ -253,7 +253,7 @@ class UserloginController extends Controller
                 'error' => $e->getMessage(),
             ]);
             return response()->json([
-                'status' => false,
+                'status' => 201,
                 'message' => 'Error during OTP verification: ' . $e->getMessage(),
             ], 500);
         }
@@ -270,7 +270,7 @@ class UserloginController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => false,
+                'status' => 201,
                 'message' => $validator->errors()->first(),
             ], 422);
         }
@@ -279,7 +279,7 @@ class UserloginController extends Controller
             $farmer = Farmer::where('phone', $request->phone)->first();
             if (!$farmer) {
                 return response()->json([
-                    'status' => false,
+                    'status' => 201,
                     'message' => 'Farmer not found',
                 ], 404);
             }
@@ -307,7 +307,7 @@ class UserloginController extends Controller
             Log::info('OTP sent for farmer login', ['phone' => $request->phone]);
 
             return response()->json([
-                'status' => true,
+                'status' => 200,
                 'message' => 'OTP sent for farmer login',
                 'data' => ['phone' => $request->phone],
             ], 200);
@@ -317,7 +317,7 @@ class UserloginController extends Controller
                 'error' => $e->getMessage(),
             ]);
             return response()->json([
-                'status' => false,
+                'status' => 201,
                 'message' => 'Error during login: ' . $e->getMessage(),
             ], 500);
         }
@@ -335,7 +335,7 @@ class UserloginController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => false,
+                'status' => 201,
                 'message' => $validator->errors()->first(),
             ], 422);
         }
@@ -349,7 +349,7 @@ class UserloginController extends Controller
 
             if (!$otpRecord) {
                 return response()->json([
-                    'status' => false,
+                    'status' => 201,
                     'message' => 'Invalid or expired OTP',
                 ], 400);
             }
@@ -357,7 +357,7 @@ class UserloginController extends Controller
             $farmer = Farmer::where('phone', $request->phone)->where('type', 'farmer')->first();
             if (!$farmer) {
                 return response()->json([
-                    'status' => false,
+                    'status' => 201,
                     'message' => 'Farmer not found',
                 ], 404);
             }
@@ -376,7 +376,7 @@ class UserloginController extends Controller
             ]);
 
             return response()->json([
-                'status' => true,
+                'status' => 200,
                 'message' => 'Farmer login verified successfully',
                 'farmer_id' => $farmer->id,
                 'token' => $token,
@@ -387,7 +387,7 @@ class UserloginController extends Controller
                 'error' => $e->getMessage(),
             ]);
             return response()->json([
-                'status' => false,
+                'status' => 201,
                 'message' => 'Error during OTP verification: ' . $e->getMessage(),
             ], 500);
         }
@@ -426,7 +426,7 @@ class UserloginController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => false,
+                'status' => 201,
                 'message' => $validator->errors()->first(),
             ], 422);
         }
@@ -448,7 +448,7 @@ class UserloginController extends Controller
             $farmer = Farmer::where('phone', $phone)->first();
             if ($farmer) {
                 return response()->json([
-                    'status' => false,
+                    'status' => 201,
                     'message' => 'User Already Exist!',
                 ], 400);
             }
@@ -456,7 +456,7 @@ class UserloginController extends Controller
             $doctor = Doctor::where('phone', $phone)->first();
             if ($doctor) {
                 return response()->json([
-                    'status' => false,
+                    'status' => 201,
                     'message' => 'User Already Exist!',
                 ], 400);
             }
@@ -464,7 +464,7 @@ class UserloginController extends Controller
             $vendor = Vendor::where('phone', $phone)->first();
             if ($vendor) {
                 return response()->json([
-                    'status' => false,
+                    'status' => 201,
                     'message' => 'User Already Exist!',
                 ], 400);
             }
@@ -521,7 +521,7 @@ class UserloginController extends Controller
             Log::info('OTP sent for registration', ['phone' => $phone]);
 
             return response()->json([
-                'status' => true,
+                'status' => 200,
                 'message' => 'Please enter OTP sent to your registered mobile number',
                 'data' => ['phone' => $phone],
             ], 200);
@@ -531,7 +531,7 @@ class UserloginController extends Controller
                 'error' => $e->getMessage(),
             ]);
             return response()->json([
-                'status' => false,
+                'status' => 201,
                 'message' => 'Some error occurred: ' . $e->getMessage(),
             ], 500);
         }
@@ -549,7 +549,7 @@ class UserloginController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => false,
+                'status' => 201,
                 'message' => $validator->errors()->first(),
             ], 422);
         }
@@ -562,7 +562,7 @@ class UserloginController extends Controller
 
             if (!$otpRecord) {
                 return response()->json([
-                    'status' => false,
+                    'status' => 201,
                     'message' => 'Invalid or expired OTP',
                 ], 400);
             }
@@ -623,7 +623,7 @@ class UserloginController extends Controller
                 ]);
 
                 return response()->json([
-                    'status' => true,
+                    'status' => 200,
                     'message' => 'Registration verified successfully',
                     'user_id' => $model->id,
                     'token' => $token,
@@ -631,7 +631,7 @@ class UserloginController extends Controller
             } else {
                 Log::error('Failed to save user data', ['phone' => $userData['phone'], 'type' => $type]);
                 return response()->json([
-                    'status' => false,
+                    'status' => 201,
                     'message' => 'Failed to save user data',
                 ], 500);
             }
@@ -641,7 +641,7 @@ class UserloginController extends Controller
                 'error' => $e->getMessage(),
             ]);
             return response()->json([
-                'status' => false,
+                'status' => 201,
                 'message' => 'Error during OTP verification: ' . $e->getMessage(),
             ], 500);
         }
@@ -659,7 +659,7 @@ class UserloginController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => false,
+                'status' => 201,
                 'message' => $validator->errors()->first(),
             ], 422);
         }
@@ -682,7 +682,7 @@ class UserloginController extends Controller
             $user = $model::where('phone', $phone)->where('type', $type)->first();
             if (!$user) {
                 return response()->json([
-                    'status' => false,
+                    'status' => 201,
                     'message' => 'User not found',
                 ], 404);
             }
@@ -711,7 +711,7 @@ class UserloginController extends Controller
             Log::info('OTP sent for user login', ['phone' => $phone, 'type' => $type]);
 
             return response()->json([
-                'status' => true,
+                'status' => 200,
                 'message' => 'OTP sent for login',
                 'data' => ['phone' => $phone],
             ], 200);
@@ -722,7 +722,7 @@ class UserloginController extends Controller
                 'error' => $e->getMessage(),
             ]);
             return response()->json([
-                'status' => false,
+                'status' => 201,
                 'message' => 'Error during login: ' . $e->getMessage(),
             ], 500);
         }
@@ -741,7 +741,7 @@ class UserloginController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => false,
+                'status' => 201,
                 'message' => $validator->errors()->first(),
             ], 422);
         }
@@ -755,7 +755,7 @@ class UserloginController extends Controller
 
             if (!$otpRecord) {
                 return response()->json([
-                    'status' => false,
+                    'status' => 201,
                     'message' => 'Invalid or expired OTP',
                 ], 400);
             }
@@ -774,7 +774,7 @@ class UserloginController extends Controller
             $user = $model::where('phone', $request->phone)->where('type', $request->type)->first();
             if (!$user) {
                 return response()->json([
-                    'status' => false,
+                    'status' => 201,
                     'message' => 'User not found',
                 ], 404);
             }
@@ -812,7 +812,7 @@ class UserloginController extends Controller
             ]);
 
             return response()->json([
-                'status' => true,
+                'status' => 200,
                 'message' => 'Login verified successfully',
                 'user_id' => $user->id,
                 'token' => $token,
@@ -824,7 +824,7 @@ class UserloginController extends Controller
                 'error' => $e->getMessage(),
             ]);
             return response()->json([
-                'status' => false,
+                'status' => 201,
                 'message' => 'Error during OTP verification: ' . $e->getMessage(),
             ], 500);
         }
@@ -843,7 +843,7 @@ class UserloginController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => false,
+                'status' => 201,
                 'message' => $validator->errors()->first(),
             ], 422);
         }
@@ -852,7 +852,7 @@ class UserloginController extends Controller
             $user = auth('api')->user();
             if (!$user) {
                 return response()->json([
-                    'status' => false,
+                    'status' => 201,
                     'message' => 'User not authenticated',
                 ], 401);
             }
@@ -865,7 +865,7 @@ class UserloginController extends Controller
 
             if (!isset($modelMap[$request->type]) || $user->type !== $request->type) {
                 return response()->json([
-                    'status' => false,
+                    'status' => 201,
                     'message' => 'Invalid user type',
                 ], 400);
             }
@@ -879,13 +879,13 @@ class UserloginController extends Controller
             if ($updated) {
                 Log::info('User profile updated', ['user_id' => $user->id, 'type' => $request->type]);
                 return response()->json([
-                    'status' => true,
+                    'status' => 200,
                     'message' => 'Profile updated successfully',
                 ], 200);
             } else {
                 Log::error('Failed to update user profile', ['user_id' => $user->id, 'type' => $request->type]);
                 return response()->json([
-                    'status' => false,
+                    'status' => 201,
                     'message' => 'Failed to update profile',
                 ], 500);
             }
@@ -896,7 +896,7 @@ class UserloginController extends Controller
                 'error' => $e->getMessage(),
             ]);
             return response()->json([
-                'status' => false,
+                'status' => 201,
                 'message' => 'Error during profile update: ' . $e->getMessage(),
             ], 500);
         }
@@ -911,13 +911,13 @@ class UserloginController extends Controller
             JWTAuth::invalidate(JWTAuth::getToken());
             Log::info('User logged out', ['user_id' => auth('api')->id()]);
             return response()->json([
-                'status' => true,
+                'status' => 200,
                 'message' => 'Logged out successfully',
             ], 200);
         } catch (\Exception $e) {
             Log::error('Error in logout', ['error' => $e->getMessage()]);
             return response()->json([
-                'status' => false,
+                'status' => 201,
                 'message' => 'Error during logout: ' . $e->getMessage(),
             ], 500);
         }
