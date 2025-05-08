@@ -427,7 +427,7 @@ class UserloginController extends Controller
             } else {
                 // User doesn't exist, prompt for registration
                 return response()->json([
-                    'status' => 202,
+                    'status' => 200,
                     'message' => 'OTP verified, please complete registration',
                     'data' => [
                         'phone' => $request->phone,
