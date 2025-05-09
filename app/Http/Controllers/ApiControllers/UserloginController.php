@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Log;
 use Str;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Http\Controllers\Controller;
+use App\Models\GiftCard;
+use Illuminate\Support\Facades\DB;
 
 class UserloginController extends Controller
 {
@@ -165,7 +167,7 @@ class UserloginController extends Controller
         $last_id = DB::table('tbl_farmers')->insertGetId($data_insert);
 
         // Send welcome SMS
-        $this->sendWelcomeSms($receive['phone'], $receive['name'], 'farmer', '649e7ef5d6fc055fd16f92a2');
+        // $this->sendWelcomeSms($receive['phone'], $receive['name'], 'farmer', '649e7ef5d6fc055fd16f92a2');
 
         return [
             'status' => 200,
