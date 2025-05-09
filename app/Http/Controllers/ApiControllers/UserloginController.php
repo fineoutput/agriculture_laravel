@@ -842,12 +842,113 @@ class UserloginController extends Controller
     /**
      * Doctor/Vendor Login OTP Verify
      */
-    public function login_otp_verify(Request $request)
+    // public function login_otp_verify(Request $request)
+    // {
+    //     $validator = Validator::make($request->all(), [
+    //         'phone' => 'required|string',
+    //         'otp' => 'required|string',
+    //         'type' => 'required|string|in:doctor,vendor',
+    //     ]);
+
+    //     if ($validator->fails()) {
+    //         return response()->json([
+    //             'status' => 201,
+    //             'message' => $validator->errors()->first(),
+    //         ], 422);
+    //     }
+
+    //     try {
+    //         $otpRecord = Otp::where('phone', $request->phone)
+    //             ->where('otp', $request->otp)
+    //             ->where('type', $request->type)
+    //             ->where('expires_at', '>', now())
+    //             ->first();
+
+    //         if (!$otpRecord) {
+    //             return response()->json([
+    //                 'status' => 201,
+    //                 'message' => 'Invalid or expired OTP',
+    //             ], 400);
+    //         }
+
+    //         $modelMap = [
+    //             'doctor' => Doctor::class,
+    //             'vendor' => Vendor::class,
+    //         ];
+
+    //         if (!isset($modelMap[$request->type])) {
+    //             throw new \Exception('Invalid user type');
+    //         }
+
+    //         $model = $modelMap[$request->type];
+
+    //         $user = $model::where('phone', $request->phone)->where('type', $request->type)->first();
+    //         if (!$user) {
+    //             return response()->json([
+    //                 'status' => 201,
+    //                 'message' => 'User not found',
+    //             ], 404);
+    //         }
+
+    //         $guardMap = [
+    //             'doctor' => 'doctor',
+    //             'vendor' => 'vendor',
+    //         ];
+
+    //         if (!isset($guardMap[$request->type])) {
+    //             throw new \Exception('Invalid user type');
+    //         }
+
+    //         $guard = $guardMap[$request->type];
+
+    //         Log::info('Guard assigned', [
+    //             'phone' => $request->phone,
+    //             'type' => $request->type,
+    //             'guard' => $guard,
+    //         ]);
+
+    //         Auth::guard($guard)->login($user);
+
+    //         $token = JWTAuth::fromUser($user);
+    //         $user->auth = $token;
+    //         $user->save();
+    //         $otpRecord->delete();
+
+    //         Log::info('User login verified', [
+    //             'phone' => $request->phone,
+    //             'type' => $request->type,
+    //             'user_id' => $user->id,
+    //             'guard' => $guard,
+    //             'token' => $token,
+    //         ]);
+
+    //         return response()->json([
+    //             'status' => 200,
+    //             'message' => 'Login verified successfully',
+    //             'user_id' => $user->id,
+    //             'token' => $token,
+    //         ], 200);
+    //     } catch (\Exception $e) {
+    //         Log::error('Error in login_otp_verify', [
+    //             'phone' => $request->phone,
+    //             'type' => $request->type,
+    //             'error' => $e->getMessage(),
+    //         ]);
+    //         return response()->json([
+    //             'status' => 201,
+    //             'message' => 'Error during OTP verification: ' . $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }
+    
+
+
+    public function verify_login_otp(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'phone' => 'required|string',
             'otp' => 'required|string',
-            'type' => 'required|string|in:doctor,vendor',
+            'type' => 'required|string',
         ]);
 
         if ($validator->fails()) {
@@ -861,6 +962,7 @@ class UserloginController extends Controller
             $otpRecord = Otp::where('phone', $request->phone)
                 ->where('otp', $request->otp)
                 ->where('type', $request->type)
+                ->where('status', 0)
                 ->where('expires_at', '>', now())
                 ->first();
 
@@ -871,65 +973,68 @@ class UserloginController extends Controller
                 ], 400);
             }
 
-            $modelMap = [
-                'doctor' => Doctor::class,
-                'vendor' => Vendor::class,
-            ];
+            $data = $otpRecord->data;
+            $model = $data['model'];
+            $userExists = $data['user_exists'];
 
-            if (!isset($modelMap[$request->type])) {
-                throw new \Exception('Invalid user type');
-            }
+            if ($userExists) {
+                // User exists, complete login
+                $user = $model::where('phone', $request->phone)->first();
+                if (!$user) {
+                    return response()->json([
+                        'status' => 201,
+                        'message' => 'User not found',
+                    ], 404);
+                }
 
-            $model = $modelMap[$request->type];
+                // Check account status
+                if ($user->is_active != 1) {
+                    return response()->json([
+                        'status' => 201,
+                        'message' => 'Your Account is blocked! Please contact to admin',
+                    ], 403);
+                }
 
-            $user = $model::where('phone', $request->phone)->where('type', $request->type)->first();
-            if (!$user) {
+                if ($request->type === 'doctor' || $request->type === 'vendor') {
+                    if ($user->is_approved == 2) {
+                        return response()->json([
+                            'status' => 201,
+                            'message' => 'Your account request is rejected! Please contact to admin',
+                        ], 403);
+                    }
+                }
+
+                // Generate auth token
+                $authToken = Str::random(32);
+                $user->auth = $authToken;
+                $user->save();
+
+                // Update OTP status
+                $otpRecord->status = 1;
+                $otpRecord->save();
+
                 return response()->json([
-                    'status' => 201,
-                    'message' => 'User not found',
-                ], 404);
+                    'status' => 200,
+                    'message' => 'Login successful',
+                    'data' => [
+                        'user_id' => $user->id,
+                        'type' => $request->type,
+                        'auth' => $authToken,
+                    ],
+                ], 200);
+            } else {
+                // User doesn't exist, prompt for registration
+                return response()->json([
+                    'status' => 202,
+                    'message' => 'OTP verified, please complete registration',
+                    'data' => [
+                        'phone' => $request->phone,
+                        'type' => $request->type,
+                    ],
+                ], 200);
             }
-
-            $guardMap = [
-                'doctor' => 'doctor',
-                'vendor' => 'vendor',
-            ];
-
-            if (!isset($guardMap[$request->type])) {
-                throw new \Exception('Invalid user type');
-            }
-
-            $guard = $guardMap[$request->type];
-
-            Log::info('Guard assigned', [
-                'phone' => $request->phone,
-                'type' => $request->type,
-                'guard' => $guard,
-            ]);
-
-            Auth::guard($guard)->login($user);
-
-            $token = JWTAuth::fromUser($user);
-            $user->auth = $token;
-            $user->save();
-            $otpRecord->delete();
-
-            Log::info('User login verified', [
-                'phone' => $request->phone,
-                'type' => $request->type,
-                'user_id' => $user->id,
-                'guard' => $guard,
-                'token' => $token,
-            ]);
-
-            return response()->json([
-                'status' => 200,
-                'message' => 'Login verified successfully',
-                'user_id' => $user->id,
-                'token' => $token,
-            ], 200);
         } catch (\Exception $e) {
-            Log::error('Error in login_otp_verify', [
+            Log::error('Error in verify_login_otp', [
                 'phone' => $request->phone,
                 'type' => $request->type,
                 'error' => $e->getMessage(),
@@ -940,7 +1045,6 @@ class UserloginController extends Controller
             ], 500);
         }
     }
-
     /**
      * Update User Profile
      */
