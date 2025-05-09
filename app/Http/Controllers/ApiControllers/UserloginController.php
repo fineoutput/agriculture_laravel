@@ -48,22 +48,12 @@ class UserloginController extends Controller
             'state' => 'nullable|string',
             'pincode' => 'nullable|string',
             'phone' => 'required|string',
-            'type' => 'required|string|in:farmer',
             'email' => 'nullable|email',
-            'doc_type' => 'nullable|string',
-            'degree' => 'nullable|string',
-            'experience' => 'nullable|string',
-            'shop_name' => 'nullable|string',
-            'address' => 'nullable|string',
-            'gst_no' => 'nullable|string',
-            'aadhar_no' => 'nullable|string',
-            'pan_no' => 'nullable|string',
             'latitude' => 'required|string',
             'longitude' => 'required|string',
             'no_of_animals' => 'nullable|string',
-            'expert_category' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:25000',
             'refer_code' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:25000',
         ]);
 
         if ($validator->fails()) {
@@ -73,81 +63,41 @@ class UserloginController extends Controller
             ], 422);
         }
 
-        // Handle image upload
-        $imagePath = null;
-        if ($request->hasFile('image')) {
-            $image = $request->file('image');
-            $imageName = 'image_' . date('YmdHis') . '.' . $image->getClientOriginalExtension();
-            $imagePath = $image->storeAs('uploads/aadhar', $imageName, 'public');
-            $imagePath = 'assets/' . $imagePath;
-        }
-
-        // Check if farmer exists
-        $farmer = Farmer::where('phone', $request->phone)->first();
-        if ($farmer) {
-            return response()->json([
-                'status' => 201,
-                'message' => 'Farmer Already Exist!',
-            ], 400);
-        }
-
-        // Prepare data for OTP verification
-        $farmerData = [
-            'name' => $request->name,
-            'village' => $request->village,
-            'district' => $request->district,
-            'city' => $request->city,
-            'state' => $request->state,
-            'pincode' => $request->pincode,
-            'refer_code' => $request->refer_code,
-            'phone' => $request->phone,
-            'email' => $request->email,
-            'image' => $imagePath,
-            'doc_type' => $request->doc_type,
-            'degree' => $request->degree,
-            'experience' => $request->experience,
-            'shop_name' => $request->shop_name,
-            'address' => $request->address,
-            'gst_no' => $request->gst_no,
-            'aadhar_no' => $request->aadhar_no,
-            'pan_no' => $request->pan_no,
-            'type' => $request->type,
-            'latitude' => $request->latitude,
-            'longitude' => $request->longitude,
-            'no_of_animals' => $request->no_of_animals,
-            'expert_category' => $request->expert_category,
-            'date' => now()->toDateTimeString(),
-        ];
-
         try {
-            $otp = rand(100000, 999999);
-            $expiresAt = now()->addMinutes(10);
+            $imagePath = null;
+            if ($request->hasFile('image')) {
+                $image = $request->file('image');
+                $imageName = 'image_' . date('YmdHis') . '.' . $image->getClientOriginalExtension();
+                $imagePath = $image->storeAs('uploads/aadhar', $imageName, 'public');
+                $imagePath = 'assets/' . $imagePath;
+            }
 
-            $otpRecord = Otp::create([
+            $farmerData = [
+                'name' => $request->name,
+                'village' => $request->village,
+                'district' => $request->district,
+                'city' => $request->city,
+                'state' => $request->state,
+                'pincode' => $request->pincode,
+                'refer_code' => $request->refer_code,
                 'phone' => $request->phone,
-                'otp' => $otp,
-                'type' => $request->type,
-                'data' => $farmerData,
-                'expires_at' => $expiresAt,
-                'created_at' => now(),
-            ]);
+                'email' => $request->email,
+                'image' => $imagePath,
+                'latitude' => $request->latitude,
+                'longitude' => $request->longitude,
+                'no_animals' => $request->no_of_animals,
+                'gst_no' => $request->gst_no,
+                'ip' => $request->ip(),
+                'date' => now()->toDateTimeString(),
+            ];
 
-            Log::info('OTP stored for farmer registration', [
-                'phone' => $request->phone,
-                'otp' => $otp,
-                'otp_record_id' => $otpRecord->id,
-            ]);
-
-            $msg = "Your OTP for DAIRY MUNEEM registration is: $otp. Valid for 10 minutes.";
-            $this->sendSmsMsg91($request->phone, $msg, env('DLT_CODE', '645ca6f9d6fc057295695743'));
-
-            Log::info('OTP sent for farmer registration', ['phone' => $request->phone]);
+            $result = $this->farmerRegister($farmerData);
 
             return response()->json([
-                'status' => 200,
-                'message' => 'Please enter OTP sent to your registered mobile number',
-                'data' => ['phone' => $request->phone],
-            ], 200);
+                'status' => $result['status'],
+                'message' => $result['message'],
+                'data' => $result['data'],
+            ], $result['status'] == 200 ? 200 : 400);
         } catch (\Exception $e) {
             Log::error('Error in farmer_register_process', [
                 'phone' => $request->phone,
@@ -158,6 +108,76 @@ class UserloginController extends Controller
                 'message' => 'Error during registration: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    private function farmerRegister(array $receive)
+    {
+        // Check if farmer exists
+        $farmer = Farmer::where('phone', $receive['phone'])->first();
+        if ($farmer) {
+            return [
+                'status' => 201,
+                'message' => 'User already registered',
+                'data' => [],
+            ];
+        }
+
+        // Generate auth token
+        $auth = bin2hex(random_bytes(18));
+
+        // Gift card logic
+        $giftCard = null;
+        $giftCardUrl = null;
+        if (!empty($receive['no_animals'])) {
+            $giftCard = GiftCard::where('gift_count', '>', 0)
+                ->where('start_range', '<', $receive['no_animals'])
+                ->where('end_range', '>', $receive['no_animals'])
+                ->inRandomOrder()
+                ->first();
+        }
+
+        if ($giftCard && env('GIFTCARD', 0) == 1) {
+            $giftCard->decrement('gift_count');
+            $giftCardUrl = env('APP_URL') . '/assets/uploads/gift_card/' . $giftCard->image;
+        }
+
+        // Insert farmer data
+        $data_insert = [
+            'name' => $receive['name'],
+            'village' => $receive['village'],
+            'district' => $receive['district'],
+            'city' => $receive['city'],
+            'state' => $receive['state'],
+            'pincode' => $receive['pincode'],
+            'refer_code' => $receive['refer_code'],
+            'phone' => $receive['phone'],
+            'no_animals' => $receive['no_animals'],
+            'gst_no' => $receive['gst_no'],
+            'latitude' => $receive['latitude'],
+            'longitude' => $receive['longitude'],
+            'auth' => $auth,
+            'ip' => $receive['ip'],
+            'is_active' => 1,
+            'giftcard_id' => $giftCard ? $giftCard->id : null,
+            'date' => $receive['date'],
+        ];
+
+        $last_id = DB::table('tbl_farmers')->insertGetId($data_insert);
+
+        // Send welcome SMS
+        $this->sendWelcomeSms($receive['phone'], $receive['name'], 'farmer', '649e7ef5d6fc055fd16f92a2');
+
+        return [
+            'status' => 200,
+            'message' => 'Successfully Registered!',
+            'data' => [
+                'name' => $receive['name'],
+                'auth' => $auth,
+                'is_login' => 1,
+                'giftcard' => env('GIFTCARD', 0),
+                'giftcard_url' => $giftCardUrl,
+            ],
+        ];
     }
 
     /**

@@ -23,7 +23,9 @@ use App\Http\Controllers\ApiControllers\VendorController;
 |
 */
 Route::post('/msgtest', [UserloginController::class, 'msgtest']);
+
 Route::post('register-farmer', [UserloginController::class, 'farmer_register_process']);
+
 Route::post('registerotpverify', [UserloginController::class, 'farmer_register_otp_verify']);
 
 ////
