@@ -263,11 +263,13 @@ class UserloginController extends Controller
     /**
      * Farmer Login Process
      */
+
+
+
     public function farmer_login_process(Request $request)
     {
-        $validator =Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'phone' => 'required|string',
-            'type' => 'required|string|in:farmer,doctor,vendor',
         ]);
 
         if ($validator->fails()) {
@@ -279,62 +281,19 @@ class UserloginController extends Controller
 
         try {
             $phone = $request->phone;
-            $type = $request->type;
             $ip = $request->ip();
+            $type = 'farmer';
 
-            // Check if user already exists
-            $user = null;
-            $model = null;
-            if ($type === 'farmer') {
-                $user = Farmer::where('phone', $phone)->first();
-                $model = Farmer::class;
-            } elseif ($type === 'doctor') {
-                $user = Doctor::where('phone', $phone)->first();
-                $model = Doctor::class;
-            } elseif ($type === 'vendor') {
-                $user = Vendor::where('phone', $phone)->first();
-                $model = Vendor::class;
-            }
-
-            // Generate OTP (even if user doesn't exist)
-            $otp = rand(100000, 999999);
-            if (in_array($phone, ['0000000000', '7777777777', '5555555555'])) {
-                $otp = 123456;
-            }
-            $expiresAt = now()->addMinutes(10);
-
-            // Store OTP with type and IP
-            $otpRecord = Otp::create([
-                'phone' => $phone,
-                'otp' => $otp,
-                'type' => $type,
-                'data' => ['model' => $model, 'user_exists' => !is_null($user), 'ip' => $ip],
-                'expires_at' => $expiresAt,
-                'created_at' => now(),
-            ]);
-
-            Log::info('OTP stored for login', [
-                'phone' => $phone,
-                'type' => $type,
-                'otp' => $otp,
-                'otp_record_id' => $otpRecord->id,
-            ]);
-
-            // Send OTP via Msg91
-            $msg = "Your OTP for DAIRY MUNEEM login is: $otp. Valid for 10 minutes.";
-            $this->sendSmsMsg91($phone, $msg, env('DLT_CODE', '645ca712d6fc053e3918af93'));
-
-            Log::info('OTP sent for login', ['phone' => $phone]);
+            $result = $this->farmerLoginWithOtp($phone, $ip);
 
             return response()->json([
-                'status' => 200,
-                'message' => 'Please enter OTP sent to your registered mobile number',
+                'status' => $result['status'],
+                'message' => $result['message'],
                 'data' => ['phone' => $phone, 'type' => $type],
-            ], 200);
+            ], $result['status'] == 200 ? 200 : 400);
         } catch (\Exception $e) {
             Log::error('Error in farmer_login_process', [
                 'phone' => $request->phone,
-                'type' => $request->type,
                 'error' => $e->getMessage(),
             ]);
             return response()->json([
@@ -343,6 +302,64 @@ class UserloginController extends Controller
             ], 500);
         }
     }
+    private function farmerLoginWithOtp($phone, $ip)
+    {
+        $cur_date = now()->toDateTimeString();
+        $type = 'farmer';
+        $model = Farmer::class;
+
+        // Generate OTP
+        $otp = rand(100000, 999999);
+        if (in_array($phone, ['0000000000', '7777777777', '5555555555'])) {
+            $otp = 123456;
+        }
+        $expiresAt = now()->addMinutes(5); // CI uses 5 minutes
+
+        // Check if user exists for registration prompt
+        $user = Farmer::where('phone', $phone)->first();
+        $userExists = !is_null($user);
+
+        // Store OTP
+        $otpRecord = Otp::create([
+            'phone' => $phone,
+            'otp' => $otp,
+            'type' => $type,
+            'status' => 0,
+            'ip' => $ip,
+            'data' => [
+                'model' => $model,
+                'user_exists' => $userExists,
+            ],
+            'expires_at' => $expiresAt,
+            'created_at' => $cur_date,
+        ]);
+
+        if (!$otpRecord) {
+            return [
+                'status' => 201,
+                'message' => 'Some error occurred!',
+            ];
+        }
+
+        // Send OTP
+        $message = "Dear User, your OTP for login on Dairy Muneem is $otp and is valid for 5 minutes OQDN0bWIEBF";
+        $dlt = '1407172223704961719';
+        $this->sendSmsMsg91($phone, $message, $dlt);
+
+        Log::info('OTP stored and sent for farmer login', [
+            'phone' => $phone,
+            'type' => $type,
+            'otp' => $otp,
+            'otp_record_id' => $otpRecord->id,
+        ]);
+
+        return [
+            'status' => 200,
+            'message' => 'Please enter OTP sent to your registered mobile number',
+        ];
+    }
+
+
 
     /**
      * Farmer Login OTP Verify
@@ -352,7 +369,6 @@ class UserloginController extends Controller
         $validator = Validator::make($request->all(), [
             'phone' => 'required|string',
             'otp' => 'required|string',
-            'type' => 'required|string|in:farmer,doctor,vendor',
         ]);
 
         if ($validator->fails()) {
@@ -363,82 +379,20 @@ class UserloginController extends Controller
         }
 
         try {
-            $otpRecord = Otp::where('phone', $request->phone)
-                ->where('otp', $request->otp)
-                ->where('type', $request->type)
-                ->where('expires_at', '>', now())
-                ->first();
+            $phone = $request->phone;
+            $otp = $request->otp;
+            $type = 'farmer';
 
-            if (!$otpRecord) {
-                return response()->json([
-                    'status' => 201,
-                    'message' => 'Invalid or expired OTP',
-                ], 400);
-            }
+            $result = $this->farmerLoginOtpVerify($phone, $otp, $type);
 
-            $data = $otpRecord->data;
-            $model = $data['model'];
-            $userExists = $data['user_exists'];
-
-            if ($userExists) {
-                // User exists, complete login
-                $user = $model::where('phone', $request->phone)->first();
-                if (!$user) {
-                    return response()->json([
-                        'status' => 201,
-                        'message' => 'User not found',
-                    ], 404);
-                }
-
-                // Check account status
-                if ($user->is_active != 1) {
-                    return response()->json([
-                        'status' => 201,
-                        'message' => 'Your Account is blocked! Please contact to admin',
-                    ], 403);
-                }
-
-                if ($request->type === 'doctor' || $request->type === 'vendor') {
-                    if ($user->is_approved == 2) {
-                        return response()->json([
-                            'status' => 201,
-                            'message' => 'Your account request is rejected! Please contact to admin',
-                        ], 403);
-                    }
-                }
-
-                // Generate auth token
-                $authToken = Str::random(32);
-                $user->auth = $authToken;
-                $user->save();
-
-                // Delete OTP record
-                $otpRecord->delete();
-
-                return response()->json([
-                    'status' => 200,
-                    'message' => 'Login successful',
-                    'data' => [
-                        'user_id' => $user->id,
-                        'type' => $request->type,
-                        'auth' => $authToken,
-                    ],
-                ], 200);
-            } else {
-                // User doesn't exist, prompt for registration
-                return response()->json([
-                    'status' => 200,
-                    'message' => 'OTP verified, please complete registration',
-                    'data' => [
-                        'phone' => $request->phone,
-                        'type' => $request->type,
-                    ],
-                ], 200);
-            }
+            return response()->json([
+                'status' => $result['status'],
+                'message' => $result['message'],
+                'data' => $result['data'],
+            ], $result['status'] == 200 ? 200 : ($result['status'] == 201 ? 400 : 403));
         } catch (\Exception $e) {
-            Log::error('Error in verify_login_otp', [
+            Log::error('Error in farmer_login_otp_verify', [
                 'phone' => $request->phone,
-                'type' => $request->type,
                 'error' => $e->getMessage(),
             ]);
             return response()->json([
@@ -446,6 +400,86 @@ class UserloginController extends Controller
                 'message' => 'Error during OTP verification: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    private function farmerLoginOtpVerify($phone, $input_otp, $call_type)
+    {
+        // Get latest OTP record
+        $otpRecord = Otp::where('phone', $phone)
+            ->where('type', $call_type)
+            ->orderBy('id', 'desc')
+            ->first();
+
+        if (!$otpRecord) {
+            return [
+                'status' => 201,
+                'message' => 'Invalid OTP!',
+                'data' => ['phone' => $phone, 'is_login' => 0],
+            ];
+        }
+
+        if ($otpRecord->otp != $input_otp) {
+            return [
+                'status' => 201,
+                'message' => 'Wrong OTP Entered!',
+                'data' => ['phone' => $phone, 'is_login' => 0],
+            ];
+        }
+
+        if ($otpRecord->status != 0) {
+            return [
+                'status' => 201,
+                'message' => 'OTP is already used!',
+                'data' => ['phone' => $phone, 'is_login' => 0],
+            ];
+        }
+
+        // Update OTP status
+        $otpRecord->status = 1;
+        $updated = $otpRecord->save();
+
+        if (!$updated) {
+            return [
+                'status' => 201,
+                'message' => 'Some error occurred! Please try again',
+                'data' => ['phone' => $phone, 'is_login' => 0],
+            ];
+        }
+
+        // Check user existence (redundant, as in CI)
+        $user = Farmer::where('phone', $phone)->first();
+
+        if (!$user) {
+            return [
+                'status' => 200,
+                'message' => 'User Not Found! Please Register First',
+                'data' => ['phone' => $phone, 'is_login' => 0],
+            ];
+        }
+
+        // Check account status
+        if ($user->is_active != 1) {
+            return [
+                'status' => 201,
+                'message' => 'Your Account is blocked! Please contact to admin',
+                'data' => ['phone' => $phone, 'is_login' => 0],
+            ];
+        }
+
+        // Generate auth token
+        $authToken = Str::random(32);
+        $user->auth = $authToken;
+        $user->save();
+
+        return [
+            'status' => 200,
+            'message' => 'Login Successfully',
+            'data' => [
+                'name' => $user->name,
+                'auth' => $authToken,
+                'is_login' => 1,
+            ],
+        ];
     }
 
     /**
