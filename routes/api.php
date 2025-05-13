@@ -105,7 +105,7 @@ Route::middleware(['auth:farmer'])->group(function () {
     Route::post('homeGet/semen', [HomeController::class, 'getSemenBulls']);
     Route::post('homeAnimal/data', [HomeController::class, 'getAnimalData']);
     Route::post('homeSubscription/buy', [HomeController::class, 'subscriptionPlan']);
-    Route::post('home/data', [HomeController::class, 'homeData']);
+    Route::get('home/data', [HomeController::class, 'homeData']);
     Route::get('homeGet/-State', [HomeController::class, 'getState']);
     Route::post('homeGet/-city', [HomeController::class, 'getCity']);
     Route::post('homeBuy/plan', [HomeController::class, 'buyPlan']);
