@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\FacadesLog;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
@@ -49,8 +51,11 @@ class ProductController extends Controller
         ]);
     }
 
-    public function addProductsData(Request $request, $t, $iw = null)
+   public function addProductsData(Request $request, $t, $iw = null)
     {
+        Log::info('Request data: ' . json_encode($request->all()));
+        Log::info('Request files: ' . json_encode($request->file()));
+
         $validator = Validator::make($request->all(), [
             'name_english' => 'required|string',
             'name_hindi' => 'required|string',
@@ -73,6 +78,7 @@ class ProductController extends Controller
         ]);
 
         if ($validator->fails()) {
+            Log::error('Validation failed: ' . json_encode($validator->errors()->all()));
             return redirect()->back()->with('smessage', $validator->errors()->first())->withInput();
         }
 
@@ -82,21 +88,62 @@ class ProductController extends Controller
 
         $images = [];
         if ($request->hasFile('images')) {
+            $uploadPath = public_path('admin_products');
+            if (!file_exists($uploadPath)) {
+                mkdir($uploadPath, 0755, true);
+                Log::info('Created directory: ' . $uploadPath);
+            }
+
             foreach ($request->file('images') as $index => $file) {
-                $new_file_name = "image_" . $cur_date->format('YmdHis') . "_{$index}";
-                $path = $file->storeAs('admin_products', $new_file_name, 'public');
-                $images[] = "storage/$path";
+                if ($file->isValid()) {
+                    $new_file_name = "image_" . $cur_date->format('YmdHis') . "_{$index}_" . $file->getClientOriginalName();
+                    $destinationPath = $uploadPath;
+
+                    try {
+                        if ($file->move($destinationPath, $new_file_name)) {
+                            $images[] = 'admin_products/' . $new_file_name;
+                            Log::info('Image uploaded: ' . $new_file_name);
+                        } else {
+                            Log::error('Failed to move image: ' . $new_file_name);
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('Error moving image: ' . $new_file_name . ' - ' . $e->getMessage());
+                    }
+                } else {
+                    Log::error('Invalid image file at index ' . $index . ': ' . $file->getClientOriginalName());
+                }
             }
         }
 
-        $video = '';
-        if ($request->hasFile('video')) {
-            $new_file_name = "video_" . $cur_date->format('YmdHis');
-            $video = $request->file('video')->storeAs('admin_products', $new_file_name, 'public');
-            $video = "storage/$video";
+        $video = null;
+        if ($request->hasFile('video') && $request->file('video')->isValid()) {
+            $uploadPath = public_path('admin_products');
+            if (!file_exists($uploadPath)) {
+                mkdir($uploadPath, 0755, true);
+                Log::info('Created directory: ' . $uploadPath);
+            }
+
+            $file = $request->file('video');
+            $new_file_name = "video_" . $cur_date->format('YmdHis') . '_' . $file->getClientOriginalName();
+            $destinationPath = $uploadPath;
+
+            try {
+                if ($file->move($destinationPath, $new_file_name)) {
+                    $video = 'admin_products/' . $new_file_name;
+                    Log::info('Video uploaded: ' . $new_file_name);
+                } else {
+                    Log::error('Failed to move video: ' . $new_file_name);
+                }
+            } catch (\Exception $e) {
+                Log::error('Error moving video: ' . $new_file_name . ' - ' . $e->getMessage());
+            }
         }
 
-        $typ = base64_decode($t);
+        $typ = base64_decode($t, true);
+        if ($typ === false || !in_array($typ, [1, 2])) {
+            return redirect()->back()->with('smessage', 'Invalid request type');
+        }
+
         $data = [
             'name_english' => $request->name_english,
             'name_hindi' => $request->name_hindi,
@@ -131,21 +178,59 @@ class ProductController extends Controller
         if ($typ == 1) {
             $data['is_active'] = 1;
             $data['is_admin'] = 1;
-            $product = Product::create($data);
-            $last_id = $product->id;
-        } elseif ($typ == 2) {
-            $idw = base64_decode($iw);
-            $product = Product::findOrFail($idw);
-            if (empty($images)) {
-                $data['image'] = $product->image; // Retain old images if none uploaded
+            try {
+                $product = Product::create($data);
+                $success = $product->id ? true : false;
+            } catch (\Exception $e) {
+                Log::error('Failed to create product: ' . $e->getMessage());
+                return redirect()->back()->with('smessage', 'Failed to save product data');
             }
-            $last_id = $product->update($data);
+        } elseif ($typ == 2) {
+            $idw = base64_decode($iw, true);
+            if ($idw === false) {
+                return redirect()->back()->with('smessage', 'Invalid product ID');
+            }
+            $product = Product::findOrFail($idw);
+
+            // Delete old images if new ones are uploaded
+            if (!empty($images)) {
+                $existingImages = json_decode($product->image, true);
+                if (is_array($existingImages)) {
+                    foreach ($existingImages as $img) {
+                        $path = public_path($img);
+                        if (file_exists($path)) {
+                            unlink($path);
+                            Log::info('Deleted old image: ' . $path);
+                        }
+                    }
+                }
+            } else {
+                $data['image'] = $product->image; // Retain old images
+            }
+
+            // Delete old video if new one is uploaded
+            if ($video && $product->video) {
+                $path = public_path($product->video);
+                if (file_exists($path)) {
+                    unlink($path);
+                    Log::info('Deleted old video: ' . $path);
+                }
+            } elseif (!$video) {
+                $data['video'] = $product->video; // Retain old video
+            }
+
+            try {
+                $success = $product->update($data);
+            } catch (\Exception $e) {
+                Log::error('Failed to update product: ' . $e->getMessage());
+                return redirect()->back()->with('smessage', 'Failed to update product data');
+            }
         }
 
-        if ($last_id) {
+        if ($success) {
             return redirect()->route('admin.products.view')->with('smessage', 'Data inserted successfully');
         }
-        return redirect()->back()->with('smessage', 'Sorry error occurred');
+        return redirect()->back()->with('smessage', 'Sorry, an error occurred');
     }
 
     public function updateProducts($idd)
