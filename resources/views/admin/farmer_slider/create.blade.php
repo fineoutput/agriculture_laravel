@@ -48,7 +48,7 @@
                 <div class="form-group row">
                   <label for="image" class="col-sm-2 col-form-label"><strong>Image</strong> <span style="color:red;">*</span></label>
                   <div class="col-sm-10">
-                    <input type="file" name="image[]" multiple class="form-control" required>
+                    <input type="file" name="image" class="form-control" required>
                   </div>
                 </div>
                 <div class="form-group text-right">

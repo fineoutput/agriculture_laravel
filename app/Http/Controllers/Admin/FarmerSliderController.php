@@ -5,7 +5,9 @@
     use Illuminate\Http\Request;
     use App\Models\FarmerSlider;
     use Illuminate\Support\Facades\Auth;
-    use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\FacadesLog;
+use Illuminate\Support\Facades\Session;
     use Illuminate\Support\Facades\Storage;
 
     class FarmerSliderController extends Controller
@@ -31,38 +33,58 @@
             return view('admin.farmer_slider.create');
         }
 
-        public function storeSlider(Request $request)
-{
-    $request->validate([
-        'image.*' => 'required|image|mimes:jpg,jpeg,png|max:25000', // validate each image
-    ]);
+      public function storeSlider(Request $request)
+    {
+        Log::info('Request data: ' . json_encode($request->all()));
+        Log::info('Request files: ' . json_encode($request->file()));
 
-    $imagePaths = [];
+        $request->validate([
+            'image' => 'required|image|mimes:jpg,jpeg,png|max:25000', // Validate single image
+        ]);
 
-    if ($request->hasFile('image')) {
-        foreach ($request->file('image') as $image) {
-            $fileName = time() . '_' . $image->getClientOriginalName();
+        $imagePath = null;
+        if ($request->hasFile('image') && $request->file('image')->isValid()) {
+            $image = $request->file('image');
+            $fileName = 'slider_' . time() . '_' . $image->getClientOriginalName();
             $destinationPath = public_path('slider_images');
 
             if (!file_exists($destinationPath)) {
                 mkdir($destinationPath, 0755, true);
+                Log::info('Created directory: ' . $destinationPath);
             }
 
-            $image->move($destinationPath, $fileName);
-            $imagePaths[] = 'slider_images/' . $fileName;
+            try {
+                if ($image->move($destinationPath, $fileName)) {
+                    $imagePath = 'slider_images/' . $fileName; // Store relative path
+                    Log::info('File uploaded: ' . $fileName);
+                } else {
+                    Log::error('Failed to move file: ' . $fileName);
+                }
+            } catch (\Exception $e) {
+                Log::error('Error moving file: ' . $fileName . ' - ' . $e->getMessage());
+                return redirect()->back()->withErrors(['image' => 'Failed to upload image'])->withInput();
+            }
+        } else {
+            Log::warning('No valid image file found in request');
         }
+
+        Log::info('Image path to store: ' . $imagePath);
+
+        try {
+            FarmerSlider::create([
+                'image' => $imagePath,
+                'ip' => $request->ip(),
+                'added_by' => Auth::id(),
+                'is_active' => 1,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to create slider: ' . $e->getMessage());
+            return redirect()->back()->withErrors(['image' => 'Failed to save slider data'])->withInput();
+        }
+
+        Session::flash('success', 'Slider added successfully!');
+        return redirect()->route('farmer_slider.list');
     }
-
-    FarmerSlider::create([
-        'image' => json_encode($imagePaths),
-        'ip' => request()->ip(),
-        'added_by' => Auth::id(),
-        'is_active' => 1,
-    ]);
-
-    Session::flash('success', 'Slider added successfully!');
-    return redirect()->route('farmer_slider.list');
-}
 
 
         public function editForm($id)
