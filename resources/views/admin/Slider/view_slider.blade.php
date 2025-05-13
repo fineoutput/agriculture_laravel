@@ -13,7 +13,7 @@
     <section class="content">
         <div class="row">
             <div class="col-lg-12">
-                <a class="btn btn-info cticket" href="{{ route('admin.slider.add') }}" role="button" style="margin-bottom:12px;">Add Slider</a>
+                <a class="btn btn-info cticket" href="{{ route('admin.Slider.add') }}" role="button" style="margin-bottom:12px;">Add Slider</a>
                 <div class="panel panel-default">
                     <div class="panel-heading">
                         <h3 class="panel-title"><i class="fa fa-image"></i> View All Sliders</h3>
@@ -70,18 +70,18 @@
                                                             </button>
                                                             <ul class="dropdown-menu" role="menu">
                                                                 @if($slider->is_active)
-                                                                    <li><a href="{{ route('admin.slider.update_status', [base64_encode($slider->id), 'inactive']) }}">Inactive</a></li>
+                                                                    <li><a href="{{ route('admin.Slider.update_status', [base64_encode($slider->id), 'inactive']) }}">Inactive</a></li>
                                                                 @else
-                                                                    <li><a href="{{ route('admin.slider.update_status', [base64_encode($slider->id), 'active']) }}">Active</a></li>
+                                                                    <li><a href="{{ route('admin.Slider.update_status', [base64_encode($slider->id), 'active']) }}">Active</a></li>
                                                                 @endif
-                                                                <li><a href="{{ route('admin.slider.update', base64_encode($slider->id)) }}">Edit</a></li>
+                                                                <li><a href="{{ route('admin.Slider.update', base64_encode($slider->id)) }}">Edit</a></li>
                                                                 <li><a href="javascript:;" class="dCnf" data-mydata="{{ $index + 1 }}">Delete</a></li>
                                                             </ul>
                                                         </div>
                                                     </div>
                                                     <div style="display:none" id="cnfbox{{ $index + 1 }}">
                                                         <p>Are you sure you want to delete this?</p>
-                                                        <a href="{{ route('admin.slider.delete', base64_encode($slider->id)) }}" class="btn btn-danger">Yes</a>
+                                                        <a href="{{ route('admin.Slider.delete', base64_encode($slider->id)) }}" class="btn btn-danger">Yes</a>
                                                         <a href="javascript:;" class="cans btn btn-default" data-mydatas="{{ $index + 1 }}">No</a>
                                                     </div>
                                                 </td>

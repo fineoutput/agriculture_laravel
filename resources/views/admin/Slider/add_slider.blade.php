@@ -14,7 +14,7 @@
                         @if (session('emessage'))
                             <div class="alert alert-danger">{{ session('emessage') }}</div>
                         @endif
-                        <form action="{{ route('admin.slider.add_data', [base64_encode(1)]) }}" method="post" enctype="multipart/form-data">
+                        <form action="{{ route('admin.Slider.add_data', [base64_encode(1)]) }}" method="post" enctype="multipart/form-data">
                             @csrf
                             <div class="form-group">
                                 <label>Image</label>
