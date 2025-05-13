@@ -21,7 +21,7 @@
                             @csrf
                             <div class="form-group">
                                 <label>Images (Select multiple images, supported formats: JPG, JPEG, PNG)</label>
-                                <input type="file" name="image[]" class="form-control" accept="image/jpeg,image/jpg,image/png" multiple>
+                                <input type="file" name="image" class="form-control" accept="image/jpeg,image/jpg,image/png" >
                                 @error('image.*')
                                     <span class="text-danger">{{ $message }}</span>
                                 @enderror
