@@ -12,7 +12,7 @@ class SliderController extends Controller
     public function viewSlider()
     {
         $sliders = Slider::all();
-        return view('admin.slider.view_slider', [
+        return view('admin.Slider.view_slider', [
             'user_name' => auth()->guard('admin')->user()->name,
             'slider_data' => $sliders
         ]);
@@ -20,7 +20,7 @@ class SliderController extends Controller
 
     public function addSlider()
     {
-        return view('admin.slider.add_slider', [
+        return view('admin.Slider.add_slider', [
             'user_name' => auth()->guard('admin')->user()->name
         ]);
     }
