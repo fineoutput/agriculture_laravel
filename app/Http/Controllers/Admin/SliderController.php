@@ -87,7 +87,7 @@ class SliderController extends Controller
         }
 
         if ($last_id) {
-            return redirect()->route('admin.slider.view')->with('smessage', 'Data inserted successfully');
+            return redirect()->route('admin.Slider.view')->with('smessage', 'Data inserted successfully');
         }
         return redirect()->back()->with('emessage', 'Sorry error occurred');
     }
@@ -96,7 +96,7 @@ class SliderController extends Controller
     {
         $id = base64_decode($idd);
         $slider = Slider::findOrFail($id);
-        return view('admin.slider.update_slider', [
+        return view('admin.Slider.update_slider', [
             'user_name' => auth()->guard('admin')->user()->name,
             'slider' => $slider,
             'id' => $idd
@@ -123,7 +123,7 @@ class SliderController extends Controller
 
         $zapak = $slider->delete();
         if ($zapak) {
-            return redirect()->route('admin.slider.view');
+            return redirect()->route('admin.Slider.view');
         }
         return "Error";
     }
@@ -135,7 +135,7 @@ class SliderController extends Controller
         $zapak = Slider::where('id', $id)->update($data_update);
 
         if ($zapak) {
-            return redirect()->route('admin.slider.view');
+            return redirect()->route('admin.Slider.view');
         }
         return view('errors.error500admin', ['e' => 'Error Occurred']);
     }

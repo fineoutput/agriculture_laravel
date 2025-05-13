@@ -169,7 +169,7 @@
                             <a href="{{route('view_team')}}" class="waves-effect"><i class="bi bi-eye-fill"></i><span> Teams </span></a>
                         </li>
                         <li>
-                            <a href="{{route('farmer_slider.list')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Farmer Slider</span></a>
+                            <a href="{{route('admin.Slider.view')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Farmer Slider</span></a>
                         </li>
                         <li>
                             <a href="{{route('disease.index')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Disease</span></a>
@@ -184,7 +184,7 @@
                             <a href="{{route('admin.products.view')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Products</span></a>
                         </li>
                         <li>
-                            <a href="{{route('admin.Slider.view')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Farmer Slider 2</span></a>
+                            <a href="{{route('farmer_slider.list')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Farmer Slider 2</span></a>
                         </li>
                         <li>
                             <a href="{{route('admin.salepurchaseslider.view')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Sale Purchase Slider</span></a>
