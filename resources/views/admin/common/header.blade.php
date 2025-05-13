@@ -184,7 +184,7 @@
                             <a href="{{route('admin.products.view')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Products</span></a>
                         </li>
                         <li>
-                            <a href="{{route('admin.slider.view')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Farmer Slider 2</span></a>
+                            <a href="{{route('admin.Slider.view')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Farmer Slider 2</span></a>
                         </li>
                         <li>
                             <a href="{{route('admin.salepurchaseslider.view')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Sale Purchase Slider</span></a>
