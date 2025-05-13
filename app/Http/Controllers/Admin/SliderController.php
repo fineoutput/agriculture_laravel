@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Slider;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
@@ -25,72 +26,94 @@ class SliderController extends Controller
         ]);
     }
 
-    public function addSliderData(Request $request, $t, $iw = null)
-    {
-        $validator = Validator::make($request->all(), [
-            'image.*' => 'nullable|image|mimes:jpg,jpeg,png|max:25000' // Validate each image
-        ]);
+  public function addSliderData(Request $request, $t, $iw = null)
+{
+    $validator = Validator::make($request->all(), [
+        'image.*' => 'nullable|image|mimes:jpg,jpeg,png|max:25000'
+    ]);
 
-        if ($validator->fails()) {
-            return redirect()->back()->with('emessage', $validator->errors()->first())->withInput();
+    if ($validator->fails()) {
+        Log::error('Validation failed: ' . $validator->errors()->first());
+        return redirect()->back()->with('emessage', $validator->errors()->first())->withInput();
+    }
+
+    $ip = $request->ip();
+    $cur_date = now()->setTimezone('Asia/Kolkata');
+    $added_by = auth()->guard('admin')->id();
+
+    $imagePaths = [];
+    if ($request->hasFile('image')) {
+        $uploadPath = public_path('assets/uploads/slider');
+        if (!file_exists($uploadPath)) {
+            mkdir($uploadPath, 0755, true);
         }
 
-        $ip = $request->ip();
-        $cur_date = now()->setTimezone('Asia/Kolkata');
-        $added_by = auth()->guard('admin')->id();
+        foreach ($request->file('image') as $image) {
+            if ($image->isValid()) {
+                // Generate a unique filename similar to CodeIgniter
+                $fileName = 'slider' . $cur_date->format('YmdHis') . '_' . $image->getClientOriginalName();
+                $destinationPath = $uploadPath;
 
-        $imagePaths = [];
-        if ($request->hasFile('image')) {
-            foreach ($request->file('image') as $image) {
-                $fileName = $cur_date->format('YmdHis') . '_' . $image->getClientOriginalName();
-                $destinationPath = public_path('slider_images');
-
-                if (!file_exists($destinationPath)) {
-                    mkdir($destinationPath, 0755, true);
+                if ($image->move($destinationPath, $fileName)) {
+                    // Store the full URL using asset()
+                    $imagePaths[] = asset('assets/uploads/slider/' . $fileName);
+                } else {
+                    Log::error('Failed to move file: ' . $fileName);
                 }
-
-                $image->move($destinationPath, $fileName);
-                $imagePaths[] = 'slider_images/' . $fileName;
+            } else {
+                Log::error('Invalid file uploaded: ' . $image->getClientOriginalName());
             }
         }
+    }
 
-        $typ = base64_decode($t);
-        if ($typ == 1) {
-            $data = [
-                'image' => json_encode($imagePaths),
-                'ip' => $ip,
-                'added_by' => $added_by,
-                'is_active' => 1,
-                'date' => $cur_date
-            ];
-            $slider = Slider::create($data);
-            $last_id = $slider->id;
-        } elseif ($typ == 2) {
-            $idw = base64_decode($iw);
-            $slider = Slider::findOrFail($idw);
+    Log::info('Image paths to store: ' . json_encode($imagePaths));
 
-            if ($request->hasFile('image')) {
-                // Delete existing images
-                $existingImages = json_decode($slider->image, true);
-                if (is_array($existingImages)) {
-                    foreach ($existingImages as $img) {
-                        if (file_exists(public_path($img))) {
-                            unlink(public_path($img));
-                        }
+    $typ = base64_decode($t, true);
+    if ($typ === false || !in_array($typ, [1, 2])) {
+        return redirect()->back()->with('emessage', 'Invalid request type');
+    }
+
+    if ($typ == 1) {
+        $data = [
+            'image' => json_encode($imagePaths),
+            'ip' => $ip,
+            'added_by' => $added_by,
+            'is_active' => 1,
+            'date' => $cur_date
+        ];
+        $slider = Slider::create($data);
+        $success = $slider->id ? true : false;
+    } elseif ($typ == 2) {
+        $idw = base64_decode($iw, true);
+        if ($idw === false) {
+            return redirect()->back()->with('emessage', 'Invalid slider ID');
+        }
+        $slider = Slider::findOrFail($idw);
+
+        if (!empty($imagePaths)) {
+            // Delete existing images only if new ones were uploaded
+            $existingImages = json_decode($slider->image, true);
+            if (is_array($existingImages)) {
+                foreach ($existingImages as $img) {
+                    // Extract the relative path from the full URL
+                    $relativePath = str_replace(asset(''), '', $img);
+                    $path = public_path($relativePath);
+                    if (file_exists($path)) {
+                        unlink($path);
                     }
                 }
-
-                $slider->image = json_encode($imagePaths);
             }
-
-            $last_id = $slider->save();
+            $slider->image = json_encode($imagePaths);
         }
 
-        if ($last_id) {
-            return redirect()->route('admin.Slider.view')->with('smessage', 'Data inserted successfully');
-        }
-        return redirect()->back()->with('emessage', 'Sorry error occurred');
+        $success = $slider->save();
     }
+
+    if ($success) {
+        return redirect()->route('admin.Slider.view')->with('smessage', 'Data ' . ($typ == 1 ? 'inserted' : 'updated') . ' successfully');
+    }
+    return redirect()->back()->with('emessage', 'Sorry, an error occurred');
+}
 
     public function updateSlider($idd)
     {
