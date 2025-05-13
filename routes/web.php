@@ -148,7 +148,7 @@ Route::post('farmers/qtyupdate', [FarmersController::class, 'updateQty'])->name(
 
 /////////////slider2
 
-    Route::get('/Slider/View_slider', [SliderController::class, 'viewSlider'])->name('admin.Slider.view');
+    Route::get('Slider', [SliderController::class, 'viewSlider'])->name('admin.Slider.view');
     Route::get('/Slider/add_slider', [SliderController::class, 'addSlider'])->name('admin.Slider.add');
     Route::post('/Slider/add_slider_data/{t}/{iw?}', [SliderController::class, 'addSliderData'])->name('admin.Slider.add_data');
     Route::get('/Slider/update_slider/{idd}', [SliderController::class, 'updateSlider'])->name('admin.Slider.update');
