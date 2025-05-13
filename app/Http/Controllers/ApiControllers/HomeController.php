@@ -1260,19 +1260,15 @@ class HomeController extends Controller
     {
         try {
             // Get headers
-            $headers = $request->headers->all();
             $fcmToken = $request->header('Fcm-Token', '');
             $lang = $request->header('Lang', 'en');
             $authToken = $request->header('Authentication');
-            $farmerId = $request->header('Farmer-Id');
 
             // Validate inputs
             $validator = Validator::make([
-                'Farmer-Id' => $farmerId,
                 'Lang' => $lang,
                 'Authentication' => $authToken,
             ], [
-                'Farmer-Id' => 'required|integer|exists:tbl_farmers,id',
                 'Lang' => 'nullable|string|in:en,hi,mr,pu',
                 'Authentication' => 'required|string',
             ]);
@@ -1290,13 +1286,12 @@ class HomeController extends Controller
             }
 
             // Authenticate farmer
-            $farmer = Farmer::where('id', $farmerId)
-                ->where('auth', $authToken)
+            $farmer = Farmer::where('auth', $authToken)
                 ->where('is_active', 1)
                 ->first();
 
             Log::debug('HomeData: Farmer query result', [
-                'farmer_id' => $farmerId,
+                'farmer_id' => $farmer ? $farmer->id : null,
                 'farmer_found' => $farmer ? $farmer->id : null,
                 'ip' => $request->ip(),
             ]);
@@ -1304,7 +1299,7 @@ class HomeController extends Controller
             if (!$farmer) {
                 Log::warning('HomeData: Authentication failed', [
                     'ip' => $request->ip(),
-                    'farmer_id' => $farmerId,
+                    'auth_token' => $authToken,
                 ]);
                 return response()->json([
                     'message' => 'Permission Denied!',
@@ -1497,7 +1492,7 @@ class HomeController extends Controller
             ], 200);
         } catch (\Illuminate\Database\QueryException $e) {
             Log::error('HomeData: Database error', [
-                'farmer_id' => $farmerId ?? null,
+                'farmer_id' => $farmer->id ?? null,
                 'error' => $e->getMessage(),
                 'sql' => $e->getSql(),
                 'bindings' => $e->getBindings(),
@@ -1508,7 +1503,7 @@ class HomeController extends Controller
             ], 500);
         } catch (\Exception $e) {
             Log::error('HomeData: General error', [
-                'farmer_id' => $farmerId ?? null,
+                'farmer_id' => $farmer->id ?? null,
                 'error' => $e->getMessage(),
             ]);
             return response()->json([
