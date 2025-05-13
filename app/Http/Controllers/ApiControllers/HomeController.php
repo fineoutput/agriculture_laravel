@@ -969,26 +969,312 @@ class HomeController extends Controller
         }
     }
 
-    public function homeData(Request $request)
+    // public function homeData(Request $request)
+    // {
+    //     try {
+    //         // Check if POST data exists
+    //         if (!$request->isMethod('post') || empty($request->all())) {
+    //             Log::warning('HomeData: Missing POST data', [
+    //                 'ip' => $request->ip(),
+    //                 'url' => $request->fullUrl(),
+    //             ]);
+    //             return response()->json([
+    //                 'message' => 'Please Insert Data',
+    //                 'status' => 201,
+    //             ], 422);
+    //         }
+
+    //         // Validate inputs
+    //         $validator = Validator::make($request->all(), [
+    //             'farmer_id' => 'required|integer|exists:tbl_farmers,id',
+    //             'fcm_token' => 'nullable|string|max:255',
+    //             'lang' => 'nullable|string|in:en,hi,mr,pu',
+    //         ]);
+
+    //         if ($validator->fails()) {
+    //             Log::warning('HomeData: Validation failed', [
+    //                 'ip' => $request->ip(),
+    //                 'errors' => $validator->errors(),
+    //                 'url' => $request->fullUrl(),
+    //             ]);
+    //             return response()->json([
+    //                 'message' => $validator->errors()->first(),
+    //                 'status' => 201,
+    //             ], 422);
+    //         }
+
+    //         // Set defaults
+    //         $fcmToken = $request->input('fcm_token', '');
+    //         $lang = $request->input('lang', 'en');
+
+    //         // Authenticate farmer
+    //         $farmer = Farmer::where('id', $request->input('farmer_id'))
+    //             ->where('is_active', 1)
+    //             ->first();
+
+    //         Log::debug('HomeData: Farmer query result', [
+    //             'farmer_id' => $request->input('farmer_id'),
+    //             'farmer_found' => $farmer ? $farmer->id : null,
+    //             'ip' => $request->ip(),
+    //         ]);
+
+    //         if (!$farmer) {
+    //             Log::warning('HomeData: Authentication failed', [
+    //                 'ip' => $request->ip(),
+    //                 'farmer_id' => $request->input('farmer_id'),
+    //             ]);
+    //             return response()->json([
+    //                 'message' => 'Permission Denied! from farmer end',
+    //                 'status' => 201,
+    //             ], 403);
+    //         }
+
+    //         // Update fcm_token if different
+    //         if ($fcmToken && $fcmToken !== $farmer->fcm_token) {
+    //             $farmer->fcm_token = $fcmToken;
+    //             $farmer->save();
+    //             Log::info('HomeData: FCM token updated', [
+    //                 'farmer_id' => $farmer->id,
+    //                 'fcm_token' => $fcmToken,
+    //                 'ip' => $request->ip(),
+    //             ]);
+    //         }
+
+    //         // Fetch slider data
+    //         $sliders = Slider::where('is_active', 1)->get();
+    //         $sliderData = $sliders->map(function ($slide) {
+    //             return $slide->image ? asset($slide->image) : '';
+    //         })->filter()->toArray();
+
+    //         // Fetch farmer slider data
+    //         $farmerSliders = FarmerSlider::where('is_active', 1)->get();
+    //         $farmerSliderData = $farmerSliders->map(function ($farmerSlide) {
+    //             return [
+    //                 'image' => $farmerSlide->image ? asset($farmerSlide->image) : '',
+    //             ];
+    //         })->toArray();
+
+    //         // Fetch category and subcategory data
+    //         $categories = CategoryImages::where('is_active', 1)->get();
+    //         $categoryData = [];
+
+    //         foreach ($categories as $category) {
+    //             $subcategories = SubcategoryImages::where('is_active', 1)
+    //                 ->where('category_id', $category->id)
+    //                 ->orderBy('seq', 'asc')
+    //                 ->get();
+
+    //             $subCategoryData = $subcategories->map(function ($subcategory) use ($lang) {
+    //                 if ($lang === 'hi') {
+    //                     $subImage = $subcategory->image_hindi;
+    //                 } elseif ($lang === 'mr') {
+    //                     $subImage = $subcategory->image_marathi;
+    //                 } elseif ($lang === 'pu') {
+    //                     $subImage = $subcategory->image_punjabi;
+    //                 } else {
+    //                     $subImage = $subcategory->image;
+    //                 }
+                    
+    //                 return [
+    //                     'id' => $subcategory->id,
+    //                     'name' => $subcategory->name,
+    //                     'image' => $subImage ? asset($subImage) : '',
+    //                 ];
+    //             })->toArray();
+
+    //             // $catImage = match ($lang) {
+    //             //     'hi' => $category->image_hindi,
+    //             //     'mr' => $category->image_marathi,
+    //             //     'pu' => $category->image_punjabi,
+    //             //     default => $category->image,
+    //             // };
+    //             if ($lang === 'hi') {
+    //                 $catImage = $category->image_hindi;
+    //             } elseif ($lang === 'mr') {
+    //                 $catImage = $category->image_marathi;
+    //             } elseif ($lang === 'pu') {
+    //                 $catImage = $category->image_punjabi;
+    //             } else {
+    //                 $catImage = $category->image;
+    //             }
+                
+    //             $categoryData[] = [
+    //                 'id' => $category->id,
+    //                 'name' => $category->name,
+    //                 'image' => $catImage ? asset($catImage) : '',
+    //                 'subcatgory' => $subCategoryData,
+    //             ];
+    //         }
+
+    //         // Fetch trending products
+    //         $products = Product::where('tranding_products', 1)
+    //             ->where('is_active', 1)
+    //             ->where('is_admin', 1)
+    //             ->get();
+
+    //         $productData = $products->map(function ($product) use ($lang, $farmer) {
+    //             $images = [];
+    //             if ($product->image) {
+    //                 $imageArray = json_decode($product->image, true);
+    //                 if (is_array($imageArray) && !empty($imageArray)) {
+    //                     $images = array_map(function ($img) {
+    //                         return asset($img);
+    //                     }, $imageArray);
+                        
+    //                 } else {
+    //                     $images = [asset($product->image)];
+    //                 }
+    //             }
+
+    //             $video = $product->video ? asset($product->video) : '';
+    //             $stock = $product->inventory != 0 ? 'In Stock' : 'Out of Stock';
+    //             $discount = (int)$product->mrp - (int)$product->selling_price;
+    //             $percent = $discount > 0 ? round($discount / $product->mrp * 100) : 0;
+
+    //             switch ($lang) {
+    //                 case 'hi':
+    //                     $productDetails = [
+    //                         'name' => $product->name_hindi,
+    //                         'description' => $product->description_hindi,
+    //                     ];
+    //                     break;
+    //                 case 'mr':
+    //                     $productDetails = [
+    //                         'name' => $product->name_marathi,
+    //                         'description' => $product->description_marathi,
+    //                     ];
+    //                     break;
+    //                 case 'pu':
+    //                     $productDetails = [
+    //                         'name' => $product->name_punjabi,
+    //                         'description' => $product->description_punjabi,
+    //                     ];
+    //                     break;
+    //                 default:
+    //                     $productDetails = [
+    //                         'name' => $product->name_english,
+    //                         'description' => $product->description_english,
+    //                     ];
+    //             }
+                
+
+    //             return [
+    //                 'pro_id' => $product->id,
+    //                 'name' => $productDetails['name'],
+    //                 'description' => $productDetails['description'],
+    //                 'image' => $images,
+    //                 'video' => $video,
+    //                 'mrp' => $product->mrp,
+    //                 'min_qty' => $product->min_qty ?? 1,
+    //                 'selling_price' => $product->selling_price,
+    //                 'suffix' => $product->suffix,
+    //                 'stock' => $stock,
+    //                 'percent' => $percent,
+    //                 'vendor_id' => $product->added_by,
+    //                 'is_admin' => $product->is_admin,
+    //                 'offer' => $product->offer,
+    //                 'product_cod' => $product->cod,
+    //                 'is_cod' => $farmer->cod,
+    //             ];
+    //         })->toArray();
+
+    //         // Fetch cart count
+    //         $cartCount = Cart::where('farmer_id', $farmer->id)->count();
+
+    //         // Fetch farmer notifications
+    //         $notifications = FarmerNotification::where('farmer_id', $farmer->id)->get();
+    //         $notificationData = $notifications->map(function ($notification) {
+    //             return [
+    //                 'id' => $notification->id,
+    //                 'name' => $notification->name,
+    //                 'image' => $notification->image ? asset($notification->image) : '',
+    //                 'description' => $notification->dsc,
+    //                 'date' => Carbon::parse($notification->date, 'Asia/Kolkata')->format('d-m-y, g:i a'),
+    //             ];
+    //         })->toArray();
+
+    //         $notificationCount = $notifications->count();
+
+    //         // Check feed purchase status
+    //         $feedCheck = CheckMyFeedBuy::where('farmer_id', $farmer->id)
+    //             ->where('payment_status', 1)
+    //             ->first();
+    //         $feedBuy = $feedCheck ? 1 : 0;
+
+    //         // Define feed amount (hardcoded for testing)
+    //         $feedAmount = config('app.feed_amount', 100.00);
+
+    //         $data = [
+    //             'slider' => $sliderData,
+    //             'Farmer_slider' => $farmerSliderData,
+    //             'Category_Data' => $categoryData,
+    //             'product_data' => $productData,
+    //             'notification_data' => $notificationData,
+    //             'notification_count' => $notificationCount,
+    //             'CartCount' => $cartCount,
+    //             'feedBuy' => $feedBuy,
+    //             'feedAmount' => $feedAmount,
+    //         ];
+
+    //         Log::info('HomeData: Home data retrieved successfully', [
+    //             'farmer_id' => $farmer->id,
+    //             'slider_count' => count($sliderData),
+    //             'farmer_slider_count' => count($farmerSliderData),
+    //             'category_count' => count($categoryData),
+    //             'product_count' => count($productData),
+    //             'notification_count' => $notificationCount,
+    //             'cart_count' => $cartCount,
+    //             'feed_buy' => $feedBuy,
+    //             'ip' => $request->ip(),
+    //         ]);
+
+    //         return response()->json([
+    //             'message' => 'Success!',
+    //             'status' => 200,
+    //             'data' => $data,
+    //         ], 200);
+    //     } catch (\Illuminate\Database\QueryException $e) {
+    //         Log::error('HomeData: Database error', [
+    //             'farmer_id' => $farmer->id ?? null,
+    //             'error' => $e->getMessage(),
+    //             'sql' => $e->getSql(),
+    //             'bindings' => $e->getBindings(),
+    //         ]);
+    //         return response()->json([
+    //             'message' => 'Database error: ' . $e->getMessage(),
+    //             'status' => 201,
+    //         ], 500);
+    //     } catch (\Exception $e) {
+    //         Log::error('HomeData: General error', [
+    //             'farmer_id' => $farmer->id ?? null,
+    //             'error' => $e->getMessage(),
+    //         ]);
+    //         return response()->json([
+    //             'message' => 'Error processing request: ' . $e->getMessage(),
+    //             'status' => 201,
+    //         ], 500);
+    //     }
+    // }
+
+     public function homeData(Request $request)
     {
         try {
-            // Check if POST data exists
-            if (!$request->isMethod('post') || empty($request->all())) {
-                Log::warning('HomeData: Missing POST data', [
-                    'ip' => $request->ip(),
-                    'url' => $request->fullUrl(),
-                ]);
-                return response()->json([
-                    'message' => 'Please Insert Data',
-                    'status' => 201,
-                ], 422);
-            }
+            // Get headers
+            $headers = $request->headers->all();
+            $fcmToken = $request->header('Fcm-Token', '');
+            $lang = $request->header('Lang', 'en');
+            $authToken = $request->header('Authentication');
+            $farmerId = $request->header('Farmer-Id');
 
             // Validate inputs
-            $validator = Validator::make($request->all(), [
-                'farmer_id' => 'required|integer|exists:tbl_farmers,id',
-                'fcm_token' => 'nullable|string|max:255',
-                'lang' => 'nullable|string|in:en,hi,mr,pu',
+            $validator = Validator::make([
+                'Farmer-Id' => $farmerId,
+                'Lang' => $lang,
+                'Authentication' => $authToken,
+            ], [
+                'Farmer-Id' => 'required|integer|exists:tbl_farmers,id',
+                'Lang' => 'nullable|string|in:en,hi,mr,pu',
+                'Authentication' => 'required|string',
             ]);
 
             if ($validator->fails()) {
@@ -1003,17 +1289,14 @@ class HomeController extends Controller
                 ], 422);
             }
 
-            // Set defaults
-            $fcmToken = $request->input('fcm_token', '');
-            $lang = $request->input('lang', 'en');
-
             // Authenticate farmer
-            $farmer = Farmer::where('id', $request->input('farmer_id'))
+            $farmer = Farmer::where('id', $farmerId)
+                ->where('auth', $authToken)
                 ->where('is_active', 1)
                 ->first();
 
             Log::debug('HomeData: Farmer query result', [
-                'farmer_id' => $request->input('farmer_id'),
+                'farmer_id' => $farmerId,
                 'farmer_found' => $farmer ? $farmer->id : null,
                 'ip' => $request->ip(),
             ]);
@@ -1021,12 +1304,12 @@ class HomeController extends Controller
             if (!$farmer) {
                 Log::warning('HomeData: Authentication failed', [
                     'ip' => $request->ip(),
-                    'farmer_id' => $request->input('farmer_id'),
+                    'farmer_id' => $farmerId,
                 ]);
                 return response()->json([
-                    'message' => 'Permission Denied! from farmer end',
+                    'message' => 'Permission Denied!',
                     'status' => 201,
-                ], 403);
+                ], 401);
             }
 
             // Update fcm_token if different
@@ -1065,16 +1348,13 @@ class HomeController extends Controller
                     ->get();
 
                 $subCategoryData = $subcategories->map(function ($subcategory) use ($lang) {
-                    if ($lang === 'hi') {
-                        $subImage = $subcategory->image_hindi;
-                    } elseif ($lang === 'mr') {
-                        $subImage = $subcategory->image_marathi;
-                    } elseif ($lang === 'pu') {
-                        $subImage = $subcategory->image_punjabi;
-                    } else {
-                        $subImage = $subcategory->image;
-                    }
-                    
+                    $subImage = match ($lang) {
+                        'hi' => $subcategory->image_hindi,
+                        'mr' => $subcategory->image_marathi,
+                        'pu' => $subcategory->image_punjabi,
+                        default => $subcategory->image,
+                    };
+
                     return [
                         'id' => $subcategory->id,
                         'name' => $subcategory->name,
@@ -1082,22 +1362,13 @@ class HomeController extends Controller
                     ];
                 })->toArray();
 
-                // $catImage = match ($lang) {
-                //     'hi' => $category->image_hindi,
-                //     'mr' => $category->image_marathi,
-                //     'pu' => $category->image_punjabi,
-                //     default => $category->image,
-                // };
-                if ($lang === 'hi') {
-                    $catImage = $category->image_hindi;
-                } elseif ($lang === 'mr') {
-                    $catImage = $category->image_marathi;
-                } elseif ($lang === 'pu') {
-                    $catImage = $category->image_punjabi;
-                } else {
-                    $catImage = $category->image;
-                }
-                
+                $catImage = match ($lang) {
+                    'hi' => $category->image_hindi,
+                    'mr' => $category->image_marathi,
+                    'pu' => $category->image_punjabi,
+                    default => $category->image,
+                };
+
                 $categoryData[] = [
                     'id' => $category->id,
                     'name' => $category->name,
@@ -1120,7 +1391,6 @@ class HomeController extends Controller
                         $images = array_map(function ($img) {
                             return asset($img);
                         }, $imageArray);
-                        
                     } else {
                         $images = [asset($product->image)];
                     }
@@ -1131,32 +1401,24 @@ class HomeController extends Controller
                 $discount = (int)$product->mrp - (int)$product->selling_price;
                 $percent = $discount > 0 ? round($discount / $product->mrp * 100) : 0;
 
-                switch ($lang) {
-                    case 'hi':
-                        $productDetails = [
-                            'name' => $product->name_hindi,
-                            'description' => $product->description_hindi,
-                        ];
-                        break;
-                    case 'mr':
-                        $productDetails = [
-                            'name' => $product->name_marathi,
-                            'description' => $product->description_marathi,
-                        ];
-                        break;
-                    case 'pu':
-                        $productDetails = [
-                            'name' => $product->name_punjabi,
-                            'description' => $product->description_punjabi,
-                        ];
-                        break;
-                    default:
-                        $productDetails = [
-                            'name' => $product->name_english,
-                            'description' => $product->description_english,
-                        ];
-                }
-                
+                $productDetails = match ($lang) {
+                    'hi' => [
+                        'name' => $product->name_hindi,
+                        'description' => $product->description_hindi,
+                    ],
+                    'mr' => [
+                        'name' => $product->name_marathi,
+                        'description' => $product->description_marathi,
+                    ],
+                    'pu' => [
+                        'name' => $product->name_punjabi,
+                        'description' => $product->description_punjabi,
+                    ],
+                    default => [
+                        'name' => $product->name_english,
+                        'description' => $product->description_english,
+                    ],
+                };
 
                 return [
                     'pro_id' => $product->id,
@@ -1201,7 +1463,7 @@ class HomeController extends Controller
                 ->first();
             $feedBuy = $feedCheck ? 1 : 0;
 
-            // Define feed amount (hardcoded for testing)
+            // Define feed amount
             $feedAmount = config('app.feed_amount', 100.00);
 
             $data = [
@@ -1235,7 +1497,7 @@ class HomeController extends Controller
             ], 200);
         } catch (\Illuminate\Database\QueryException $e) {
             Log::error('HomeData: Database error', [
-                'farmer_id' => $farmer->id ?? null,
+                'farmer_id' => $farmerId ?? null,
                 'error' => $e->getMessage(),
                 'sql' => $e->getSql(),
                 'bindings' => $e->getBindings(),
@@ -1246,7 +1508,7 @@ class HomeController extends Controller
             ], 500);
         } catch (\Exception $e) {
             Log::error('HomeData: General error', [
-                'farmer_id' => $farmer->id ?? null,
+                'farmer_id' => $farmerId ?? null,
                 'error' => $e->getMessage(),
             ]);
             return response()->json([
@@ -1255,7 +1517,6 @@ class HomeController extends Controller
             ], 500);
         }
     }
-
     public function getState(Request $request)
     {
         try {
