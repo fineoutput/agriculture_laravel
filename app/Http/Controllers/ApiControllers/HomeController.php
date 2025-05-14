@@ -253,58 +253,75 @@ class HomeController extends Controller
         }
     }
 
-    public function getCattle(Request $request)
+      public function getCattle(Request $request)
     {
-        try {
-            // Check if POST data exists
-            if (!$request->isMethod('post') || empty($request->all())) {
-                Log::warning('GetCattle: Missing POST data', [
-                    'ip' => $request->ip(),
-                    'url' => $request->fullUrl(),
-                ]);
-                return response()->json([
-                    'message' => 'Please Insert Data',
-                    'status' => 201,
-                ], 422);
-            }
+        Log::info('getCattle request', [
+            'assign_to_group' => $request->input('assign_to_group'),
+            'milking' => $request->input('milking'),
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
 
-            // Validate inputs
-            $validator = Validator::make($request->all(), [
-                'farmer_id' => 'required|integer|exists:tbl_farmers,id',
-                'assign_to_group' => 'required|integer|exists:tbl_group,id',
-                'milking' => 'nullable|string|max:255',
+        // Validate inputs
+        $token = $request->header('Authentication');
+        $validator = Validator::make(array_merge($request->all(), ['Authentication' => $token]), [
+            'assign_to_group' => 'required|integer|exists:tbl_group,id',
+            'milking' => 'nullable|string|max:255',
+            'Authentication' => 'required|string',
+        ], [
+            'Authentication.required' => 'Authentication token is required',
+            'assign_to_group.exists' => 'Invalid group ID',
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('getCattle: Validation failed', [
+                'errors' => $validator->errors(),
+                'ip' => $request->ip(),
+                'url' => $request->fullUrl(),
             ]);
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
 
-            if ($validator->fails()) {
-                Log::warning('GetCattle: Validation failed', [
-                    'ip' => $request->ip(),
-                    'errors' => $validator->errors(),
-                    'url' => $request->fullUrl(),
-                ]);
-                return response()->json([
-                    'message' => $validator->errors()->first(),
-                    'status' => 201,
-                ], 422);
-            }
-
-            // Authenticate farmer
-            $farmer = Farmer::where('id', $request->input('farmer_id'))
+        try {
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
                 ->where('is_active', 1)
                 ->first();
 
-            Log::debug('GetCattle: Farmer query result', [
-                'farmer_id' => $request->input('farmer_id'),
-                'farmer_found' => $farmer ? $farmer->id : null,
+            Log::debug('getCattle: Farmer query result', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'farmer_found' => $farmer ? true : false,
                 'ip' => $request->ip(),
             ]);
 
             if (!$farmer) {
-                Log::warning('GetCattle: Authentication failed', [
+                Log::warning('getCattle: Authentication failed', [
+                    'token' => $token,
                     'ip' => $request->ip(),
-                    'farmer_id' => $request->input('farmer_id'),
                 ]);
                 return response()->json([
-                    'message' => 'Permission Denied! from farmer end',
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            // Verify group belongs to farmer
+            $group = Group::where('id', $request->input('assign_to_group'))
+                ->where('farmer_id', $farmer->id)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$group) {
+                Log::warning('getCattle: Group not found or unauthorized', [
+                    'group_id' => $request->input('assign_to_group'),
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'message' => 'Invalid or unauthorized group!',
                     'status' => 201,
                 ], 403);
             }
@@ -332,7 +349,7 @@ class HomeController extends Controller
                 $serialNumber++;
             }
 
-            Log::info('GetCattle: Animal types retrieved successfully', [
+            Log::info('getCattle: Animal types retrieved successfully', [
                 'farmer_id' => $farmer->id,
                 'assign_to_group' => $request->input('assign_to_group'),
                 'milking' => $request->input('milking'),
@@ -346,20 +363,24 @@ class HomeController extends Controller
                 'data' => $data,
             ], 200);
         } catch (\Illuminate\Database\QueryException $e) {
-            Log::error('GetCattle: Database error', [
+            Log::error('getCattle: Database error', [
                 'farmer_id' => $farmer->id ?? null,
+                'assign_to_group' => $request->input('assign_to_group'),
                 'error' => $e->getMessage(),
                 'sql' => $e->getSql(),
                 'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
             ]);
             return response()->json([
                 'message' => 'Database error: ' . $e->getMessage(),
                 'status' => 201,
             ], 500);
         } catch (\Exception $e) {
-            Log::error('GetCattle: General error', [
+            Log::error('getCattle: General error', [
                 'farmer_id' => $farmer->id ?? null,
+                'assign_to_group' => $request->input('assign_to_group'),
                 'error' => $e->getMessage(),
+                'ip' => $request->ip(),
             ]);
             return response()->json([
                 'message' => 'Error processing request: ' . $e->getMessage(),
