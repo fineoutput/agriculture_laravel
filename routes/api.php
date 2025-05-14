@@ -226,4 +226,4 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
     Route::post('homeCreateGroup', [HomeController::class, 'createGroup']);
 
     
-    Route::post('homeGetgroup', [HomeController::class, 'getGroup']);
+    Route::get('homeGetgroup', [HomeController::class, 'getGroup']);
