@@ -1574,7 +1574,7 @@ class HomeController extends Controller
             // 'Authentication' => $token,
         ], [
             'state_id' => 'required|integer|exists:all_states,id',
-            'Authentication' => 'required|string',
+            // 'Authentication' => 'required|string',
         ], [
             'Authentication.required' => 'Authentication token is required',
             'state_id.exists' => 'Invalid state ID',
