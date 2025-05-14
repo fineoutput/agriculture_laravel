@@ -1427,7 +1427,7 @@ class HomeController extends Controller
                     'stock' => $stock,
                     'percent' => $percent,
                     'vendor_id' => $product->added_by,
-                    'is_admin' => (int) $product->is_admin,
+                    'is_admin' => intval($product->is_admin),
                     'offer' => $product->offer,
                     'product_cod' => $product->cod,
                     'is_cod' => $farmer->cod,
