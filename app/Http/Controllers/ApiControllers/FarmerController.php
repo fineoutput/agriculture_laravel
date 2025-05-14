@@ -38,7 +38,7 @@ class FarmerController extends Controller
             'product_id' => 'required|integer',
             'vendor_id' => 'required|integer',
             'is_admin' => 'required|in:0,1',
-            'Authentication' => 'required|string',
+            // 'Authentication' => 'required|string',
         ], [
             'Authentication.required' => 'Authentication token is required',
         ]);
@@ -130,7 +130,7 @@ class FarmerController extends Controller
             // Get cart item count
             $cartCount = Cart::where('farmer_id', $user->id)->count();
 
-            \Log::info('Product added to cart', [
+            Log::info('Product added to cart', [
                 'farmer_id' => $user->id,
                 'product_id' => $product_id,
                 'cart_id' => $cart->id,
