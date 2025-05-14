@@ -201,3 +201,5 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
 
     
     Route::post('RemoveCartItems', [FarmerController::class, 'removeCart']);
+
+    Route::get('GetFarmerCart', [FarmerController::class, 'getCart']);

@@ -157,31 +157,47 @@ class FarmerController extends Controller
         }
     }
 
-    public function getCart(Request $request)
+  public function getCart(Request $request)
     {
-        try {
-            // Authenticate user using 'farmer' guard
-            $user = auth('farmer')->user();
-            Log::info('GetCart auth attempt', [
-                'user_id' => $user ? $user->id : null,
-                'is_active' => $user ? ($user->is_active ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
-            ]);
+        Log::info('getCart request', [
+            'lang' => $request->query('lang', 'en'),
+            'authentication_header' => $request->header('Authentication'),
+        ]);
 
-            if (!$user || !$user->is_active) {
+        // Validate inputs
+        $lang = $request->query('lang', 'en');
+        $token = $request->header('Authentication');
+
+        $validator = Validator::make([
+            'lang' => $lang,
+            // 'Authentication' => $token,
+        ], [
+            'lang' => 'nullable|string|in:en,hi,pn',
+            // 'Authentication' => 'required|string',
+        ], [
+            'Authentication.required' => 'Authentication token is required',
+        ]);
+
+        if ($validator->fails()) {
+            Log::error('Validation failed: ' . $validator->errors()->first());
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
+
+        try {
+            // Authenticate user by token
+            $user = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$user) {
+                Log::warning('Invalid or inactive user for token', ['token' => $token]);
                 return response()->json([
-                    'message' => 'Permission Denied!',
+                    'message' => 'Invalid token or inactive user!',
                     'status' => 201,
                 ], 403);
-            }
-
-            // Validate language parameter
-            $lang = $request->query('lang', 'en');
-            if (!in_array($lang, ['en', 'hi', 'pn'])) {
-                return response()->json([
-                    'message' => 'Invalid language! Use en, hi, or pn.',
-                    'status' => 201,
-                ], 400);
             }
 
             // Fetch cart items
@@ -191,7 +207,7 @@ class FarmerController extends Controller
 
             if ($cartItems->isNotEmpty()) {
                 foreach ($cartItems as $cart) {
-                    // Fetch product (admin or vendor, same table)
+                    // Fetch product
                     $product = Product::where('id', $cart->product_id)
                         ->where('is_active', 1)
                         ->first();
@@ -202,9 +218,9 @@ class FarmerController extends Controller
                         if ($product->image) {
                             $imageArray = json_decode($product->image, true);
                             if (is_array($imageArray) && !empty($imageArray)) {
-                                $image = url($imageArray[0]);
+                                $image = asset($imageArray[0]);
                             } else {
-                                $image = url($product->image);
+                                $image = asset($product->image);
                             }
                         }
 
@@ -246,11 +262,21 @@ class FarmerController extends Controller
                         Cart::where('farmer_id', $user->id)
                             ->where('product_id', $cart->product_id)
                             ->delete();
+                        Log::info('Removed invalid cart item', [
+                            'farmer_id' => $user->id,
+                            'product_id' => $cart->product_id,
+                        ]);
                     }
                 }
 
                 // Get cart count
                 $count = Cart::where('farmer_id', $user->id)->count();
+
+                Log::info('Cart retrieved successfully', [
+                    'farmer_id' => $user->id,
+                    'cart_count' => $count,
+                    'total' => $total,
+                ]);
 
                 return response()->json([
                     'message' => 'Success!',
@@ -261,6 +287,7 @@ class FarmerController extends Controller
                 ], 200);
             } else {
                 $count = Cart::where('farmer_id', $user->id)->count();
+                Log::info('Cart is empty', ['farmer_id' => $user->id]);
                 return response()->json([
                     'message' => 'Cart is empty!',
                     'status' => 201,
@@ -271,7 +298,7 @@ class FarmerController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Error in getCart', [
-                'farmer_id' => auth('farmer')->id() ?? null,
+                'farmer_id' => $user->id ?? null,
                 'error' => $e->getMessage(),
             ]);
 
