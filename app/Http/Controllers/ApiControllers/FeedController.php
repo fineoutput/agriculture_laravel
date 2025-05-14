@@ -615,58 +615,56 @@ class FeedController extends Controller
             Log::info('AnimalRequirements inputs', ['input' => $input]);
 
             // Process Excel file
-            $inputFileName = public_path('assets/excel/animal_requirement.xlsx');
-            $outputFileName = public_path('assets/excel/animal_requirement.xls');
+            // $inputFileName = public_path('assets/excel/animal_requirement.xlsx');
+            // $outputFileName = public_path('assets/excel/animal_requirement.xls');
 
-            try {
-                // Load the Excel file
-                $spreadsheet = IOFactory::load($inputFileName);
-                $worksheet = $spreadsheet->getActiveSheet();
+            // try {
+            //     $spreadsheet = IOFactory::load($inputFileName);
+            //     $worksheet = $spreadsheet->getActiveSheet();
 
-                // Set input values
-                $worksheet->setCellValue('F21', $input['group']);
-                $worksheet->setCellValue('F22', $input['feeding_system']);
-                $worksheet->setCellValue('F23', $input['weight']);
-                $worksheet->setCellValue('F24', $input['milk_production']);
-                $worksheet->setCellValue('F25', $input['days_milk']);
-                $worksheet->setCellValue('F26', $input['milk_fat']);
-                $worksheet->setCellValue('F27', $input['milk_protein']);
-                $worksheet->setCellValue('F28', $input['milk_lactose']);
-                $worksheet->setCellValue('I21', $input['weight_variation']);
-                $worksheet->setCellValue('I22', $input['bcs']);
-                $worksheet->setCellValue('I23', $input['gestation_days']);
-                $worksheet->setCellValue('I24', $input['temp']);
-                $worksheet->setCellValue('I25', $input['humidity']);
-                $worksheet->setCellValue('I26', $input['thi']);
-                $worksheet->setCellValue('I27', $input['fat_4']);
 
-                // Save as .xls with formulas recalculated
-                $writer = IOFactory::createWriter($spreadsheet, 'Xls');
-                $writer->setPreCalculateFormulas(true);
-                $writer->save($outputFileName);
+            //     $worksheet->setCellValue('F21', $input['group']);
+            //     $worksheet->setCellValue('F22', $input['feeding_system']);
+            //     $worksheet->setCellValue('F23', $input['weight']);
+            //     $worksheet->setCellValue('F24', $input['milk_production']);
+            //     $worksheet->setCellValue('F25', $input['days_milk']);
+            //     $worksheet->setCellValue('F26', $input['milk_fat']);
+            //     $worksheet->setCellValue('F27', $input['milk_protein']);
+            //     $worksheet->setCellValue('F28', $input['milk_lactose']);
+            //     $worksheet->setCellValue('I21', $input['weight_variation']);
+            //     $worksheet->setCellValue('I22', $input['bcs']);
+            //     $worksheet->setCellValue('I23', $input['gestation_days']);
+            //     $worksheet->setCellValue('I24', $input['temp']);
+            //     $worksheet->setCellValue('I25', $input['humidity']);
+            //     $worksheet->setCellValue('I26', $input['thi']);
+            //     $worksheet->setCellValue('I27', $input['fat_4']);
 
-                // Reload the saved .xls file
-                $spreadsheet = IOFactory::load($outputFileName);
-                Log::info('Excel file processed', [
-                    'input_file' => $inputFileName,
-                    'output_file' => $outputFileName,
-                ]);
 
-            } catch (\Exception $e) {
-                Log::error('Error processing Excel file', [
-                    'error' => $e->getMessage(),
-                    'file' => $inputFileName,
-                ]);
-                return response()->json([
-                    'message' => 'Error processing Excel file: ' . $e->getMessage(),
-                    'status' => 201,
-                ], 500);
-            }
+            //     $writer = IOFactory::createWriter($spreadsheet, 'Xls');
+            //     $writer->setPreCalculateFormulas(true);
+            //     $writer->save($outputFileName);
 
-            // Generate HTML
+
+            //     $spreadsheet = IOFactory::load($outputFileName);
+            //     Log::info('Excel file processed', [
+            //         'input_file' => $inputFileName,
+            //         'output_file' => $outputFileName,
+            //     ]);
+
+            // } catch (\Exception $e) {
+            //     Log::error('Error processing Excel file', [
+            //         'error' => $e->getMessage(),
+            //         'file' => $inputFileName,
+            //     ]);
+            //     return response()->json([
+            //         'message' => 'Error processing Excel file: ' . $e->getMessage(),
+            //         'status' => 201,
+            //     ], 500);
+            // }
+
+
             $html = View::make('pdf.animal_requirements', compact('input', 'spreadsheet'))->render();
 
-            // Update service record
             $serviceRecord = ServiceRecord::first();
             if ($serviceRecord) {
                 $serviceRecord->update(['animal_req' => $serviceRecord->animal_req + 1]);
