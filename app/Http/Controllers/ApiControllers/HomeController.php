@@ -1260,7 +1260,7 @@ class HomeController extends Controller
     {
         try {
             // Get headers
-            $fcmToken = $request->header('Fcm-Token', '');
+            // $fcmToken = $request->header('Fcm-Token', '');
             $lang = $request->header('Lang', 'en');
             $authToken = $request->header('Authentication');
 
@@ -1308,15 +1308,15 @@ class HomeController extends Controller
             }
 
             // Update fcm_token if different
-            if ($fcmToken && $fcmToken !== $farmer->fcm_token) {
-                $farmer->fcm_token = $fcmToken;
-                $farmer->save();
-                Log::info('HomeData: FCM token updated', [
-                    'farmer_id' => $farmer->id,
-                    'fcm_token' => $fcmToken,
-                    'ip' => $request->ip(),
-                ]);
-            }
+            // if ($fcmToken && $fcmToken !== $farmer->fcm_token) {
+            //     $farmer->fcm_token = $fcmToken;
+            //     $farmer->save();
+            //     Log::info('HomeData: FCM token updated', [
+            //         'farmer_id' => $farmer->id,
+            //         'fcm_token' => $fcmToken,
+            //         'ip' => $request->ip(),
+            //     ]);
+            // }
 
             // Fetch slider data
             $sliders = Slider::where('is_active', 1)->get();
