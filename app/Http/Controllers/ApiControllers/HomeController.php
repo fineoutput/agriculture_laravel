@@ -2448,7 +2448,7 @@ class HomeController extends Controller
                 // Delete related records
                 BreedingRecord::where('group_id', $group->id)->delete();
                 HealthInfo::where('group_id', $group->id)->delete();
-                MilkRecord::where('group_id', $group->id)->delete();
+                // MilkRecord::where('group_id', $group->id)->delete();
 
                 // Delete the group
                 return $group->delete();
