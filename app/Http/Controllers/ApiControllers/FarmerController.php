@@ -37,7 +37,7 @@ class FarmerController extends Controller
         $validator = Validator::make($request->all(), [
             'product_id' => 'required|integer',
             'vendor_id' => 'required|integer',
-            'is_admin' => 'required|in:0,1',
+            'is_admin' => 'required',
         ]);
 
         if ($validator->fails()) {
