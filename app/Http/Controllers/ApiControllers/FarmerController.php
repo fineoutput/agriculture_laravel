@@ -16,14 +16,23 @@ use App\Models\Cart;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\FacadesLog;
 use Illuminate\Support\Facades\Mail;
 use Razorpay\Api\Api; // Add this import
 use GuzzleHttp\Client;
+use Illuminate\Support\Facades\Log;
+
 class FarmerController extends Controller
 {
     public function addToCart(Request $request)
     {
+        Log::info('addToCart request', [
+            'product_id' => $request->input('product_id'),
+            'vendor_id' => $request->input('vendor_id'),
+            'is_admin' => $request->input('is_admin'),
+            'token' => $request->bearerToken(),
+        ]);
+
         // Validate input
         $validator = Validator::make($request->all(), [
             'product_id' => 'required|integer',
@@ -32,6 +41,7 @@ class FarmerController extends Controller
         ]);
 
         if ($validator->fails()) {
+            Log::error('Validation failed: ' . $validator->errors()->first());
             return response()->json([
                 'message' => $validator->errors()->first(),
                 'status' => 201,
@@ -39,19 +49,25 @@ class FarmerController extends Controller
         }
 
         try {
-            // Authenticate user using 'farmer' guard
-            $user = auth('farmer')->user();
-            if (!$user || !$user->is_active) {
+            // Get bearer token
+            $token = $request->bearerToken();
+            if (!$token) {
+                Log::warning('No bearer token provided');
                 return response()->json([
-                    'message' => 'Permission Denied!',
+                    'message' => 'Token required!',
                     'status' => 201,
-                ], 403);
+                ], 401);
             }
 
-            // Validate token against farmers.token (optional, handled by check.token middleware)
-            if ($user->auth !== $request->bearerToken()) {
+            // Authenticate user by token
+            $user = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$user) {
+                Log::warning('Invalid or inactive user for token', ['token' => $token]);
                 return response()->json([
-                    'message' => 'Invalid token!',
+                    'message' => 'Invalid token or inactive user!',
                     'status' => 201,
                 ], 403);
             }
@@ -69,6 +85,10 @@ class FarmerController extends Controller
             ])->first();
 
             if ($cartItem) {
+                Log::info('Product already in cart', [
+                    'farmer_id' => $user->id,
+                    'product_id' => $product_id,
+                ]);
                 return response()->json([
                     'message' => 'Product is already in your cart!',
                     'status' => 201,
@@ -76,11 +96,13 @@ class FarmerController extends Controller
                 ], 200);
             }
 
+            // Verify product
             $product = Product::where('id', $product_id)
                 ->where('is_active', 1)
                 ->first();
 
             if (!$product) {
+                Log::warning('Product not found or inactive', ['product_id' => $product_id]);
                 return response()->json([
                     'message' => 'Product Not Found!',
                     'status' => 201,
@@ -89,6 +111,7 @@ class FarmerController extends Controller
             }
 
             if ($product->inventory <= 0) {
+                Log::warning('Product out of stock', ['product_id' => $product_id]);
                 return response()->json([
                     'message' => 'Product is out of Stock!',
                     'status' => 201,
@@ -115,6 +138,7 @@ class FarmerController extends Controller
                 'farmer_id' => $user->id,
                 'product_id' => $product_id,
                 'cart_id' => $cart->id,
+                'cart_count' => $cartCount,
             ]);
 
             return response()->json([
@@ -126,7 +150,7 @@ class FarmerController extends Controller
         } catch (\Exception $e) {
             Log::error('Error in addToCart', [
                 'product_id' => $request->input('product_id'),
-                'farmer_id' => auth('farmer')->id() ?? null,
+                'farmer_id' => $user->id ?? null,
                 'error' => $e->getMessage(),
             ]);
 
