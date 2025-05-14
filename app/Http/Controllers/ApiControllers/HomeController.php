@@ -401,9 +401,9 @@ class HomeController extends Controller
         // Validate inputs
         $token = $request->header('Authentication');
         $validator = Validator::make(array_merge($request->all(), ['Authentication' => $token]), [
-            'assign_to_group' => 'required|integer|exists:tbl_group,id',
-            'animal_type' => 'required|string|in:Milking,Calf,Heifer,Bull',
-            'Authentication' => 'required|string',
+            // 'assign_to_group' => 'required|integer|exists:tbl_group,id',
+            // 'animal_type' => 'required|string|in:Milking,Calf,Heifer,Bull',
+            // 'Authentication' => 'required|string',
         ], [
             'Authentication.required' => 'Authentication token is required',
             'assign_to_group.exists' => 'Invalid group ID',
