@@ -377,7 +377,7 @@ class FeedController extends Controller
                     $ndf += isset($item[12]) ? $item[12] * $item[3] / 1000 : 0;
                     $nel += isset($item[13]) ? $item[13] * $item[3] / 1000 : 0;
                     $rudp += isset($item[14]) ? $item[14] * $item[3] / 1000 : 0;
-                    $endf += isset($item[15]) ? $item[15] * $item[3] / 1000 : 0;
+                   $endf += isset($item[15]) ? (float)$item[15] * (float)$item[3] / 1000 : 0;
                     $value += isset($item[2]) && isset($item[3]) ? $item[2] * $item[3] : 0;
                 }
             }
@@ -396,7 +396,7 @@ class FeedController extends Controller
                     $ndf += isset($item[12]) ? $item[12] * $item[3] / 1000 : 0;
                     $nel += isset($item[13]) ? $item[13] * $item[3] / 1000 : 0;
                     $rudp += isset($item[14]) ? $item[14] * $item[3] / 1000 : 0;
-                    $endf += isset($item[15]) ? $item[15] * $item[3] / 1000 : 0;
+                    $endf += isset($item[15]) ? (float)$item[15] * (float)$item[3] / 1000 : 0;
                     $value += isset($item[2]) && isset($item[3]) ? $item[2] * $item[3] : 0;
                 }
             }
@@ -415,7 +415,7 @@ class FeedController extends Controller
                     $ndf += isset($item[12]) ? $item[12] * $item[3] / 1000 : 0;
                     $nel += isset($item[13]) ? $item[13] * $item[3] / 1000 : 0;
                     $rudp += isset($item[14]) ? $item[14] * $item[3] / 1000 : 0;
-                    $endf += isset($item[15]) ? $item[15] * $item[3] / 1000 : 0;
+                    $endf += isset($item[15]) ? (float)$item[15] * (float)$item[3] / 1000 : 0;
                     $value += isset($item[2]) && isset($item[3]) ? $item[2] * $item[3] : 0;
                 }
             }
@@ -434,7 +434,7 @@ class FeedController extends Controller
                     $ndf += isset($item[12]) ? $item[12] * $item[3] / 1000 : 0;
                     $nel += isset($item[13]) ? $item[13] * $item[3] / 1000 : 0;
                     $rudp += isset($item[14]) ? $item[14] * $item[3] / 1000 : 0;
-                    $endf += isset($item[15]) ? $item[15] * $item[3] / 1000 : 0;
+                    $endf += isset($item[15]) ? (float)$item[15] * (float)$item[3] / 1000 : 0;
                     $value += isset($item[2]) && isset($item[3]) ? $item[2] * $item[3] : 0;
                 }
             }
