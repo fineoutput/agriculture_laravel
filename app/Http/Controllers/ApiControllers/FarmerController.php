@@ -426,6 +426,7 @@ class FarmerController extends Controller
         Log::info('removeCart request', [
             'product_id' => $request->input('product_id'),
             'token' => $request->bearerToken(),
+            'authentication_header' => $request->header('Authentication'),
         ]);
 
         // Validate input
@@ -443,7 +444,7 @@ class FarmerController extends Controller
 
         try {
             // Get bearer token
-            $token = $request->bearerToken();
+            $token = $request->header('Authentication');
             if (!$token) {
                 Log::warning('No bearer token provided');
                 return response()->json([
