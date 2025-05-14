@@ -227,3 +227,7 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
 
     
     Route::get('homeGetgroup', [HomeController::class, 'getGroup']);
+   
+   
+    Route::get('homeUpdategroup', [HomeController::class, 'updateGroup']);
+

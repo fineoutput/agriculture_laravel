@@ -2225,4 +2225,131 @@ class HomeController extends Controller
             return response('Aborted', 500)->header('Content-Type', 'text/plain');
         }
     }
+
+     public function updateGroup(Request $request)
+    {
+        Log::info('updateGroup request', [
+            'id' => $request->input('id'),
+            'name' => $request->input('name'),
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
+
+        // Validate inputs
+        $token = $request->header('Authentication');
+        $validator = Validator::make(array_merge($request->all(), ['Authentication' => $token]), [
+            'id' => 'required|integer|exists:tbl_group,id',
+            'name' => 'required|string|max:255',
+            'Authentication' => 'required|string',
+        ], [
+            'Authentication.required' => 'Authentication token is required',
+            'id.exists' => 'Invalid group ID',
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('updateGroup: Validation failed', [
+                'errors' => $validator->errors(),
+                'ip' => $request->ip(),
+                'url' => $request->fullUrl(),
+            ]);
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
+
+        try {
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            Log::debug('updateGroup: Farmer query result', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'farmer_found' => $farmer ? true : false,
+                'ip' => $request->ip(),
+            ]);
+
+            if (!$farmer) {
+                Log::warning('updateGroup: Authentication failed', [
+                    'token' => $token,
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            // Verify group belongs to farmer
+            $group = Group::where('id', $request->input('id'))
+                ->where('farmer_id', $farmer->id)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$group) {
+                Log::warning('updateGroup: Group not found or unauthorized', [
+                    'group_id' => $request->input('id'),
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            // Update group
+            $group->name = $request->input('name');
+            $updated = $group->save();
+
+            if ($updated) {
+                Log::info('updateGroup: Group updated successfully', [
+                    'farmer_id' => $farmer->id,
+                    'group_id' => $group->id,
+                    'name' => $group->name,
+                    'ip' => $request->ip(),
+                ]);
+
+                return response()->json([
+                    'message' => 'Record Successfully Updated!',
+                    'status' => 200,
+                ], 200);
+            } else {
+                Log::warning('updateGroup: Group update failed', [
+                    'farmer_id' => $farmer->id,
+                    'group_id' => $group->id,
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('updateGroup: Database error', [
+                'farmer_id' => $farmer->id ?? null,
+                'group_id' => $request->input('id'),
+                'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Database error: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('updateGroup: General error', [
+                'farmer_id' => $farmer->id ?? null,
+                'group_id' => $request->input('id'),
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Error processing request: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
 }
