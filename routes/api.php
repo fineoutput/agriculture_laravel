@@ -240,4 +240,4 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
     Route::post('homeGetTagNumber', [HomeController::class, 'getTagNo']);
 
     
-    Route::post('healthInfo', [BreedController::class, 'healthInfo']);
+    Route::post('BreedHealthInfo', [BreedController::class, 'healthInfo']);
