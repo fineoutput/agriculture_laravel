@@ -428,7 +428,7 @@ class FarmerController extends Controller
     public function removeCart(Request $request)
     {
         Log::info('removeCart request', [
-            'cart_id' => $request->input('cart_id'),
+            // 'cart_id' => $request->input('cart_id'),
             'token' => $request->bearerToken(),
         ]);
 
