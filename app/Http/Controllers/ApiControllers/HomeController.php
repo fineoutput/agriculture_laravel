@@ -135,77 +135,73 @@ class HomeController extends Controller
         }
     }
 
-    public function getGroup(Request $request)
+   public function getGroup(Request $request)
     {
-        try {
-            // Check if POST data exists
-            if (!$request->isMethod('post') || empty($request->all())) {
-                Log::warning('GetGroup: Missing POST data', [
-                    'ip' => $request->ip(),
-                    'url' => $request->fullUrl(),
-                ]);
-                return response()->json([
-                    'message' => 'Please Insert Data',
-                    'status' => 201,
-                ], 422);
-            }
-    
-            // Validate inputs
-            $validator = Validator::make($request->all(), [
-                'farmer_id' => 'required|integer|exists:tbl_farmers,id',
+        Log::info('getGroup request', [
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
+
+        // Validate inputs
+        $token = $request->header('Authentication');
+        $validator = Validator::make(['Authentication' => $token], [
+            // 'Authentication' => 'required|string',
+        ], [
+            'Authentication.required' => 'Authentication token is required',
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('getGroup: Validation failed', [
+                'errors' => $validator->errors(),
+                'ip' => $request->ip(),
+                'url' => $request->fullUrl(),
             ]);
-    
-            if ($validator->fails()) {
-                Log::warning('GetGroup: Validation failed', [
-                    'ip' => $request->ip(),
-                    'errors' => $validator->errors(),
-                    'url' => $request->fullUrl(),
-                ]);
-                return response()->json([
-                    'message' => $validator->errors()->first(),
-                    'status' => 201,
-                ], 422);
-            }
-    
-            // Authenticate farmer
-            $farmer = Farmer::where('id', $request->input('farmer_id'))
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
+
+        try {
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
                 ->where('is_active', 1)
                 ->first();
-    
-            Log::debug('GetGroup: Farmer query result', [
-                'farmer_id' => $request->input('farmer_id'),
-                'farmer_found' => $farmer ? $farmer->id : null,
+
+            Log::debug('getGroup: Farmer query result', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'farmer_found' => $farmer ? true : false,
                 'ip' => $request->ip(),
             ]);
-    
+
             if (!$farmer) {
-                Log::warning('GetGroup: Authentication failed', [
+                Log::warning('getGroup: Authentication failed', [
+                    'token' => $token,
                     'ip' => $request->ip(),
-                    'farmer_id' => $request->input('farmer_id'),
                 ]);
                 return response()->json([
-                    'message' => 'Permission Denied!',
+                    'message' => 'Invalid token or inactive user!',
                     'status' => 201,
                 ], 403);
             }
-    
+
             // Fetch groups
             $groups = Group::where('farmer_id', $farmer->id)
                 ->where('is_active', 1)
                 ->get();
-    
+
             // Count total animals
             $totalAnimals = MyAnimal::where('farmer_id', $farmer->id)->count();
-    
+
             $data = [];
             $serialNumber = 1;
-    
+
             foreach ($groups as $group) {
                 // Count animals in this group
                 $animalCount = MyAnimal::where('farmer_id', $farmer->id)
                     ->where('assign_to_group', $group->id)
                     ->count();
-    
+
                 $data[] = [
                     's_no' => $serialNumber,
                     'value' => $group->id,
@@ -214,14 +210,14 @@ class HomeController extends Controller
                 ];
                 $serialNumber++;
             }
-    
-            Log::info('GetGroup: Groups retrieved successfully', [
+
+            Log::info('getGroup: Groups retrieved successfully', [
                 'farmer_id' => $farmer->id,
                 'group_count' => count($data),
                 'total_animals' => $totalAnimals,
                 'ip' => $request->ip(),
             ]);
-    
+
             return response()->json([
                 'message' => 'Success',
                 'status' => 200,
@@ -229,20 +225,22 @@ class HomeController extends Controller
                 'total' => $totalAnimals,
             ], 200);
         } catch (\Illuminate\Database\QueryException $e) {
-            Log::error('GetGroup: Database error', [
+            Log::error('getGroup: Database error', [
                 'farmer_id' => $farmer->id ?? null,
                 'error' => $e->getMessage(),
                 'sql' => $e->getSql(),
                 'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
             ]);
             return response()->json([
                 'message' => 'Database error: ' . $e->getMessage(),
                 'status' => 201,
             ], 500);
         } catch (\Exception $e) {
-            Log::error('GetGroup: General error', [
+            Log::error('getGroup: General error', [
                 'farmer_id' => $farmer->id ?? null,
                 'error' => $e->getMessage(),
+                'ip' => $request->ip(),
             ]);
             return response()->json([
                 'message' => 'Error processing request: ' . $e->getMessage(),
