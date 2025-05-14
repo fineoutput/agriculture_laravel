@@ -1561,7 +1561,6 @@ class HomeController extends Controller
 
      public function getCity(Request $request, $state_id)
     {
-        return $state_id;
         Log::info('getCity request', [
             'state_id' => $state_id,
             // 'authentication_header' => $request->header('Authentication'),
