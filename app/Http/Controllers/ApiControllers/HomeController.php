@@ -391,56 +391,74 @@ class HomeController extends Controller
 
     public function getTagNo(Request $request)
     {
-        try {
-            // Check if POST data exists
-            if (!$request->isMethod('post') || empty($request->all())) {
-                Log::warning('GetTagNo: Missing POST data', [
-                    'ip' => $request->ip(),
-                    'url' => $request->fullUrl(),
-                ]);
-                return response()->json([
-                    'message' => 'Please Insert Data',
-                    'status' => 201,
-                ], 422);
-            }
+        Log::info('getTagNo request', [
+            'assign_to_group' => $request->input('assign_to_group'),
+            'animal_type' => $request->input('animal_type'),
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
 
-            // Validate inputs
-            $validator = Validator::make($request->all(), [
-                'farmer_id' => 'required|integer|exists:tbl_farmers,id',
-                'assign_to_group' => 'required|integer|exists:tbl_group,id',
-                'animal_type' => 'required|string|max:255',
+        // Validate inputs
+        $token = $request->header('Authentication');
+        $validator = Validator::make(array_merge($request->all(), ['Authentication' => $token]), [
+            'assign_to_group' => 'required|integer|exists:tbl_group,id',
+            'animal_type' => 'required|string|in:Milking,Calf,Heifer,Bull',
+            'Authentication' => 'required|string',
+        ], [
+            'Authentication.required' => 'Authentication token is required',
+            'assign_to_group.exists' => 'Invalid group ID',
+            'animal_type.in' => 'Invalid animal type. Must be Milking, Calf, Heifer, or Bull',
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('getTagNo: Validation failed', [
+                'errors' => $validator->errors(),
+                'ip' => $request->ip(),
+                'url' => $request->fullUrl(),
             ]);
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
 
-            if ($validator->fails()) {
-                Log::warning('GetTagNo: Validation failed', [
-                    'ip' => $request->ip(),
-                    'errors' => $validator->errors(),
-                    'url' => $request->fullUrl(),
-                ]);
-                return response()->json([
-                    'message' => $validator->errors()->first(),
-                    'status' => 201,
-                ], 422);
-            }
-
-            // Authenticate farmer
-            $farmer = Farmer::where('id', $request->input('farmer_id'))
+        try {
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
                 ->where('is_active', 1)
                 ->first();
 
-            Log::debug('GetTagNo: Farmer query result', [
-                'farmer_id' => $request->input('farmer_id'),
-                'farmer_found' => $farmer ? $farmer->id : null,
+            Log::debug('getTagNo: Farmer query result', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'farmer_found' => $farmer ? true : false,
                 'ip' => $request->ip(),
             ]);
 
             if (!$farmer) {
-                Log::warning('GetTagNo: Authentication failed', [
+                Log::warning('getTagNo: Authentication failed', [
+                    'token' => $token,
                     'ip' => $request->ip(),
-                    'farmer_id' => $request->input('farmer_id'),
                 ]);
                 return response()->json([
-                    'message' => 'Permission Denied! from farmer end',
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            // Verify group belongs to farmer
+            $group = Group::where('id', $request->input('assign_to_group'))
+                ->where('farmer_id', $farmer->id)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$group) {
+                Log::warning('getTagNo: Group not found or unauthorized', [
+                    'group_id' => $request->input('assign_to_group'),
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'message' => 'Invalid or unauthorized group!',
                     'status' => 201,
                 ], 403);
             }
@@ -451,9 +469,10 @@ class HomeController extends Controller
                 ->where('assign_to_group', $request->input('assign_to_group'))
                 ->where('animal_type', $request->input('animal_type'));
 
-            Log::debug('GetTagNo: Query SQL', [
+            Log::debug('getTagNo: Query SQL', [
                 'sql' => $query->toSql(),
                 'bindings' => $query->getBindings(),
+                'ip' => $request->ip(),
             ]);
 
             $tagData = $query->get();
@@ -469,7 +488,7 @@ class HomeController extends Controller
                 $serialNumber++;
             }
 
-            Log::info('GetTagNo: Tag numbers retrieved successfully', [
+            Log::info('getTagNo: Tag numbers retrieved successfully', [
                 'farmer_id' => $farmer->id,
                 'assign_to_group' => $request->input('assign_to_group'),
                 'animal_type' => $request->input('animal_type'),
@@ -483,20 +502,26 @@ class HomeController extends Controller
                 'data' => $data,
             ], 200);
         } catch (\Illuminate\Database\QueryException $e) {
-            Log::error('GetTagNo: Database error', [
+            Log::error('getTagNo: Database error', [
                 'farmer_id' => $farmer->id ?? null,
+                'assign_to_group' => $request->input('assign_to_group'),
+                'animal_type' => $request->input('animal_type'),
                 'error' => $e->getMessage(),
                 'sql' => $e->getSql(),
                 'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
             ]);
             return response()->json([
                 'message' => 'Database error: ' . $e->getMessage(),
                 'status' => 201,
             ], 500);
         } catch (\Exception $e) {
-            Log::error('GetTagNo: General error', [
+            Log::error('getTagNo: General error', [
                 'farmer_id' => $farmer->id ?? null,
+                'assign_to_group' => $request->input('assign_to_group'),
+                'animal_type' => $request->input('animal_type'),
                 'error' => $e->getMessage(),
+                'ip' => $request->ip(),
             ]);
             return response()->json([
                 'message' => 'Error processing request: ' . $e->getMessage(),
