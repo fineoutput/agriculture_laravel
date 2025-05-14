@@ -24,20 +24,23 @@ use Illuminate\Support\FacadesLog;
 
 class FarmerController extends Controller
 {
-    public function addToCart(Request $request)
+   public function addToCart(Request $request)
     {
         Log::info('addToCart request', [
             'product_id' => $request->input('product_id'),
             'vendor_id' => $request->input('vendor_id'),
             'is_admin' => $request->input('is_admin'),
-            'token' => $request->bearerToken(),
+            'authentication_header' => $request->header('Authentication'),
         ]);
 
         // Validate input
         $validator = Validator::make($request->all(), [
             'product_id' => 'required|integer',
             'vendor_id' => 'required|integer',
-            'is_admin' => 'required',
+            'is_admin' => 'required|in:0,1',
+            'Authentication' => 'required|string',
+        ], [
+            'Authentication.required' => 'Authentication token is required',
         ]);
 
         if ($validator->fails()) {
@@ -49,15 +52,8 @@ class FarmerController extends Controller
         }
 
         try {
-            // Get bearer token
-            $token = $request->bearerToken();
-            if (!$token) {
-                Log::warning('No bearer token provided');
-                return response()->json([
-                    'message' => 'Token required!',
-                    'status' => 201,
-                ], 401);
-            }
+            // Get token from Authentication header
+            $token = $request->header('Authentication');
 
             // Authenticate user by token
             $user = Farmer::where('auth', $token)
@@ -134,7 +130,7 @@ class FarmerController extends Controller
             // Get cart item count
             $cartCount = Cart::where('farmer_id', $user->id)->count();
 
-            Log::info('Product added to cart', [
+            \Log::info('Product added to cart', [
                 'farmer_id' => $user->id,
                 'product_id' => $product_id,
                 'cart_id' => $cart->id,
