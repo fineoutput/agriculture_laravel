@@ -1258,7 +1258,6 @@ class HomeController extends Controller
 
      public function homeData(Request $request)
     {
-        return 'hello';//
         try {
             // Get headers
             // $fcmToken = $request->header('Fcm-Token', '');
@@ -1415,7 +1414,7 @@ class HomeController extends Controller
                         'description' => $product->description_english,
                     ],
                 };
-                return $product->is_admin;
+                return $productData;
                 return [
                     'pro_id' => $product->id,
                     'name' => $productDetails['name'],
