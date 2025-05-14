@@ -210,4 +210,4 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
     Route::post('FarmerCheckOut', [FarmerController::class, 'checkout']);
 
     
-    Route::get('homeGet/-State', [HomeController::class, 'getState']);
+    Route::get('homeGetState', [HomeController::class, 'getState']);
