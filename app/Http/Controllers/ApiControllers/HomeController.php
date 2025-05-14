@@ -1559,42 +1559,61 @@ class HomeController extends Controller
         }
     }
 
-    public function getCity(Request $request)
+     public function getCity(Request $request, $state_id)
     {
-        try {
-            // Check if POST data exists
-            if (!$request->isMethod('post') || empty($request->all())) {
-                Log::warning('GetCity: Missing POST data', [
-                    'ip' => $request->ip(),
-                    'url' => $request->fullUrl(),
-                ]);
-                return response()->json([
-                    'message' => 'Please Insert Data',
-                    'status' => 400,
-                    'data' => [],
-                ], 400);
-            }
+        return $state_id;
+        Log::info('getCity request', [
+            'state_id' => $state_id,
+            // 'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
 
-            // Validate inputs
-            $validator = Validator::make($request->all(), [
-                'state_id' => 'required|integer|exists:all_states,id',
+        // Validate inputs
+        $token = $request->header('Authentication');
+        $validator = Validator::make([
+            'state_id' => $state_id,
+            // 'Authentication' => $token,
+        ], [
+            'state_id' => 'required|integer|exists:all_states,id',
+            'Authentication' => 'required|string',
+        ], [
+            'Authentication.required' => 'Authentication token is required',
+            'state_id.exists' => 'Invalid state ID',
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('getCity: Validation failed', [
+                'state_id' => $state_id,
+                'errors' => $validator->errors(),
+                'ip' => $request->ip(),
+                'url' => $request->fullUrl(),
             ]);
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 400,
+                'data' => [],
+            ], 400);
+        }
 
-            if ($validator->fails()) {
-                Log::warning('GetCity: Validation failed', [
+        try {
+            // Authenticate user by token
+            $farmer = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$farmer) {
+                Log::warning('getCity: Invalid or inactive user for token', [
+                    'token' => $token,
                     'ip' => $request->ip(),
-                    'errors' => $validator->errors(),
-                    'url' => $request->fullUrl(),
                 ]);
                 return response()->json([
-                    'message' => $validator->errors()->first(),
-                    'status' => 400,
-                    'data' => [],
-                ], 400);
+                    'message' => 'Invalid token or inactive user!',
+                    'status' => 201,
+                ], 403);
             }
 
             // Fetch cities for the given state_id
-            $cities = City::where('state_id', $request->input('state_id'))->get();
+            $cities = City::where('state_id', $state_id)->get();
 
             $data = $cities->map(function ($city) {
                 return [
@@ -1603,8 +1622,9 @@ class HomeController extends Controller
                 ];
             })->toArray();
 
-            Log::info('GetCity: Cities retrieved successfully', [
-                'state_id' => $request->input('state_id'),
+            Log::info('getCity: Cities retrieved successfully', [
+                'farmer_id' => $farmer->id,
+                'state_id' => $state_id,
                 'city_count' => count($data),
                 'ip' => $request->ip(),
             ]);
@@ -1615,8 +1635,9 @@ class HomeController extends Controller
                 'data' => $data,
             ], 200);
         } catch (\Illuminate\Database\QueryException $e) {
-            Log::error('GetCity: Database error', [
-                'state_id' => $request->input('state_id') ?? null,
+            Log::error('getCity: Database error', [
+                'farmer_id' => $farmer->id ?? null,
+                'state_id' => $state_id,
                 'error' => $e->getMessage(),
                 'sql' => $e->getSql(),
                 'bindings' => $e->getBindings(),
@@ -1627,8 +1648,9 @@ class HomeController extends Controller
                 'status' => 201,
             ], 500);
         } catch (\Exception $e) {
-            Log::error('GetCity: General error', [
-                'state_id' => $request->input('state_id') ?? null,
+            Log::error('getCity: General error', [
+                'farmer_id' => $farmer->id ?? null,
+                'state_id' => $state_id,
                 'error' => $e->getMessage(),
                 'ip' => $request->ip(),
             ]);
