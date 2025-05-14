@@ -18,86 +18,127 @@ class BreedController extends Controller
 {
     public function healthInfo(Request $request)
     {
+        Log::info('healthInfo request', [
+            'information_type' => $request->input('information_type'),
+            'group_id' => $request->input('group_id'),
+            'cattle_type' => $request->input('cattle_type'),
+            'tag_no' => $request->input('tag_no'),
+            'vaccination_date' => $request->input('vaccination_date'),
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
+
+        // Validate inputs
+        $token = $request->header('Authentication');
+        $validator = Validator::make(array_merge($request->all(), ['Authentication' => $token]), [
+            'information_type' => 'required|string',
+            'group_id' => 'nullable|integer|exists:tbl_group,id',
+            'cattle_type' => 'nullable|string',
+            'tag_no' => 'nullable|string',
+            'vaccination_date' => 'required|date',
+            'disease_name' => 'nullable|string',
+            'vaccination' => 'nullable|string',
+            'medicine' => 'nullable|string',
+            'deworming' => 'nullable|string',
+            'other1' => 'nullable|string',
+            'other2' => 'nullable|string',
+            'other3' => 'nullable|string',
+            'other4' => 'nullable|string',
+            'other5' => 'nullable|string',
+            'milk_loss' => 'nullable|string',
+            'treatment_cost' => 'nullable|string',
+            // 'Authentication' => 'required|string',
+        ], [
+            'Authentication.required' => 'Authentication token is required',
+            'group_id.exists' => 'Invalid group ID',
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('healthInfo: Validation failed', [
+                'errors' => $validator->errors(),
+                'ip' => $request->ip(),
+                'url' => $request->fullUrl(),
+            ]);
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
+
         try {
-            // Authenticate user using 'farmer' guard
-            $user = auth('farmer')->user();
-            Log::info('HealthInfo auth attempt', [
-                'user_id' => $user ? $user->id : null,
-                'is_active' => $user ? ($user->is_active ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            Log::debug('healthInfo: Farmer query result', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'farmer_found' => $farmer ? true : false,
+                'ip' => $request->ip(),
             ]);
 
-            if (!$user || !$user->is_active) {
+            if (!$farmer) {
+                Log::warning('healthInfo: Authentication failed', [
+                    'token' => $token,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => 'Permission Denied!',
                     'status' => 201,
                 ], 403);
             }
 
-            // Check if request has data
-            if (!$request->all()) {
-                return response()->json([
-                    'message' => 'Please Insert Data',
-                    'status' => 201,
-                ], 400);
-            }
+            // Verify group belongs to farmer if provided
+            if ($request->filled('group_id')) {
+                $group = Group::where('id', $request->input('group_id'))
+                    ->where('farmer_id', $farmer->id)
+                    ->where('is_active', 1)
+                    ->first();
 
-            // Validate input
-            $validator = Validator::make($request->all(), [
-                'information_type' => 'required|string',
-                'group_id' => 'nullable|string',
-                'cattle_type' => 'nullable|string',
-                'tag_no' => 'nullable|string',
-                'vaccination_date' => 'required|date',
-                'disease_name' => 'nullable|string',
-                'vaccination' => 'nullable|string',
-                'medicine' => 'nullable|string',
-                'deworming' => 'nullable|string',
-                'other1' => 'nullable|string',
-                'other2' => 'nullable|string',
-                'other3' => 'nullable|string',
-                'other4' => 'nullable|string',
-                'other5' => 'nullable|string',
-                'milk_loss' => 'nullable|string',
-                'treatment_cost' => 'nullable|string',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'message' => $validator->errors()->first(),
-                    'status' => 201,
-                ], 422);
+                if (!$group) {
+                    Log::warning('healthInfo: Group not found or unauthorized', [
+                        'group_id' => $request->input('group_id'),
+                        'farmer_id' => $farmer->id,
+                        'ip' => $request->ip(),
+                    ]);
+                    return response()->json([
+                        'message' => 'Invalid or unauthorized group!',
+                        'status' => 201,
+                    ], 403);
+                }
             }
 
             // Prepare data for insertion
             $data = [
-                'farmer_id' => $user->id,
-                'information_type' => $request->information_type,
-                'group_id' => $request->group_id,
-                'cattle_type' => $request->cattle_type,
-                'tag_no' => $request->tag_no,
-                'vaccination_date' => $request->vaccination_date,
-                'disease_name' => $request->disease_name,
-                'vaccination' => $request->vaccination,
-                'medicine' => $request->medicine,
-                'deworming' => $request->deworming,
-                'other1' => $request->other1,
-                'other2' => $request->other2,
-                'other3' => $request->other3,
-                'other4' => $request->other4,
-                'other5' => $request->other5,
-                'milk_loss' => $request->milk_loss,
-                'treatment_cost' => $request->treatment_cost,
-                'date' => now(),
+                'farmer_id' => $farmer->id,
+                'information_type' => $request->input('information_type'),
+                'group_id' => $request->input('group_id'),
+                'cattle_type' => $request->input('cattle_type'),
+                'tag_no' => $request->input('tag_no'),
+                'vaccination_date' => $request->input('vaccination_date'),
+                'disease_name' => $request->input('disease_name'),
+                'vaccination' => $request->input('vaccination'),
+                'medicine' => $request->input('medicine'),
+                'deworming' => $request->input('deworming'),
+                'other1' => $request->input('other1'),
+                'other2' => $request->input('other2'),
+                'other3' => $request->input('other3'),
+                'other4' => $request->input('other4'),
+                'other5' => $request->input('other5'),
+                'milk_loss' => $request->input('milk_loss'),
+                'treatment_cost' => $request->input('treatment_cost'),
+                'date' => now()->setTimezone('Asia/Kolkata'),
             ];
 
             // Insert into tbl_health_info
             $healthInfo = HealthInfo::create($data);
 
-            Log::info('Health info inserted', [
-                'farmer_id' => $user->id,
+            Log::info('healthInfo: Health info inserted', [
+                'farmer_id' => $farmer->id,
                 'health_info_id' => $healthInfo->id,
-                'information_type' => $request->information_type,
+                'information_type' => $request->input('information_type'),
+                'group_id' => $request->input('group_id'),
+                'ip' => $request->ip(),
             ]);
 
             return response()->json([
@@ -105,13 +146,26 @@ class BreedController extends Controller
                 'status' => 200,
                 'data' => [],
             ], 200);
-
-        } catch (\Exception $e) {
-            Log::error('Error in healthInfo', [
-                'farmer_id' => auth('farmer')->id() ?? null,
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('healthInfo: Database error', [
+                'farmer_id' => $farmer->id ?? null,
+                'information_type' => $request->input('information_type'),
                 'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
             ]);
-
+            return response()->json([
+                'message' => 'Database error: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('healthInfo: General error', [
+                'farmer_id' => $farmer->id ?? null,
+                'information_type' => $request->input('information_type'),
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
             return response()->json([
                 'message' => 'Error inserting health info: ' . $e->getMessage(),
                 'status' => 201,
