@@ -309,14 +309,26 @@ class FarmerController extends Controller
         }
     }
 
-    public function updateCart(Request $request)
+     public function updateCart(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        Log::info('updateCart request', [
+            'product_id' => $request->input('product_id'),
+            'qty' => $request->input('qty'),
+            'authentication_header' => $request->header('Authentication'),
+        ]);
+
+        // Validate inputs
+        $token = $request->header('Authentication');
+        $validator = Validator::make(array_merge($request->all(), ['Authentication' => $token]), [
             'product_id' => 'required|integer',
             'qty' => 'required|integer|min:1',
+            // 'Authentication' => 'required|string',
+        ], [
+            'Authentication.required' => 'Authentication token is required',
         ]);
 
         if ($validator->fails()) {
+            Log::error('Validation failed: ' . $validator->errors()->first());
             return response()->json([
                 'message' => $validator->errors()->first(),
                 'status' => 201,
@@ -324,17 +336,15 @@ class FarmerController extends Controller
         }
 
         try {
-            // Authenticate user using 'farmer' guard
-            $user = auth('farmer')->user();
-            Log::info('UpdateCart auth attempt', [
-                'user_id' => $user ? $user->id : null,
-                'is_active' => $user ? ($user->is_active ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
-            ]);
+            // Authenticate user by token
+            $user = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
 
-            if (!$user || !$user->is_active) {
+            if (!$user) {
+                Log::warning('Invalid or inactive user for token', ['token' => $token]);
                 return response()->json([
-                    'message' => 'Permission Denied!',
+                    'message' => 'Invalid token or inactive user!',
                     'status' => 201,
                 ], 403);
             }
@@ -345,6 +355,7 @@ class FarmerController extends Controller
             // Check if cart exists for the farmer
             $cartItems = Cart::where('farmer_id', $user->id)->get();
             if ($cartItems->isEmpty()) {
+                Log::info('Cart is empty', ['farmer_id' => $user->id]);
                 return response()->json([
                     'message' => 'Cart is empty!',
                     'status' => 201,
@@ -358,6 +369,7 @@ class FarmerController extends Controller
                 ->first();
 
             if (!$product) {
+                Log::warning('Product not found or inactive', ['product_id' => $product_id]);
                 return response()->json([
                     'message' => 'Product Not Found!',
                     'status' => 201,
@@ -367,6 +379,7 @@ class FarmerController extends Controller
 
             // Check inventory
             if ($product->inventory < $qty) {
+                Log::warning('Product out of stock', ['product_id' => $product_id, 'requested_qty' => $qty]);
                 return response()->json([
                     'message' => 'Product is out of Stock!',
                     'status' => 201,
@@ -376,6 +389,11 @@ class FarmerController extends Controller
 
             // Check minimum quantity
             if ($product->min_qty && $qty < $product->min_qty) {
+                Log::warning('Quantity below minimum', [
+                    'product_id' => $product_id,
+                    'requested_qty' => $qty,
+                    'min_qty' => $product->min_qty,
+                ]);
                 return response()->json([
                     'message' => "Minimum Quantity should be {$product->min_qty}",
                     'status' => 201,
@@ -389,6 +407,7 @@ class FarmerController extends Controller
                 ->first();
 
             if (!$cartItem) {
+                Log::warning('Product not in cart', ['farmer_id' => $user->id, 'product_id' => $product_id]);
                 return response()->json([
                     'message' => 'Product not in cart!',
                     'status' => 201,
@@ -416,6 +435,10 @@ class FarmerController extends Controller
                     Cart::where('farmer_id', $user->id)
                         ->where('product_id', $cart->product_id)
                         ->delete();
+                    Log::info('Removed invalid cart item', [
+                        'farmer_id' => $user->id,
+                        'product_id' => $cart->product_id,
+                    ]);
                 }
             }
 
@@ -437,7 +460,7 @@ class FarmerController extends Controller
         } catch (\Exception $e) {
             Log::error('Error in updateCart', [
                 'product_id' => $request->input('product_id'),
-                'farmer_id' => auth('farmer')->id() ?? null,
+                'farmer_id' => $user->id ?? null,
                 'error' => $e->getMessage(),
             ]);
 
