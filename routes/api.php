@@ -63,7 +63,6 @@ Route::middleware(['auth:farmer'])->group(function () {
     ///////FeedController
     Route::post('FeedTest', [FeedController::class, 'feedTest']);
     Route::post('FeedCalculator', [FeedController::class, 'feedCalculator']);
-    Route::post('AnimalRequirement', [FeedController::class, 'animalRequirements']);
     Route::post('checkMyFeed', [FeedController::class, 'checkMyFeed']);
     Route::get('DairyMart', [FeedController::class, 'dairyMart']);
     Route::get('DoctorOnCall', [FeedController::class, 'doctorOnCall']);
@@ -219,3 +218,6 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
 
     
     Route::post('DMIcalculator', [FeedController::class, 'dmiCalculator']);
+
+    
+    Route::post('AnimalRequirement', [FeedController::class, 'animalRequirements']);

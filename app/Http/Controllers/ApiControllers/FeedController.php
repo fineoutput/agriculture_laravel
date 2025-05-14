@@ -545,28 +545,26 @@ class FeedController extends Controller
 
     public function animalRequirements(Request $request)
     {
-        try {
-            // Authenticate user using 'farmer' guard
-            $user = auth('farmer')->user();
-            Log::info('AnimalRequirements auth attempt', [
-                'user_id' => $user ? $user->id : null,
-                'is_active' => $user ? ($user->is_active ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
-            ]);
-
-            if (!$user || !$user->is_active) {
+         try {
+            $token = $request->header('Authentication');
+            if (!$token) {
+                Log::warning('No bearer token provided');
                 return response()->json([
-                    'message' => 'Permission Denied!',
+                    'message' => 'Token required!',
                     'status' => 201,
-                ], 403);
+                ], 401);
             }
 
-            // Check if request has data
-            if (!$request->all()) {
+            $user = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$user) {
+                Log::warning('Invalid or inactive user for token', ['token' => $token]);
                 return response()->json([
-                    'message' => 'Please Insert Data',
+                    'message' => 'Invalid token or inactive user!',
                     'status' => 201,
-                ], 400);
+                ], 403);
             }
 
             // Validate input
