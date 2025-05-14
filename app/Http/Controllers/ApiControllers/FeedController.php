@@ -485,7 +485,7 @@ class FeedController extends Controller
             ];
 
             // Generate HTML
-            $html = View::make('pdf.feed', compact('result'))->render();
+            // $html = View::make('pdf.feed', compact('result'))->render();
 
             // Prepare response data
             $send = [
@@ -493,7 +493,7 @@ class FeedController extends Controller
                 'dmb' => $dmb,
                 'row_ton' => round($value, 2),
                 'row_qtl' => round($value / 10, 2),
-                'html' => $html,
+                // 'html' => $html,
             ];
 
             // Update service record
