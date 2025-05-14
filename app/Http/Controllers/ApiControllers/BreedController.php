@@ -10,6 +10,7 @@ use App\Models\BreedingRecord;
 use App\Models\Canister;
 use App\Models\Group;
 use App\Models\HealthInfo;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -456,6 +457,255 @@ class BreedController extends Controller
 
             return response()->json([
                 'message' => 'Error retrieving breeding records: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
+
+      public function myAnimal(Request $request)
+    {
+        Log::info('myAnimal request', [
+            'animal_type' => $request->input('animal_type'),
+            'tag_no' => $request->input('tag_no'),
+            'assign_to_group' => $request->input('assign_to_group'),
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
+
+        // Validate inputs
+        $token = $request->header('Authentication');
+        $validator = Validator::make(array_merge($request->all(), ['Authentication' => $token]), [
+            'animal_type' => 'required|string|in:Milking,Calf,Heifer,Bull',
+            'assign_to_group' => 'required|integer|exists:tbl_group,id',
+            'tag_no' => 'required|string|max:255',
+            'animal_name' => 'required|string|max:255',
+            'dob' => 'nullable|date',
+            'father_name' => 'nullable|string|max:255',
+            'mother_name' => 'nullable|string|max:255',
+            'weight' => 'nullable|numeric',
+            'age' => 'nullable|numeric',
+            'breed_type' => 'nullable|string|max:255',
+            'semen_brand' => 'nullable|string|max:255',
+            'insemination_date' => 'nullable|date',
+            'is_pregnant' => 'nullable|in:0,1',
+            'pregnancy_test_date' => 'nullable|date',
+            'animal_gender' => 'nullable|string|in:Male,Female',
+            'is_inseminated' => 'nullable|in:0,1',
+            'insemination_type' => 'nullable|string|max:255',
+            'service_status' => 'nullable|string|max:255',
+            'in_house' => 'nullable|in:0,1',
+            'lactation' => 'nullable|numeric',
+            'calving_date' => 'nullable|date',
+            'insured_value' => 'nullable|numeric',
+            'insurance_no' => 'nullable|string|max:255',
+            'renewal_period' => 'nullable|string|max:255',
+            'insurance_date' => 'nullable|date',
+            'Authentication' => 'required|string',
+        ], [
+            'Authentication.required' => 'Authentication token is required',
+            'assign_to_group.exists' => 'Invalid group ID',
+            'animal_type.in' => 'Invalid animal type. Must be Milking, Calf, Heifer, or Bull',
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('myAnimal: Validation failed', [
+                'errors' => $validator->errors(),
+                'ip' => $request->ip(),
+                'url' => $request->fullUrl(),
+            ]);
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
+
+        try {
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            Log::debug('myAnimal: Farmer query result', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'farmer_found' => $farmer ? true : false,
+                'ip' => $request->ip(),
+            ]);
+
+            if (!$farmer) {
+                Log::warning('myAnimal: Authentication failed', [
+                    'token' => $token,
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            // Verify group belongs to farmer
+            $group = Group::where('id', $request->input('assign_to_group'))
+                ->where('farmer_id', $farmer->id)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$group) {
+                Log::warning('myAnimal: Group not found or unauthorized', [
+                    'group_id' => $request->input('assign_to_group'),
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'message' => 'Invalid or unauthorized group!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            // Check if tag_no is unique for this farmer
+            $existingAnimal = MyAnimal::where('farmer_id', $farmer->id)
+                ->where('tag_no', $request->input('tag_no'))
+                ->exists();
+
+            if ($existingAnimal) {
+                Log::warning('myAnimal: Duplicate tag_no', [
+                    'tag_no' => $request->input('tag_no'),
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'message' => 'Tag No Must Be Different!',
+                    'status' => 201,
+                ], 422);
+            }
+
+            // Prepare data based on animal_type
+            $animalType = $request->input('animal_type');
+            $commonData = [
+                'farmer_id' => $farmer->id,
+                'animal_type' => $animalType,
+                'assign_to_group' => $request->input('assign_to_group'),
+                'animal_name' => $request->input('animal_name'),
+                'tag_no' => $request->input('tag_no'),
+                'date' => now()->setTimezone('Asia/Kolkata'),
+            ];
+
+            $typeSpecificData = [];
+
+            switch ($animalType) {
+                case 'Milking':
+                    $typeSpecificData = [
+                        'dob' => $request->input('dob'),
+                        'father_name' => $request->input('father_name'),
+                        'mother_name' => $request->input('mother_name'),
+                        'weight' => $request->input('weight'),
+                        'age' => $request->input('age'),
+                        'breed_type' => $request->input('breed_type'),
+                        'semen_brand' => $request->input('semen_brand'),
+                        'insemination_date' => $request->input('insemination_date'),
+                        'pregnancy_test_date' => $request->input('pregnancy_test_date'),
+                        'animal_gender' => $request->input('animal_gender'),
+                        'is_inseminated' => $request->input('is_inseminated'),
+                        'insemination_type' => $request->input('insemination_type'),
+                        'is_pregnant' => $request->input('is_pregnant'),
+                        'service_status' => $request->input('service_status'),
+                        'in_house' => $request->input('in_house'),
+                        'lactation' => $request->input('lactation'),
+                        'calving_date' => $request->input('calving_date'),
+                        'insured_value' => $request->input('insured_value'),
+                        'insurance_no' => $request->input('insurance_no'),
+                        'renewal_period' => $request->input('renewal_period'),
+                        'insurance_date' => $request->input('insurance_date'),
+                    ];
+                    break;
+
+                case 'Calf':
+                    $typeSpecificData = [
+                        'dob' => $request->input('dob'),
+                        'father_name' => $request->input('father_name'),
+                        'mother_name' => $request->input('mother_name'),
+                        'weight' => $request->input('weight'),
+                        'age' => $request->input('age'),
+                    ];
+                    break;
+
+                case 'Heifer':
+                    $typeSpecificData = [
+                        'dob' => $request->input('dob'),
+                        'breed_type' => $request->input('breed_type'),
+                        'is_inseminated' => $request->input('is_inseminated'),
+                        'insemination_type' => $request->input('insemination_type'),
+                        'semen_brand' => $request->input('semen_brand'),
+                        'insemination_date' => $request->input('insemination_date'),
+                        'is_pregnant' => $request->input('is_pregnant'),
+                        'pregnancy_test_date' => $request->input('pregnancy_test_date'),
+                        'animal_gender' => $request->input('animal_gender'),
+                    ];
+                    break;
+
+                case 'Bull':
+                    $typeSpecificData = [
+                        'dob' => $request->input('dob'),
+                        'father_name' => $request->input('father_name'),
+                        'mother_name' => $request->input('mother_name'),
+                        'weight' => $request->input('weight'),
+                        'age' => $request->input('age'),
+                        'in_house' => $request->input('in_house'),
+                        'service_status' => $request->input('service_status'),
+                    ];
+                    break;
+
+                default:
+                    Log::warning('myAnimal: Invalid animal_type', [
+                        'animal_type' => $animalType,
+                        'farmer_id' => $farmer->id,
+                        'ip' => $request->ip(),
+                    ]);
+                    return response()->json([
+                        'message' => 'Invalid animal type!',
+                        'status' => 201,
+                    ], 422);
+            }
+
+            // Insert animal
+            $data = array_merge($commonData, $typeSpecificData);
+            $animal = DB::transaction(function () use ($data) {
+                return MyAnimal::create($data);
+            });
+
+            Log::info('myAnimal: Animal registered successfully', [
+                'farmer_id' => $farmer->id,
+                'animal_id' => $animal->id,
+                'tag_no' => $animal->tag_no,
+                'animal_type' => $animal->animal_type,
+                'group_id' => $animal->assign_to_group,
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json([
+                'message' => 'Animal Successfully Registered!',
+                'status' => 200,
+            ], 200);
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('myAnimal: Database error', [
+                'farmer_id' => $farmer->id ?? null,
+                'tag_no' => $request->input('tag_no'),
+                'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Database error: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('myAnimal: General error', [
+                'farmer_id' => $farmer->id ?? null,
+                'tag_no' => $request->input('tag_no'),
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Error processing request: ' . $e->getMessage(),
                 'status' => 201,
             ], 500);
         }
