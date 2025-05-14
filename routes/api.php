@@ -88,7 +88,6 @@ Route::middleware(['auth:farmer'])->group(function () {
 
 
     //////////////HomeController
-    Route::post('home/create-group', [HomeController::class, 'createGroup']);
     Route::post('home/Get-/group', [HomeController::class, 'getGroup']);
     Route::post('home/get-cattle', [HomeController::class, 'getCattle']);
     Route::post('homeGet/Tag-No', [HomeController::class, 'getTagNo']);
@@ -223,3 +222,6 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
 
     
     Route::post('FeedCalculator', [FeedController::class, 'feedCalculator']);
+
+    
+    Route::post('homeCreateGroup', [HomeController::class, 'createGroup']);
