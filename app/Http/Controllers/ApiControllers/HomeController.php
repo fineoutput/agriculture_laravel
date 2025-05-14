@@ -1414,7 +1414,7 @@ class HomeController extends Controller
                         'description' => $product->description_english,
                     ],
                 };
-
+                return $product->is_admin;
                 return [
                     'pro_id' => $product->id,
                     'name' => $productDetails['name'],
@@ -1429,6 +1429,7 @@ class HomeController extends Controller
                     'percent' => $percent,
                     'vendor_id' => $product->added_by,
                     'is_admin' => $product->is_admin,
+
                     'offer' => $product->offer,
                     'product_cod' => $product->cod,
                     'is_cod' => $farmer->cod,
