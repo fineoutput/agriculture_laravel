@@ -53,7 +53,6 @@ Route::middleware(['auth:farmer'])->group(function () {
     //////////FarmerController
     Route::get('GetCart', [FarmerController::class, 'getCart']);
     Route::post('UpdateCartItems', [FarmerController::class, 'updateCart']);
-    Route::post('RemoveCartItems', [FarmerController::class, 'removeCart']);
     Route::get('Calculate', [FarmerController::class, 'calculate']);
     Route::post('CheckOut', [FarmerController::class, 'checkout']);
 
@@ -199,3 +198,6 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
     Route::get('home/data', [HomeController::class, 'homeData']);
     
     Route::post('AddtoCartFarmer', [FarmerController::class, 'addToCart']);
+
+    
+    Route::post('RemoveCartItems', [FarmerController::class, 'removeCart']);

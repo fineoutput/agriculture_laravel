@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Mail;
 use Razorpay\Api\Api; // Add this import
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\FacadesLog;
 
 class FarmerController extends Controller
 {
@@ -427,12 +428,18 @@ class FarmerController extends Controller
 
     public function removeCart(Request $request)
     {
+        Log::info('removeCart request', [
+            'cart_id' => $request->input('cart_id'),
+            'token' => $request->bearerToken(),
+        ]);
+
         // Validate input
         $validator = Validator::make($request->all(), [
-            'product_id' => 'required|integer',
+            'cart_id' => 'required|integer|exists:carts,id',
         ]);
 
         if ($validator->fails()) {
+            Log::error('Validation failed: ' . $validator->errors()->first());
             return response()->json([
                 'message' => $validator->errors()->first(),
                 'status' => 201,
@@ -440,53 +447,75 @@ class FarmerController extends Controller
         }
 
         try {
-            // Authenticate user using 'farmer' guard
-            $user = auth('farmer')->user();
-            Log::info('RemoveCart auth attempt', [
-                'user_id' => $user ? $user->id : null,
-                'is_active' => $user ? ($user->is_active ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
-            ]);
-
-            if (!$user || !$user->is_active) {
+            // Get bearer token
+            $token = $request->bearerToken();
+            if (!$token) {
+                Log::warning('No bearer token provided');
                 return response()->json([
-                    'message' => 'Permission Denied!',
+                    'message' => 'Token required!',
+                    'status' => 201,
+                ], 401);
+            }
+
+            // Authenticate user by token
+            $user = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$user) {
+                Log::warning('Invalid or inactive user for token', ['token' => $token]);
+                return response()->json([
+                    'message' => 'Invalid token or inactive user!',
                     'status' => 201,
                 ], 403);
             }
 
-            $product_id = $request->input('product_id');
+            $cart_id = $request->input('cart_id');
+
+            // Find cart item
+            $cartItem = Cart::where('id', $cart_id)
+                ->where('farmer_id', $user->id)
+                ->first();
+
+            if (!$cartItem) {
+                Log::warning('Cart item not found or not owned by user', [
+                    'cart_id' => $cart_id,
+                    'farmer_id' => $user->id,
+                ]);
+                return response()->json([
+                    'message' => 'Cart item not found!',
+                    'status' => 201,
+                    'data' => [],
+                ], 404);
+            }
 
             // Delete cart item
-            $deleted = Cart::where('farmer_id', $user->id)
-                ->where('product_id', $product_id)
-                ->delete();
+            $cartItem->delete();
 
-            // Get updated cart count
-            $count = Cart::where('farmer_id', $user->id)->count();
+            // Get updated cart item count
+            $cartCount = Cart::where('farmer_id', $user->id)->count();
 
             Log::info('Cart item removed', [
                 'farmer_id' => $user->id,
-                'product_id' => $product_id,
-                'deleted' => $deleted,
-                'cart_count' => $count,
+                'cart_id' => $cart_id,
+                'cart_count' => $cartCount,
             ]);
 
             return response()->json([
-                'message' => 'Success!',
+                'message' => 'Product Successfully Removed from Cart!',
                 'status' => 200,
-                'data' => $count,
+                'data' => $cartCount,
             ], 200);
 
         } catch (\Exception $e) {
             Log::error('Error in removeCart', [
-                'product_id' => $request->input('product_id'),
-                'farmer_id' => auth('farmer')->id() ?? null,
+                'cart_id' => $request->input('cart_id'),
+                'farmer_id' => $user->id ?? null,
                 'error' => $e->getMessage(),
             ]);
 
             return response()->json([
-                'message' => 'Error removing cart item: ' . $e->getMessage(),
+                'message' => 'Error removing product from cart: ' . $e->getMessage(),
                 'status' => 201,
             ], 500);
         }
