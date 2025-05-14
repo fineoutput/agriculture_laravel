@@ -428,13 +428,13 @@ class FarmerController extends Controller
     public function removeCart(Request $request)
     {
         Log::info('removeCart request', [
-            // 'cart_id' => $request->input('cart_id'),
+            'product_id' => $request->input('product_id'),
             'token' => $request->bearerToken(),
         ]);
 
         // Validate input
         $validator = Validator::make($request->all(), [
-            'cart_id' => 'required|integer|exists:carts,id',
+            'product_id' => 'required|integer',
         ]);
 
         if ($validator->fails()) {
@@ -469,52 +469,38 @@ class FarmerController extends Controller
                 ], 403);
             }
 
-            $cart_id = $request->input('cart_id');
-
-            // Find cart item
-            $cartItem = Cart::where('id', $cart_id)
-                ->where('farmer_id', $user->id)
-                ->first();
-
-            if (!$cartItem) {
-                Log::warning('Cart item not found or not owned by user', [
-                    'cart_id' => $cart_id,
-                    'farmer_id' => $user->id,
-                ]);
-                return response()->json([
-                    'message' => 'Cart item not found!',
-                    'status' => 201,
-                    'data' => [],
-                ], 404);
-            }
+            $product_id = $request->input('product_id');
 
             // Delete cart item
-            $cartItem->delete();
+            $deleted = Cart::where('farmer_id', $user->id)
+                ->where('product_id', $product_id)
+                ->delete();
 
-            // Get updated cart item count
-            $cartCount = Cart::where('farmer_id', $user->id)->count();
+            // Get updated cart count
+            $count = Cart::where('farmer_id', $user->id)->count();
 
             Log::info('Cart item removed', [
                 'farmer_id' => $user->id,
-                'cart_id' => $cart_id,
-                'cart_count' => $cartCount,
+                'product_id' => $product_id,
+                'deleted' => $deleted,
+                'cart_count' => $count,
             ]);
 
             return response()->json([
-                'message' => 'Product Successfully Removed from Cart!',
+                'message' => 'Success!',
                 'status' => 200,
-                'data' => $cartCount,
+                'data' => $count,
             ], 200);
 
         } catch (\Exception $e) {
             Log::error('Error in removeCart', [
-                'cart_id' => $request->input('cart_id'),
+                'product_id' => $request->input('product_id'),
                 'farmer_id' => $user->id ?? null,
                 'error' => $e->getMessage(),
             ]);
 
             return response()->json([
-                'message' => 'Error removing product from cart: ' . $e->getMessage(),
+                'message' => 'Error removing cart item: ' . $e->getMessage(),
                 'status' => 201,
             ], 500);
         }
