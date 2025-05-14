@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\ApiControllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\AnimalCycle;
+use App\Models\BreedingRecord;
 use App\Models\Farmer;
 use App\Models\Group;
 use App\Models\Slider;
@@ -19,6 +21,8 @@ use App\Models\FarmerNotification;
 use App\Models\CheckMyFeedBuy;
 use App\Models\SubscriptionBuy;
 use App\Models\Canister;
+use App\Models\HealthInfo;
+use App\Models\MilkRecord;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -2240,7 +2244,7 @@ class HomeController extends Controller
         $validator = Validator::make(array_merge($request->all(), ['Authentication' => $token]), [
             'id' => 'required|integer|exists:tbl_group,id',
             'name' => 'required|string|max:255',
-            'Authentication' => 'required|string',
+            // 'Authentication' => 'required|string',
         ], [
             'Authentication.required' => 'Authentication token is required',
             'id.exists' => 'Invalid group ID',
@@ -2341,6 +2345,152 @@ class HomeController extends Controller
             ], 500);
         } catch (\Exception $e) {
             Log::error('updateGroup: General error', [
+                'farmer_id' => $farmer->id ?? null,
+                'group_id' => $request->input('id'),
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Error processing request: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
+
+      public function deleteGroup(Request $request)
+    {
+        Log::info('deleteGroup request', [
+            'id' => $request->input('id'),
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
+
+        // Validate inputs
+        $token = $request->header('Authentication');
+        $validator = Validator::make(array_merge($request->all(), ['Authentication' => $token]), [
+            'id' => 'required|integer|exists:tbl_group,id',
+            // 'Authentication' => 'required|string',
+        ], [
+            'Authentication.required' => 'Authentication token is required',
+            'id.exists' => 'Invalid group ID',
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('deleteGroup: Validation failed', [
+                'errors' => $validator->errors(),
+                'ip' => $request->ip(),
+                'url' => $request->fullUrl(),
+            ]);
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
+
+        try {
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            Log::debug('deleteGroup: Farmer query result', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'farmer_found' => $farmer ? true : false,
+                'ip' => $request->ip(),
+            ]);
+
+            if (!$farmer) {
+                Log::warning('deleteGroup: Authentication failed', [
+                    'token' => $token,
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            // Verify group belongs to farmer
+            $group = Group::where('id', $request->input('id'))
+                ->where('farmer_id', $farmer->id)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$group) {
+                Log::warning('deleteGroup: Group not found or unauthorized', [
+                    'group_id' => $request->input('id'),
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            // Perform deletions and updates in a transaction
+            $deleted = DB::transaction(function () use ($farmer, $group) {
+                // Delete related animals and their cycles
+                $animals = MyAnimal::where('assign_to_group', $group->id)->get();
+                foreach ($animals as $animal) {
+                    AnimalCycle::where('animal_id', $animal->id)->delete();
+                    Canister::where('tag_no', $animal->tag_no)->update([
+                        'farm_bull' => '',
+                        'bull_name' => '',
+                        'company_name' => '',
+                        'no_of_units' => '',
+                        'milk_production_of_mother' => '',
+                        'date' => '',
+                    ]);
+                    $animal->delete();
+                }
+
+                // Delete related records
+                BreedingRecord::where('group_id', $group->id)->delete();
+                HealthInfo::where('group_id', $group->id)->delete();
+                MilkRecord::where('group_id', $group->id)->delete();
+
+                // Delete the group
+                return $group->delete();
+            });
+
+            if ($deleted) {
+                Log::info('deleteGroup: Group deleted successfully', [
+                    'farmer_id' => $farmer->id,
+                    'group_id' => $group->id,
+                    'ip' => $request->ip(),
+                ]);
+
+                return response()->json([
+                    'message' => 'Record Successfully Deleted!',
+                    'status' => 200,
+                ], 200);
+            } else {
+                Log::warning('deleteGroup: Group deletion failed', [
+                    'farmer_id' => $farmer->id,
+                    'group_id' => $group->id,
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('deleteGroup: Database error', [
+                'farmer_id' => $farmer->id ?? null,
+                'group_id' => $request->input('id'),
+                'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Database error: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('deleteGroup: General error', [
                 'farmer_id' => $farmer->id ?? null,
                 'group_id' => $request->input('id'),
                 'error' => $e->getMessage(),

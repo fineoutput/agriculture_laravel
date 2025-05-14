@@ -231,3 +231,6 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
    
     Route::post('homeUpdategroup', [HomeController::class, 'updateGroup']);
 
+
+    Route::post('homeDeletegroup', [HomeController::class, 'deleteGroup']);
+
