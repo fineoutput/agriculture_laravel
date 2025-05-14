@@ -663,7 +663,7 @@ class FeedController extends Controller
             // }
 
 
-            $html = View::make('pdf.animal_requirements', compact('input', 'spreadsheet'))->render();
+            // $html = View::make('pdf.animal_requirements', compact('input', 'spreadsheet'))->render();
 
             $serviceRecord = ServiceRecord::first();
             if ($serviceRecord) {
@@ -693,7 +693,7 @@ class FeedController extends Controller
             return response()->json([
                 'message' => 'Success!',
                 'status' => 200,
-                'data' => $html,
+                // 'data' => $html,
             ], 200);
 
         } catch (\Exception $e) {
