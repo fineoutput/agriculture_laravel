@@ -193,10 +193,10 @@ class FeedController extends Controller
             ];
 
             // Generate HTML
-            $html = View::make('pdf.dmi', compact('input', 'result'))->render();
+            // $html = View::make('pdf.dmi', compact('input', 'result'))->render();
 
-            // Add HTML to response data
-            $result['html'] = $html;
+            // // Add HTML to response data
+            // $result['html'] = $html;
 
             // Update service record
             $serviceRecord = ServiceRecord::first();
