@@ -16,7 +16,6 @@ use App\Models\Cart;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
-use Illuminate\Support\FacadesLog;
 use Illuminate\Support\Facades\Mail;
 use Razorpay\Api\Api; // Add this import
 use GuzzleHttp\Client;
