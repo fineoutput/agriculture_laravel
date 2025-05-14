@@ -1258,6 +1258,7 @@ class HomeController extends Controller
 
      public function homeData(Request $request)
     {
+        return 'hello';//
         try {
             // Get headers
             // $fcmToken = $request->header('Fcm-Token', '');
