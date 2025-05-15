@@ -266,7 +266,7 @@ class HomeController extends Controller
         $token = $request->header('Authentication');
         $validator = Validator::make(array_merge($request->all(), ['Authentication' => $token]), [
             'assign_to_group' => 'required|integer|exists:tbl_group,id',
-            'milking' => 'nullable|string|max:255',
+            'milking' => 'nullable|integer',
             // 'Authentication' => 'required|string',
         ], [
             'Authentication.required' => 'Authentication token is required',
