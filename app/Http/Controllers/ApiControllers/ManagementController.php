@@ -26,6 +26,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use App\Mail\EquipmentSalePurchaseNotification;
+use Illuminate\Support\Facades\Storage;
+
 class ManagementController extends Controller
 {
     private function createPagination($currentPage, $totalPages)
@@ -3230,6 +3232,156 @@ $entryIds = DB::table(DB::raw("({$subQuery->toSql()}) as sub"))
             ]);
             return response()->json([
                 'message' => 'Error processing request: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
+
+     public function viewEquipmentSalePurchase(Request $request)
+    {
+        Log::info('viewEquipmentSalePurchase request', [
+            'page_index' => $request->header('Index', 1),
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
+
+        // Validate authentication header
+        $token = $request->header('Authentication');
+        $validator = Validator::make(['Authentication' => $token], [
+            'Authentication' => 'required|string',
+        ], [
+            'Authentication.required' => 'Authentication token is required',
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('viewEquipmentSalePurchase: Validation failed', [
+                'errors' => $validator->errors(),
+                'ip' => $request->ip(),
+                'url' => $request->fullUrl(),
+            ]);
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
+
+        try {
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            Log::debug('viewEquipmentSalePurchase: Farmer query result', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'farmer_found' => $farmer ? true : false,
+                'ip' => $request->ip(),
+            ]);
+
+            if (!$farmer) {
+                Log::warning('viewEquipmentSalePurchase: Authentication failed', [
+                    'token' => $token,
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            // Get page index from headers (default to 1)
+            $pageIndex = $request->header('Index', 1);
+            $perPage = 20;
+
+            // Fetch paginated equipment sale/purchase records
+            $equipmentData = EquipmentSalePurchase::where('farmer_id', $farmer->id)
+                ->orderBy('id', 'desc')
+                ->paginate($perPage, ['*'], 'page', $pageIndex);
+
+            // Prepare response data
+            $data = [];
+            $i = ($equipmentData->currentPage() - 1) * $perPage + 1;
+
+            foreach ($equipmentData as $exp) {
+                // Format status
+                $statusDetails = match ($exp->status) {
+                    0 => ['status' => 'Pending', 'show' => 0, 'bg_color' => '#65bcd7'],
+                    1 => ['status' => 'Accepted', 'show' => 1, 'bg_color' => '#3b71ca'],
+                    2 => ['status' => 'Completed', 'show' => 0, 'bg_color' => '#139c49'],
+                    3 => ['status' => 'Rejected', 'show' => 0, 'bg_color' => '#dc4c64'],
+                    default => ['status' => 'Unknown', 'show' => 0, 'bg_color' => '#000000'],
+                };
+
+                // Format file paths
+                $image1 = $exp->image1 ? Storage::url($exp->image1) : '';
+                $image2 = $exp->image2 ? Storage::url($exp->image2) : '';
+                $image3 = $exp->image3 ? Storage::url($exp->image3) : '';
+                $image4 = $exp->image4 ? Storage::url($exp->image4) : '';
+                $video = $exp->video ? Storage::url($exp->video) : '';
+
+                $data[] = [
+                    's_no' => $i,
+                    'id' => $exp->id,
+                    'information_type' => $exp->information_type,
+                    'equipment_type' => $exp->equipment_type,
+                    'company_name' => $exp->company_name,
+                    'year_old' => $exp->year_old,
+                    'price' => $exp->price,
+                    'status' => $statusDetails['status'],
+                    'show' => $statusDetails['show'],
+                    'image1' => $image1,
+                    'image2' => $image2,
+                    'image3' => $image3,
+                    'image4' => $image4,
+                    'video' => $video,
+                    'remark' => $exp->remark,
+                    'date' => $exp->date->format('d/m/Y'),
+                ];
+                $i++;
+            }
+
+            Log::info('viewEquipmentSalePurchase: Records retrieved', [
+                'farmer_id' => $farmer->id,
+                'page' => $pageIndex,
+                'total_records' => $equipmentData->total(),
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json([
+                'message' => 'Success!',
+                'status' => 200,
+                'data' => $data,
+                'pagination' => [
+                    'current_page' => $equipmentData->currentPage(),
+                    'last_page' => $equipmentData->lastPage(),
+                    'per_page' => $equipmentData->perPage(),
+                    'total' => $equipmentData->total(),
+                    'from' => $equipmentData->firstItem(),
+                    'to' => $equipmentData->lastItem(),
+                ],
+                'last' => $equipmentData->lastPage(),
+            ], 200);
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('viewEquipmentSalePurchase: Database error', [
+                'farmer_id' => $farmer->id ?? null,
+                'page_index' => $pageIndex,
+                'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Database error: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('viewEquipmentSalePurchase: General error', [
+                'farmer_id' => $farmer->id ?? null,
+                'page_index' => $pageIndex,
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Error retrieving records: ' . $e->getMessage(),
                 'status' => 201,
             ], 500);
         }
