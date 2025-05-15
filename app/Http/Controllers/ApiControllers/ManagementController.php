@@ -3034,7 +3034,7 @@ $entryIds = DB::table(DB::raw("({$subQuery->toSql()}) as sub"))
             'image2' => 'nullable|file|mimes:jpg,jpeg,png|max:25600',
             'image3' => 'nullable|file|mimes:jpg,jpeg,png|max:25600',
             'image4' => 'nullable|file|mimes:jpg,jpeg,png|max:25600',
-            'video' => 'nullable|file|mimes:mp4,avi,mov,mpeg,mkv|max:51200',
+            'video' => 'nullable|file|mimes:mp4,jpg,jpeg,png,avi,mov,mpeg,mkv|max:51200',
             'Authentication' => 'required|string',
         ], [
             'information_type.required' => 'Information type is required',
