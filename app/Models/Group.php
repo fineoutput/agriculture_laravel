@@ -18,6 +18,9 @@ class Group extends Model
         "ip",
         "date",
         "is_active",
-        "added_by"
+        "added_by",
+        "created_at",
+        "updated_at",
+        "deleted_at",
       ];
  }
