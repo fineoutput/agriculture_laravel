@@ -46,8 +46,13 @@ class MyAnimal extends Model
         "nine_month"
     ];
 
-    // public function farmer()
-    // {
-    //     return $this->belongsTo(Farmer::class, 'farmer_id');
-    // }
+    public function farmer()
+    {
+        return $this->belongsTo(Farmer::class, 'farmer_id');
+    }
+
+    public function group()
+{
+    return $this->belongsTo(Group::class, 'group_id'); // adjust 'group_id' if your foreign key is different
+}
 }
