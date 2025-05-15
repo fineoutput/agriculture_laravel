@@ -1431,8 +1431,8 @@ $entryIds = DB::table(DB::raw("({$subQuery->toSql()}) as sub"))
             }
 
             $validator = Validator::make($request->all(), [
-                'from' => 'nullable|date_format:Y-m-d',
-                'to' => 'nullable|date_format:Y-m-d|after_or_equal:from',
+                'from' => 'nullable|date_format:d-m-Y',
+                'to' => 'nullable|date_format:d-m-Y|after_or_equal:from',
             ]);
 
             if ($validator->fails()) {
