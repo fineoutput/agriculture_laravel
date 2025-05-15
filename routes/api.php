@@ -287,4 +287,4 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
     Route::post('ManagementSemenTank-add', [ManagementController::class, 'addSemenTank']);
 
     
-    Route::get('ManagementViewSemen-Tank', [ManagementController::class, 'viewSemenTank']);
+    Route::get('ManagementView-Semen-Tank', [ManagementController::class, 'viewSemenTank']);
