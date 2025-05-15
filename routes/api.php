@@ -93,7 +93,6 @@ Route::middleware(['auth:farmer'])->group(function () {
     
     ///////managementController
     Route::post('others-sale-purchase-View', [ManagementController::class, 'viewOthersSalePurchase']);
-    Route::get('View-Stock-handling', [ManagementController::class, 'viewStocks']);
     Route::get('view-Stock-Txn', [ManagementController::class, 'viewStocksTxn']);
     Route::get('ViewSemen-Tank', [ManagementController::class, 'viewSemenTank']);
     Route::post('SemenTank-add', [ManagementController::class, 'addSemenTank']);
@@ -280,3 +279,6 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
 
     
     Route::post('ManagementStock-Handling', [ManagementController::class, 'stockHandling']);
+
+    
+    Route::get('ManagementView-Stock-handling', [ManagementController::class, 'viewStocks']);
