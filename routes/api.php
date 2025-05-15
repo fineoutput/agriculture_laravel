@@ -292,3 +292,6 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
 
     
     Route::post('Management-Delete-semen-Tank', [ManagementController::class, 'deleteSemenTank']);
+
+
+    Route::post('Equipment-Sale-Purchase', [ManagementController::class, 'equipmentSalePurchase']);

@@ -25,6 +25,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use App\Mail\EquipmentSalePurchaseNotification;
 class ManagementController extends Controller
 {
     private function createPagination($currentPage, $totalPages)
@@ -2999,6 +3000,236 @@ $entryIds = DB::table(DB::raw("({$subQuery->toSql()}) as sub"))
             ]);
             return response()->json([
                 'message' => 'Error updating record: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
+
+    public function equipmentSalePurchase(Request $request)
+    {
+        Log::info('equipmentSalePurchase request', [
+            'information_type' => $request->input('information_type'),
+            'company_name' => $request->input('company_name'),
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
+
+        // Validate inputs
+        $token = $request->header('Authentication');
+        $validator = Validator::make(array_merge($request->all(), [
+            'Authentication' => $token,
+            'image1' => $request->file('image1'),
+            'image2' => $request->file('image2'),
+            'image3' => $request->file('image3'),
+            'image4' => $request->file('image4'),
+            'video' => $request->file('video'),
+        ]), [
+            'information_type' => 'required|string',
+            'equipment_type' => 'nullable|string',
+            'company_name' => 'required|string',
+            'year_old' => 'required|string',
+            'price' => 'nullable|string',
+            'remark' => 'nullable|string',
+            'image1' => 'nullable|file|mimes:jpg,jpeg,png|max:25600',
+            'image2' => 'nullable|file|mimes:jpg,jpeg,png|max:25600',
+            'image3' => 'nullable|file|mimes:jpg,jpeg,png|max:25600',
+            'image4' => 'nullable|file|mimes:jpg,jpeg,png|max:25600',
+            'video' => 'nullable|file|mimes:mp4,avi,mov,mpeg,mkv|max:51200',
+            'Authentication' => 'required|string',
+        ], [
+            'information_type.required' => 'Information type is required',
+            'company_name.required' => 'Company name is required',
+            'year_old.required' => 'Year old is required',
+            'image1.mimes' => 'Image 1 must be a JPG, JPEG, or PNG file',
+            'image1.max' => 'Image 1 must not exceed 25MB',
+            'image2.mimes' => 'Image 2 must be a JPG, JPEG, or PNG file',
+            'image2.max' => 'Image 2 must not exceed 25MB',
+            'image3.mimes' => 'Image 3 must be a JPG, JPEG, or PNG file',
+            'image3.max' => 'Image 3 must not exceed 25MB',
+            'image4.mimes' => 'Image 4 must be a JPG, JPEG, or PNG file',
+            'image4.max' => 'Image 4 must not exceed 25MB',
+            'video.mimes' => 'Video must be an MP4, AVI, MOV, MPEG, or MKV file',
+            'video.max' => 'Video must not exceed 50MB',
+            'Authentication.required' => 'Authentication token is required',
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('equipmentSalePurchase: Validation failed', [
+                'errors' => $validator->errors(),
+                'ip' => $request->ip(),
+                'url' => $request->fullUrl(),
+            ]);
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
+
+        try {
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            Log::debug('equipmentSalePurchase: Farmer query result', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'farmer_found' => $farmer ? true : false,
+                'ip' => $request->ip(),
+            ]);
+
+            if (!$farmer) {
+                Log::warning('equipmentSalePurchase: Authentication failed', [
+                    'token' => $token,
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            // Handle file uploads
+            $image1Path = $image2Path = $image3Path = $image4Path = $videoPath = null;
+
+            if ($request->hasFile('image1') && $request->file('image1')->isValid()) {
+                $image1Path = $request->file('image1')->storeAs(
+                    'uploads/sales',
+                    'upload_image1_' . now()->format('YmdHis') . '.' . $request->file('image1')->extension(),
+                    'public'
+                );
+                Log::info('equipmentSalePurchase: Image1 uploaded', [
+                    'farmer_id' => $farmer->id,
+                    'path' => $image1Path,
+                    'ip' => $request->ip(),
+                ]);
+            }
+
+            if ($request->hasFile('image2') && $request->file('image2')->isValid()) {
+                $image2Path = $request->file('image2')->storeAs(
+                    'uploads/sales',
+                    'upload_image2_' . now()->format('YmdHis') . '.' . $request->file('image2')->extension(),
+                    'public'
+                );
+                Log::info('equipmentSalePurchase: Image2 uploaded', [
+                    'farmer_id' => $farmer->id,
+                    'path' => $image2Path,
+                    'ip' => $request->ip(),
+                ]);
+            }
+
+            if ($request->hasFile('image3') && $request->file('image3')->isValid()) {
+                $image3Path = $request->file('image3')->storeAs(
+                    'uploads/sales',
+                    'upload_image3_' . now()->format('YmdHis') . '.' . $request->file('image3')->extension(),
+                    'public'
+                );
+                Log::info('equipmentSalePurchase: Image3 uploaded', [
+                    'farmer_id' => $farmer->id,
+                    'path' => $image3Path,
+                    'ip' => $request->ip(),
+                ]);
+            }
+
+            if ($request->hasFile('image4') && $request->file('image4')->isValid()) {
+                $image4Path = $request->file('image4')->storeAs(
+                    'uploads/sales',
+                    'upload_image4_' . now()->format('YmdHis') . '.' . $request->file('image4')->extension(),
+                    'public'
+                );
+                Log::info('equipmentSalePurchase: Image4 uploaded', [
+                    'farmer_id' => $farmer->id,
+                    'path' => $image4Path,
+                    'ip' => $request->ip(),
+                ]);
+            }
+
+            if ($request->hasFile('video') && $request->file('video')->isValid()) {
+                $videoPath = $request->file('video')->storeAs(
+                    'uploads/sales/videos',
+                    'upload_video_' . now()->format('YmdHis') . '.' . $request->file('video')->extension(),
+                    'public'
+                );
+                Log::info('equipmentSalePurchase: Video uploaded', [
+                    'farmer_id' => $farmer->id,
+                    'path' => $videoPath,
+                    'ip' => $request->ip(),
+                ]);
+            }
+
+            // Prepare data for insertion
+            $data = [
+                'farmer_id' => $farmer->id,
+                'information_type' => $request->input('information_type'),
+                'equipment_type' => $request->input('equipment_type'),
+                'company_name' => $request->input('company_name'),
+                'year_old' => $request->input('year_old'),
+                'price' => $request->input('price'),
+                'image1' => $image1Path,
+                'image2' => $image2Path,
+                'image3' => $image3Path,
+                'image4' => $image4Path,
+                'video' => $videoPath,
+                'status' => 0,
+                'date' => now()->setTimezone('Asia/Kolkata'),
+                'remark' => $request->input('remark'),
+            ];
+
+            // Insert into tbl_equipment_sale_purchase
+            $equipmentRecord = EquipmentSalePurchase::create($data);
+
+            Log::info('equipmentSalePurchase: Record inserted', [
+                'farmer_id' => $farmer->id,
+                'equipment_record_id' => $equipmentRecord->id,
+                'information_type' => $request->input('information_type'),
+                'ip' => $request->ip(),
+            ]);
+
+            // Send email to admin
+            try {
+                Mail::to(config('mail.admin_email', 'admin@dairymuneem.com'))
+                    ->send(new EquipmentSalePurchaseNotification($farmer, $equipmentRecord));
+                Log::info('equipmentSalePurchase: Email sent to admin', [
+                    'farmer_id' => $farmer->id,
+                    'equipment_record_id' => $equipmentRecord->id,
+                    'ip' => $request->ip(),
+                ]);
+            } catch (\Exception $e) {
+                Log::error('equipmentSalePurchase: Failed to send email', [
+                    'farmer_id' => $farmer->id,
+                    'equipment_record_id' => $equipmentRecord->id,
+                    'error' => $e->getMessage(),
+                    'ip' => $request->ip(),
+                ]);
+                // Continue with success response despite email failure
+            }
+
+            return response()->json([
+                'message' => 'Record Successfully Inserted!',
+                'status' => 200,
+                'data' => [],
+            ], 200);
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('equipmentSalePurchase: Database error', [
+                'farmer_id' => $farmer->id ?? null,
+                'information_type' => $request->input('information_type'),
+                'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Database error: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('equipmentSalePurchase: General error', [
+                'farmer_id' => $farmer->id ?? null,
+                'information_type' => $request->input('information_type'),
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Error processing request: ' . $e->getMessage(),
                 'status' => 201,
             ], 500);
         }
