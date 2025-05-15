@@ -3186,13 +3186,13 @@ $entryIds = DB::table(DB::raw("({$subQuery->toSql()}) as sub"))
 
             // Send email to admin
             try {
-                Mail::to(config('mail.admin_email', 'admin@dairymuneem.com'))
-                    ->send(new EquipmentSalePurchaseNotification($farmer, $equipmentRecord));
-                Log::info('equipmentSalePurchase: Email sent to admin', [
-                    'farmer_id' => $farmer->id,
-                    'equipment_record_id' => $equipmentRecord->id,
-                    'ip' => $request->ip(),
-                ]);
+                // Mail::to(config('mail.admin_email', 'admin@dairymuneem.com'))
+                //     // ->send(new EquipmentSalePurchaseNotification($farmer, $equipmentRecord));
+                // Log::info('equipmentSalePurchase: Email sent to admin', [
+                //     'farmer_id' => $farmer->id,
+                //     'equipment_record_id' => $equipmentRecord->id,
+                //     'ip' => $request->ip(),
+                // ]);
             } catch (\Exception $e) {
                 Log::error('equipmentSalePurchase: Failed to send email', [
                     'farmer_id' => $farmer->id,
