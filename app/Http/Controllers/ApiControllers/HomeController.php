@@ -770,7 +770,7 @@ class HomeController extends Controller
 
             // Validate inputs
             $validator = Validator::make($request->all(), [
-                'farmer_id' => 'required|integer|exists:tbl_farmers,id',
+                // 'farmer_id' => 'required|integer|exists:tbl_farmers,id',
                 'tag_no' => 'required|string',
             ]);
 
