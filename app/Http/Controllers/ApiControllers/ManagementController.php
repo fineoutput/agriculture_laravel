@@ -61,7 +61,7 @@ class ManagementController extends Controller
             }
 
             $validator = Validator::make($request->all(), [
-                'date' => 'required|date_format:d/m/Y',
+                'date' => 'required|date_format:d-m-Y',
                 'data' => 'required|json',
                 'update_inventory' => 'required|string|in:Yes,No',
             ]);
