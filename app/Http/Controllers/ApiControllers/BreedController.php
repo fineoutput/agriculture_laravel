@@ -131,7 +131,7 @@ class BreedController extends Controller
             ];
 
             // Insert into tbl_health_info
-            $healthInfo = HealthInfo::create($data);
+            $healthInfo = HealthInfo::insert($data);
 
             Log::info('healthInfo: Health info inserted', [
                 'farmer_id' => $farmer->id,
@@ -144,7 +144,7 @@ class BreedController extends Controller
             return response()->json([
                 'message' => 'Record Successfully Inserted!',
                 'status' => 200,
-                'data' => [],
+                'data' => $data,
             ], 200);
         } catch (\Illuminate\Database\QueryException $e) {
             Log::error('healthInfo: Database error', [
