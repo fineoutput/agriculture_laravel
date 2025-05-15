@@ -131,7 +131,7 @@ class BreedController extends Controller
             ];
 
             // Insert into tbl_health_info
-            $healthInfo = HealthInfo::insert($data);
+            $healthInfo = HealthInfo::create($data);
 
             Log::info('healthInfo: Health info inserted', [
                 'farmer_id' => $farmer->id,
