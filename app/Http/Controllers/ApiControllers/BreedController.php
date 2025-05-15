@@ -319,129 +319,190 @@ class BreedController extends Controller
         }
     }
 
-    public function breedingRecord(Request $request)
+   public function breedingRecord(Request $request)
     {
+        Log::info('breedingRecord request', [
+            'group_id' => $request->input('group_id'),
+            'cattle_type' => $request->input('cattle_type'),
+            'tag_no' => $request->input('tag_no'),
+            'breeding_date' => $request->input('breeding_date'),
+            'farm_bull' => $request->input('farm_bull'),
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
+
+        // Validate inputs
+        $token = $request->header('Authentication');
+        $validator = Validator::make(array_merge($request->all(), ['Authentication' => $token]), [
+            'group_id' => 'required|integer|exists:tbl_group,id',
+            'cattle_type' => 'required|string',
+            'tag_no' => 'required|string',
+            'breeding_date' => 'required|date',
+            'weight' => 'required|string',
+            'date_of_ai' => 'required|date',
+            'farm_bull' => 'required|string|in:Yes,No',
+            'bull_tag_no' => 'nullable|string',
+            'bull_name' => 'nullable|string',
+            'expenses' => 'required|string',
+            'vet_name' => 'required|string',
+            'update_bull_semen' => 'required|string|in:Yes,No',
+            'is_pregnant' => 'nullable|string',
+            'pregnancy_test_date' => 'nullable|date',
+            'semen_bull_id' => 'nullable|integer',
+            'Authentication' => 'required|string',
+        ], [
+            'Authentication.required' => 'Authentication token is required',
+            'group_id.exists' => 'Invalid group ID',
+            'farm_bull.in' => 'Farm bull must be Yes or No',
+            'update_bull_semen.in' => 'Update bull semen must be Yes or No',
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('breedingRecord: Validation failed', [
+                'errors' => $validator->errors(),
+                'ip' => $request->ip(),
+                'url' => $request->fullUrl(),
+            ]);
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
+
         try {
-            // Authenticate user using 'farmer' guard
-            $user = auth('farmer')->user();
-            Log::info('BreedingRecord auth attempt', [
-                'user_id' => $user ? $user->id : null,
-                'is_active' => $user ? ($user->is_active ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            Log::debug('breedingRecord: Farmer query result', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'farmer_found' => $farmer ? true : false,
+                'ip' => $request->ip(),
             ]);
 
-            if (!$user || !$user->is_active) {
+            if (!$farmer) {
+                Log::warning('breedingRecord: Authentication failed', [
+                    'token' => $token,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => 'Permission Denied!',
                     'status' => 201,
                 ], 403);
             }
 
-            // Check if request has data
-            if (!$request->all()) {
+            // Verify group belongs to farmer
+            $group = Group::where('id', $request->input('group_id'))
+                ->where('farmer_id', $farmer->id)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$group) {
+                Log::warning('breedingRecord: Group not found or unauthorized', [
+                    'group_id' => $request->input('group_id'),
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
-                    'message' => 'Please Insert Data',
+                    'message' => 'Invalid or unauthorized group!',
                     'status' => 201,
-                ], 400);
+                ], 403);
             }
 
-            // Validate input
-            $validator = Validator::make($request->all(), [
-                'group_id' => 'required|string',
-                'cattle_type' => 'required|string',
-                'tag_no' => 'required|string',
-                'breeding_date' => 'required|date',
-                'weight' => 'required|string',
-                'date_of_ai' => 'required|date',
-                'farm_bull' => 'required|string|in:Yes,No',
-                'bull_tag_no' => 'nullable|string',
-                'bull_name' => 'nullable|string',
-                'expenses' => 'required|string',
-                'vet_name' => 'required|string',
-                'update_bull_semen' => 'required|string|in:Yes,No',
-                'is_pregnant' => 'nullable|string',
-                'pregnancy_test_date' => 'nullable|date',
-                'semen_bull_id' => 'nullable|string',
-            ]);
+            // Verify tag_no belongs to farmer
+            $animal = MyAnimal::where('farmer_id', $farmer->id)
+                ->where('tag_no', $request->input('tag_no'))
+                ->first();
 
-            if ($validator->fails()) {
+            if (!$animal) {
+                Log::warning('breedingRecord: Animal not found', [
+                    'tag_no' => $request->input('tag_no'),
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
-                    'message' => $validator->errors()->first(),
+                    'message' => 'Invalid tag number!',
                     'status' => 201,
-                ], 422);
+                ], 403);
             }
 
             // Prepare data for insertion
             $data = [
-                'farmer_id' => $user->id,
-                'group_id' => $request->group_id,
-                'cattle_type' => $request->cattle_type,
-                'tag_no' => $request->tag_no,
-                'breeding_date' => $request->breeding_date,
-                'weight' => $request->weight,
-                'date_of_ai' => $request->date_of_ai,
-                'farm_bull' => $request->farm_bull,
-                'bull_tag_no' => $request->bull_tag_no,
-                'bull_name' => $request->bull_name,
-                'expenses' => $request->expenses,
-                'vet_name' => $request->vet_name,
-                'update_bull_semen' => $request->update_bull_semen,
-                'semen_bull_id' => $request->semen_bull_id,
-                'is_pregnant' => $request->is_pregnant,
-                'pregnancy_test_date' => $request->pregnancy_test_date,
-                'date' => now(),
-                'only_date' => now()->format('Y-m-d'),
+                'farmer_id' => $farmer->id,
+                'group_id' => $request->input('group_id'),
+                'cattle_type' => $request->input('cattle_type'),
+                'tag_no' => $request->input('tag_no'),
+                'breeding_date' => $request->input('breeding_date'),
+                'weight' => $request->input('weight'),
+                'date_of_ai' => $request->input('date_of_ai'),
+                'farm_bull' => $request->input('farm_bull'),
+                'bull_tag_no' => $request->input('bull_tag_no'),
+                'bull_name' => $request->input('bull_name'),
+                'expenses' => $request->input('expenses'),
+                'vet_name' => $request->input('vet_name'),
+                'update_bull_semen' => $request->input('update_bull_semen'),
+                'semen_bull_id' => $request->input('semen_bull_id'),
+                'is_pregnant' => $request->input('is_pregnant'),
+                'pregnancy_test_date' => $request->input('pregnancy_test_date'),
+                'date' => now()->setTimezone('Asia/Kolkata'),
+                'only_date' => now()->setTimezone('Asia/Kolkata')->format('Y-m-d'),
             ];
 
             // Insert into tbl_breeding_record
             $breedingRecord = BreedingRecord::create($data);
 
             // Update canister if update_bull_semen is Yes
-            if ($request->update_bull_semen === 'Yes') {
-                if ($request->farm_bull === 'Yes') {
-                    $canister = Canister::where('farmer_id', $user->id)
-                        ->where('tag_no', $request->bull_tag_no)
+            if ($request->input('update_bull_semen') === 'Yes') {
+                if ($request->input('farm_bull') === 'Yes') {
+                    $canister = Canister::where('farmer_id', $farmer->id)
+                        ->where('tag_no', $request->input('bull_tag_no'))
                         ->first();
                     if ($canister) {
                         $canister->update(['no_of_units' => $canister->no_of_units - 1]);
-                        Log::info('Canister updated (farm_bull)', [
+                        Log::info('breedingRecord: Canister updated (farm_bull)', [
                             'canister_id' => $canister->id,
-                            'farmer_id' => $user->id,
-                            'tag_no' => $request->bull_tag_no,
+                            'farmer_id' => $farmer->id,
+                            'tag_no' => $request->input('bull_tag_no'),
                             'new_units' => $canister->no_of_units,
+                            'ip' => $request->ip(),
                         ]);
                     } else {
-                        Log::warning('Canister not found (farm_bull)', [
-                            'farmer_id' => $user->id,
-                            'tag_no' => $request->bull_tag_no,
+                        Log::warning('breedingRecord: Canister not found (farm_bull)', [
+                            'farmer_id' => $farmer->id,
+                            'tag_no' => $request->input('bull_tag_no'),
+                            'ip' => $request->ip(),
                         ]);
                     }
                 } else {
-                    $canister = Canister::where('farmer_id', $user->id)
-                        ->where('id', $request->semen_bull_id)
+                    $canister = Canister::where('farmer_id', $farmer->id)
+                        ->where('id', $request->input('semen_bull_id'))
                         ->first();
                     if ($canister) {
                         $canister->update(['no_of_units' => $canister->no_of_units - 1]);
-                        Log::info('Canister updated (semen_bull)', [
+                        Log::info('breedingRecord: Canister updated (semen_bull)', [
                             'canister_id' => $canister->id,
-                            'farmer_id' => $user->id,
-                            'semen_bull_id' => $request->semen_bull_id,
+                            'farmer_id' => $farmer->id,
+                            'semen_bull_id' => $request->input('semen_bull_id'),
                             'new_units' => $canister->no_of_units,
+                            'ip' => $request->ip(),
                         ]);
                     } else {
-                        Log::warning('Canister not found (semen_bull)', [
-                            'farmer_id' => $user->id,
-                            'semen_bull_id' => $request->semen_bull_id,
+                        Log::warning('breedingRecord: Canister not found (semen_bull)', [
+                            'farmer_id' => $farmer->id,
+                            'semen_bull_id' => $request->input('semen_bull_id'),
+                            'ip' => $request->ip(),
                         ]);
                     }
                 }
             }
 
-            Log::info('Breeding record inserted', [
-                'farmer_id' => $user->id,
+            Log::info('breedingRecord: Breeding record inserted', [
+                'farmer_id' => $farmer->id,
                 'breeding_record_id' => $breedingRecord->id,
-                'cattle_type' => $request->cattle_type,
-                'tag_no' => $request->tag_no,
+                'cattle_type' => $request->input('cattle_type'),
+                'tag_no' => $request->input('tag_no'),
+                'ip' => $request->ip(),
             ]);
 
             return response()->json([
@@ -449,13 +510,28 @@ class BreedController extends Controller
                 'status' => 200,
                 'data' => [],
             ], 200);
-
-        } catch (\Exception $e) {
-            Log::error('Error in breedingRecord', [
-                'farmer_id' => auth('farmer')->id() ?? null,
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('breedingRecord: Database error', [
+                'farmer_id' => $farmer->id ?? null,
+                'cattle_type' => $request->input('cattle_type'),
+                'tag_no' => $request->input('tag_no'),
                 'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
             ]);
-
+            return response()->json([
+                'message' => 'Database error: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('breedingRecord: General error', [
+                'farmer_id' => $farmer->id ?? null,
+                'cattle_type' => $request->input('cattle_type'),
+                'tag_no' => $request->input('tag_no'),
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
             return response()->json([
                 'message' => 'Error inserting breeding record: ' . $e->getMessage(),
                 'status' => 201,
