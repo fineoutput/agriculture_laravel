@@ -261,3 +261,6 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
 
     
     Route::get('ManagementViewMilk-records', [ManagementController::class, 'viewMilkRecords']);
+
+
+    Route::get('homeMilkTagNo', [HomeController::class, 'getMilkingTagNo']);

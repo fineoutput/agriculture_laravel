@@ -2549,4 +2549,144 @@ class HomeController extends Controller
             ], 500);
         }
     }
+
+    public function getMilkingTagNo(Request $request)
+    {
+        Log::info('getMilkingTagNo request', [
+            'assign_to_group' => $request->input('assign_to_group'),
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
+
+        // Validate inputs
+        $token = $request->header('Authentication');
+        $validator = Validator::make(array_merge($request->all(), ['Authentication' => $token]), [
+            'assign_to_group' => 'required|integer|exists:tbl_group,id',
+            'Authentication' => 'required|string',
+        ], [
+            'assign_to_group.required' => 'Group ID is required',
+            'assign_to_group.integer' => 'Group ID must be an integer',
+            'assign_to_group.exists' => 'Invalid group ID',
+            'Authentication.required' => 'Authentication token is required',
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('getMilkingTagNo: Validation failed', [
+                'errors' => $validator->errors(),
+                'ip' => $request->ip(),
+                'url' => $request->fullUrl(),
+            ]);
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
+
+        try {
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            Log::debug('getMilkingTagNo: Farmer query result', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'farmer_found' => $farmer ? true : false,
+                'ip' => $request->ip(),
+            ]);
+
+            if (!$farmer) {
+                Log::warning('getMilkingTagNo: Authentication failed', [
+                    'token' => $token,
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            // Verify group belongs to farmer
+            $group = Group::where('id', $request->input('assign_to_group'))
+                ->where('farmer_id', $farmer->id)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$group) {
+                Log::warning('getMilkingTagNo: Group not found or unauthorized', [
+                    'assign_to_group' => $request->input('assign_to_group'),
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'message' => 'Invalid or unauthorized group!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            // Fetch tag numbers for milking animals
+            $query = MyAnimal::select('tag_no')
+                ->where('farmer_id', $farmer->id)
+                ->where('assign_to_group', $request->input('assign_to_group'))
+                ->where('animal_type', 'Milking');
+
+            Log::debug('getMilkingTagNo: Query SQL', [
+                'sql' => $query->toSql(),
+                'bindings' => $query->getBindings(),
+                'ip' => $request->ip(),
+            ]);
+
+            $tagData = $query->get();
+
+            $data = [];
+            $serialNumber = 1;
+
+            foreach ($tagData as $tag) {
+                $data[] = [
+                    'value' => $tag->tag_no,
+                    'label' => $tag->tag_no,
+                ];
+                $serialNumber++;
+            }
+
+            Log::info('getMilkingTagNo: Tag numbers retrieved successfully', [
+                'farmer_id' => $farmer->id,
+                'assign_to_group' => $request->input('assign_to_group'),
+                'animal_type' => 'Milking',
+                'tag_count' => count($data),
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json([
+                'message' => 'Success!',
+                'status' => 200,
+                'data' => $data,
+            ], 200);
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('getMilkingTagNo: Database error', [
+                'farmer_id' => $farmer->id ?? null,
+                'assign_to_group' => $request->input('assign_to_group'),
+                'animal_type' => 'Milking',
+                'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Database error: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('getMilkingTagNo: General error', [
+                'farmer_id' => $farmer->id ?? null,
+                'assign_to_group' => $request->input('assign_to_group'),
+                'animal_type' => 'Milking',
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Error processing request: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
 }
