@@ -175,16 +175,49 @@ class BreedController extends Controller
     
     public function viewHealthInfo(Request $request)
     {
+        Log::info('viewHealthInfo request', [
+            'page_index' => $request->header('Index', 1),
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
+
+        // Validate authentication header
+        $token = $request->header('Authentication');
+        $validator = Validator::make(['Authentication' => $token], [
+            'Authentication' => 'required|string',
+        ], [
+            'Authentication.required' => 'Authentication token is required',
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('viewHealthInfo: Validation failed', [
+                'errors' => $validator->errors(),
+                'ip' => $request->ip(),
+                'url' => $request->fullUrl(),
+            ]);
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
+
         try {
-            // Authenticate user using 'farmer' guard
-            $user = auth('farmer')->user();
-            Log::info('ViewHealthInfo auth attempt', [
-                'user_id' => $user ? $user->id : null,
-                'is_active' => $user ? ($user->is_active ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            Log::debug('viewHealthInfo: Farmer query result', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'farmer_found' => $farmer ? true : false,
+                'ip' => $request->ip(),
             ]);
 
-            if (!$user || !$user->is_active) {
+            if (!$farmer) {
+                Log::warning('viewHealthInfo: Authentication failed', [
+                    'token' => $token,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => 'Permission Denied!',
                     'status' => 201,
@@ -196,7 +229,7 @@ class BreedController extends Controller
             $perPage = 20;
 
             // Fetch paginated health info
-            $healthData = HealthInfo::where('farmer_id', $user->id)
+            $healthData = HealthInfo::where('farmer_id', $farmer->id)
                 ->orderBy('id', 'desc')
                 ->paginate($perPage, ['*'], 'page', $pageIndex);
 
@@ -208,7 +241,10 @@ class BreedController extends Controller
                 // Fetch group name if group_id exists
                 $group = '';
                 if ($health->group_id) {
-                    $groupData = Group::find($health->group_id);
+                    $groupData = Group::where('id', $health->group_id)
+                        ->where('farmer_id', $farmer->id)
+                        ->where('is_active', 1)
+                        ->first();
                     $group = $groupData ? $groupData->name : '';
                 }
 
@@ -219,7 +255,7 @@ class BreedController extends Controller
                     'cattle_type' => $health->cattle_type,
                     'tag_no' => $health->tag_no,
                     'vaccination_date' => $health->vaccination_date,
-                    'dieses_name' => $health->disease_name, // Corrected typo
+                    'disease_name' => $health->disease_name,
                     'vaccination' => $health->vaccination,
                     'medicine' => $health->medicine,
                     'deworming' => $health->deworming,
@@ -235,10 +271,11 @@ class BreedController extends Controller
                 $i++;
             }
 
-            Log::info('ViewHealthInfo retrieved', [
-                'farmer_id' => $user->id,
+            Log::info('viewHealthInfo: Health info retrieved', [
+                'farmer_id' => $farmer->id,
                 'page' => $pageIndex,
                 'total_records' => $healthData->total(),
+                'ip' => $request->ip(),
             ]);
 
             return response()->json([
@@ -255,13 +292,26 @@ class BreedController extends Controller
                 ],
                 'last' => $healthData->lastPage(),
             ], 200);
-
-        } catch (\Exception $e) {
-            Log::error('Error in viewHealthInfo', [
-                'farmer_id' => auth('farmer')->id() ?? null,
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('viewHealthInfo: Database error', [
+                'farmer_id' => $farmer->id ?? null,
+                'page_index' => $pageIndex,
                 'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
             ]);
-
+            return response()->json([
+                'message' => 'Database error: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('viewHealthInfo: General error', [
+                'farmer_id' => $farmer->id ?? null,
+                'page_index' => $pageIndex,
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
             return response()->json([
                 'message' => 'Error retrieving health info: ' . $e->getMessage(),
                 'status' => 201,

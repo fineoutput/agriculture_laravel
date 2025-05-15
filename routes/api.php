@@ -55,7 +55,6 @@ Route::middleware(['auth:farmer'])->group(function () {
 
 
     //////BreedController
-    Route::get('ViewHealth', [BreedController::class, 'viewHealthInfo']);
     Route::post('BreedingRecord', [BreedController::class, 'breedingRecord']);
     Route::get('ViewRecord', [BreedController::class, 'viewBreedingRecord']);
 
@@ -241,3 +240,6 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
 
     
     Route::post('BreedHealthInfo', [BreedController::class, 'healthInfo']);
+
+    
+    Route::get('BreedViewHealth', [BreedController::class, 'viewHealthInfo']);
