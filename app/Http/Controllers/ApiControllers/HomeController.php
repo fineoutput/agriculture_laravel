@@ -530,56 +530,52 @@ class HomeController extends Controller
         }
     }
 
-    public function getBullTagNo(Request $request)
+     public function getBullTagNo(Request $request)
     {
-        try {
-            // Check if POST data exists
-            if (!$request->isMethod('post') || empty($request->all())) {
-                Log::warning('GetBullTagNo: Missing POST data', [
-                    'ip' => $request->ip(),
-                    'url' => $request->fullUrl(),
-                ]);
-                return response()->json([
-                    'message' => 'Please Insert Data',
-                    'status' => 201,
-                ], 422);
-            }
+        Log::info('getBullTagNo request', [
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
 
-            // Validate inputs
-            $validator = Validator::make($request->all(), [
-                'farmer_id' => 'required|integer|exists:tbl_farmers,id',
+        // Validate authentication header
+        $token = $request->header('Authentication');
+        $validator = Validator::make(['Authentication' => $token], [
+            // 'Authentication' => 'required|string',
+        ], [
+            'Authentication.required' => 'Authentication token is required',
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('getBullTagNo: Validation failed', [
+                'errors' => $validator->errors(),
+                'ip' => $request->ip(),
+                'url' => $request->fullUrl(),
             ]);
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
 
-            if ($validator->fails()) {
-                Log::warning('GetBullTagNo: Validation failed', [
-                    'ip' => $request->ip(),
-                    'errors' => $validator->errors(),
-                    'url' => $request->fullUrl(),
-                ]);
-                return response()->json([
-                    'message' => $validator->errors()->first(),
-                    'status' => 201,
-                ], 422);
-            }
-
-            // Authenticate farmer
-            $farmer = Farmer::where('id', $request->input('farmer_id'))
+        try {
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
                 ->where('is_active', 1)
                 ->first();
 
-            Log::debug('GetBullTagNo: Farmer query result', [
-                'farmer_id' => $request->input('farmer_id'),
-                'farmer_found' => $farmer ? $farmer->id : null,
+            Log::debug('getBullTagNo: Farmer query result', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'farmer_found' => $farmer ? true : false,
                 'ip' => $request->ip(),
             ]);
 
             if (!$farmer) {
-                Log::warning('GetBullTagNo: Authentication failed', [
+                Log::warning('getBullTagNo: Authentication failed', [
+                    'token' => $token,
                     'ip' => $request->ip(),
-                    'farmer_id' => $request->input('farmer_id'),
                 ]);
                 return response()->json([
-                    'message' => 'Permission Denied! from farmer end',
+                    'message' => 'Permission Denied!',
                     'status' => 201,
                 ], 403);
             }
@@ -589,9 +585,10 @@ class HomeController extends Controller
                 ->where('farmer_id', $farmer->id)
                 ->where('animal_type', 'Bull');
 
-            Log::debug('GetBullTagNo: Query SQL', [
+            Log::debug('getBullTagNo: Query SQL', [
                 'sql' => $query->toSql(),
                 'bindings' => $query->getBindings(),
+                'ip' => $request->ip(),
             ]);
 
             $tagData = $query->get();
@@ -607,7 +604,7 @@ class HomeController extends Controller
                 $serialNumber++;
             }
 
-            Log::info('GetBullTagNo: Tag numbers retrieved successfully', [
+            Log::info('getBullTagNo: Tag numbers retrieved successfully', [
                 'farmer_id' => $farmer->id,
                 'animal_type' => 'Bull',
                 'tag_count' => count($data),
@@ -620,20 +617,24 @@ class HomeController extends Controller
                 'data' => $data,
             ], 200);
         } catch (\Illuminate\Database\QueryException $e) {
-            Log::error('GetBullTagNo: Database error', [
+            Log::error('getBullTagNo: Database error', [
                 'farmer_id' => $farmer->id ?? null,
+                'animal_type' => 'Bull',
                 'error' => $e->getMessage(),
                 'sql' => $e->getSql(),
                 'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
             ]);
             return response()->json([
                 'message' => 'Database error: ' . $e->getMessage(),
                 'status' => 201,
             ], 500);
         } catch (\Exception $e) {
-            Log::error('GetBullTagNo: General error', [
+            Log::error('getBullTagNo: General error', [
                 'farmer_id' => $farmer->id ?? null,
+                'animal_type' => 'Bull',
                 'error' => $e->getMessage(),
+                'ip' => $request->ip(),
             ]);
             return response()->json([
                 'message' => 'Error processing request: ' . $e->getMessage(),
