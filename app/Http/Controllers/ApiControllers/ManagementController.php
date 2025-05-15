@@ -1685,7 +1685,7 @@ $entryIds = DB::table(DB::raw("({$subQuery->toSql()}) as sub"))
             }
 
             $validator = Validator::make($request->all(), [
-                'stock_date' => 'required|date_format:Y-m-d',
+                'stock_date' => 'required|date_format:d-m-Y',
                 'green_forage' => 'nullable|numeric|min:0',
                 'dry_fodder' => 'nullable|numeric|min:0',
                 'silage' => 'nullable|numeric|min:0',
