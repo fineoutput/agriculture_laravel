@@ -95,7 +95,6 @@ Route::middleware(['auth:farmer'])->group(function () {
     Route::post('Sale-purchase', [ManagementController::class, 'salePurchase']);
     Route::get('View/sale-purchase', [ManagementController::class, 'viewSalePurchase']);
     Route::post('others-sale-purchase-View', [ManagementController::class, 'viewOthersSalePurchase']);
-    Route::get('Viewmedical-expenses', [ManagementController::class, 'viewMedicalExpenses']);
     Route::post('Reportss', [ManagementController::class, 'reports']);
     Route::post('Stock-Handling', [ManagementController::class, 'stockHandling']);
     Route::get('View-Stock-handling', [ManagementController::class, 'viewStocks']);
@@ -266,3 +265,6 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
 
     
     Route::post('ManagementMedical-expenses', [ManagementController::class, 'medicalExpenses']);
+
+    
+    Route::get('ManagementViewmedical-expenses', [ManagementController::class, 'viewMedicalExpenses']);
