@@ -88,7 +88,6 @@ Route::middleware(['auth:farmer'])->group(function () {
     //////////////HomeController
     Route::post('homeGet/Bull-Tag-No', [HomeController::class, 'getBullTagNo']);
     Route::post('homeGet/semen', [HomeController::class, 'getSemenBulls']);
-    Route::post('homeAnimal/data', [HomeController::class, 'getAnimalData']);
     Route::post('homeSubscription/buy', [HomeController::class, 'subscriptionPlan']);
     Route::post('homeBuy/plan', [HomeController::class, 'buyPlan']);
     Route::post('homePhonePay/buyPlan', [HomeController::class, 'phonePeBuyPlan']);
@@ -243,3 +242,6 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
 
     
     Route::get('BreedViewHealth', [BreedController::class, 'viewHealthInfo']);
+
+    
+    Route::post('homeAnimalData', [HomeController::class, 'getAnimalData']);
