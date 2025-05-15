@@ -3334,7 +3334,7 @@ $entryIds = DB::table(DB::raw("({$subQuery->toSql()}) as sub"))
                     'image4' => $image4,
                     'video' => $video,
                     'remark' => $exp->remark,
-                    'date' => $exp->date->format('d/m/Y'),
+                    'date' => $exp->date ? \Carbon\Carbon::parse($exp->date)->format('d/m/Y') : '',
                 ];
                 $i++;
             }
