@@ -643,53 +643,49 @@ class HomeController extends Controller
         }
     }
 
-    public function getSemenBulls(Request $request)
+     public function getSemenBulls(Request $request)
     {
-        try {
-            // Check if POST data exists
-            if (!$request->isMethod('post') || empty($request->all())) {
-                Log::warning('GetSemenBulls: Missing POST data', [
-                    'ip' => $request->ip(),
-                    'url' => $request->fullUrl(),
-                ]);
-                return response()->json([
-                    'message' => 'Please Insert Data',
-                    'status' => 201,
-                ], 422);
-            }
+        Log::info('getSemenBulls request', [
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
 
-            // Validate inputs
-            $validator = Validator::make($request->all(), [
-                'farmer_id' => 'required|integer|exists:tbl_farmers,id',
+        // Validate authentication header
+        $token = $request->header('Authentication');
+        $validator = Validator::make(['Authentication' => $token], [
+            'Authentication' => 'required|string',
+        ], [
+            'Authentication.required' => 'Authentication token is required',
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('getSemenBulls: Validation failed', [
+                'errors' => $validator->errors(),
+                'ip' => $request->ip(),
+                'url' => $request->fullUrl(),
             ]);
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
 
-            if ($validator->fails()) {
-                Log::warning('GetSemenBulls: Validation failed', [
-                    'ip' => $request->ip(),
-                    'errors' => $validator->errors(),
-                    'url' => $request->fullUrl(),
-                ]);
-                return response()->json([
-                    'message' => $validator->errors()->first(),
-                    'status' => 201,
-                ], 422);
-            }
-
-            // Authenticate farmer
-            $farmer = Farmer::where('id', $request->input('farmer_id'))
+        try {
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
                 ->where('is_active', 1)
                 ->first();
 
-            Log::debug('GetSemenBulls: Farmer query result', [
-                'farmer_id' => $request->input('farmer_id'),
-                'farmer_found' => $farmer ? $farmer->id : null,
+            Log::debug('getSemenBulls: Farmer query result', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'farmer_found' => $farmer ? true : false,
                 'ip' => $request->ip(),
             ]);
 
             if (!$farmer) {
-                Log::warning('GetSemenBulls: Authentication failed', [
+                Log::warning('getSemenBulls: Authentication failed', [
+                    'token' => $token,
                     'ip' => $request->ip(),
-                    'farmer_id' => $request->input('farmer_id'),
                 ]);
                 return response()->json([
                     'message' => 'Permission Denied!',
@@ -702,9 +698,10 @@ class HomeController extends Controller
                 ->where('farmer_id', $farmer->id)
                 ->where('farm_bull', 'No');
 
-            Log::debug('GetSemenBulls: Query SQL', [
+            Log::debug('getSemenBulls: Query SQL', [
                 'sql' => $query->toSql(),
                 'bindings' => $query->getBindings(),
+                'ip' => $request->ip(),
             ]);
 
             $tagData = $query->get();
@@ -720,7 +717,7 @@ class HomeController extends Controller
                 $serialNumber++;
             }
 
-            Log::info('GetSemenBulls: Semen bulls retrieved successfully', [
+            Log::info('getSemenBulls: Semen bulls retrieved successfully', [
                 'farmer_id' => $farmer->id,
                 'bull_count' => count($data),
                 'ip' => $request->ip(),
@@ -732,20 +729,22 @@ class HomeController extends Controller
                 'data' => $data,
             ], 200);
         } catch (\Illuminate\Database\QueryException $e) {
-            Log::error('GetSemenBulls: Database error', [
+            Log::error('getSemenBulls: Database error', [
                 'farmer_id' => $farmer->id ?? null,
                 'error' => $e->getMessage(),
                 'sql' => $e->getSql(),
                 'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
             ]);
             return response()->json([
                 'message' => 'Database error: ' . $e->getMessage(),
                 'status' => 201,
             ], 500);
         } catch (\Exception $e) {
-            Log::error('GetSemenBulls: General error', [
+            Log::error('getSemenBulls: General error', [
                 'farmer_id' => $farmer->id ?? null,
                 'error' => $e->getMessage(),
+                'ip' => $request->ip(),
             ]);
             return response()->json([
                 'message' => 'Error processing request: ' . $e->getMessage(),
