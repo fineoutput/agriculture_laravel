@@ -643,7 +643,8 @@ class BreedController extends Controller
                     'vet_name' => $breed->vet_name,
                     'is_pregnant' => $breed->is_pregnant,
                     'pregnancy_test_date' => $breed->pregnancy_test_date,
-                    'date' => $breed->date ? $breed->date->format('d/m/Y') : '',
+                    'date' => $breed->date ? \Carbon\Carbon::parse($breed->date)->format('d/m/Y') : '',
+
                 ];
                 $i++;
             }
