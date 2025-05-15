@@ -270,13 +270,17 @@ class ManagementController extends Controller
             $totalPages = ceil($count / $limit);
 
             // Fetch distinct entry_ids for the current page
-            $entryIds = DailyRecord::where('farmer_id', $farmer->id)
-                ->select('entry_id')
-                ->distinct()
-                ->orderBy('id', 'desc')
-                ->skip($offset)
-                ->take($limit)
-                ->pluck('entry_id');
+           $subQuery = DailyRecord::select('entry_id', 'id')
+    ->where('farmer_id', $farmer->id)
+    ->orderBy('id', 'desc');
+
+$entryIds = DB::table(DB::raw("({$subQuery->toSql()}) as sub"))
+    ->mergeBindings($subQuery->getQuery())
+    ->groupBy('entry_id')
+    ->skip($offset)
+    ->take($limit)
+    ->pluck('entry_id');
+
 
             // Fetch all records for the selected entry_ids
             $big = [];
