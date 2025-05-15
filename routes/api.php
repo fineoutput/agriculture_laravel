@@ -297,4 +297,4 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
     Route::post('Equipment-Sale-Purchase', [ManagementController::class, 'equipmentSalePurchase']);
     
     
-    Route::post('ViewEquipment-Sale-Purchase', [ManagementController::class, 'viewEquipmentSalePurchase']);
+    Route::get('ViewEquipment-Sale-Purchase', [ManagementController::class, 'viewEquipmentSalePurchase']);
