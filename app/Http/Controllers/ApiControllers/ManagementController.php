@@ -1207,7 +1207,7 @@ $entryIds = DB::table(DB::raw("({$subQuery->toSql()}) as sub"))
             }
 
             $validator = Validator::make($request->all(), [
-                'expense_date' => 'required|date_format:Y-m-d',
+                'expense_date' => 'required|date_format:d-m-y',
                 'doctor_visit_fees' => 'nullable|numeric|min:0',
                 'treatment_expenses' => 'nullable|numeric|min:0',
                 'vaccination_expenses' => 'nullable|numeric|min:0',
