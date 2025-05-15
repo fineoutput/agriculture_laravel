@@ -541,16 +541,49 @@ class BreedController extends Controller
 
     public function viewBreedingRecord(Request $request)
     {
+        Log::info('viewBreedingRecord request', [
+            'page_index' => $request->header('Index', 1),
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
+
+        // Validate authentication header
+        $token = $request->header('Authentication');
+        $validator = Validator::make(['Authentication' => $token], [
+            'Authentication' => 'required|string',
+        ], [
+            'Authentication.required' => 'Authentication token is required',
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('viewBreedingRecord: Validation failed', [
+                'errors' => $validator->errors(),
+                'ip' => $request->ip(),
+                'url' => $request->fullUrl(),
+            ]);
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
+
         try {
-            // Authenticate user using 'farmer' guard
-            $user = auth('farmer')->user();
-            Log::info('ViewBreedingRecord auth attempt', [
-                'user_id' => $user ? $user->id : null,
-                'is_active' => $user ? ($user->is_active ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            Log::debug('viewBreedingRecord: Farmer query result', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'farmer_found' => $farmer ? true : false,
+                'ip' => $request->ip(),
             ]);
 
-            if (!$user || !$user->is_active) {
+            if (!$farmer) {
+                Log::warning('viewBreedingRecord: Authentication failed', [
+                    'token' => $token,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => 'Permission Denied!',
                     'status' => 201,
@@ -562,7 +595,7 @@ class BreedController extends Controller
             $perPage = 20;
 
             // Fetch paginated breeding records
-            $breedData = BreedingRecord::where('farmer_id', $user->id)
+            $breedData = BreedingRecord::where('farmer_id', $farmer->id)
                 ->orderBy('id', 'desc')
                 ->paginate($perPage, ['*'], 'page', $pageIndex);
 
@@ -574,17 +607,24 @@ class BreedController extends Controller
                 // Fetch group name if group_id exists
                 $group = '';
                 if ($breed->group_id) {
-                    $groupData = Group::find($breed->group_id);
+                    $groupData = Group::where('id', $breed->group_id)
+                        ->where('farmer_id', $farmer->id)
+                        ->where('is_active', 1)
+                        ->first();
                     $group = $groupData ? $groupData->name : '';
                 }
 
                 // Fetch bull name based on farm_bull
                 $bull_name = '';
                 if ($breed->farm_bull === 'Yes') {
-                    $bullData = MyAnimal::where('tag_no', $breed->tag_no)->first();
+                    $bullData = MyAnimal::where('farmer_id', $farmer->id)
+                        ->where('tag_no', $breed->bull_tag_no)
+                        ->first();
                     $bull_name = $bullData ? $bullData->animal_name : '';
                 } else {
-                    $bullData = Canister::find($breed->semen_bull_id);
+                    $bullData = Canister::where('farmer_id', $farmer->id)
+                        ->where('id', $breed->semen_bull_id)
+                        ->first();
                     $bull_name = $bullData ? ($bullData->bull_name ?? '') : '';
                 }
 
@@ -608,10 +648,11 @@ class BreedController extends Controller
                 $i++;
             }
 
-            Log::info('ViewBreedingRecord retrieved', [
-                'farmer_id' => $user->id,
+            Log::info('viewBreedingRecord: Breeding records retrieved', [
+                'farmer_id' => $farmer->id,
                 'page' => $pageIndex,
                 'total_records' => $breedData->total(),
+                'ip' => $request->ip(),
             ]);
 
             return response()->json([
@@ -628,13 +669,26 @@ class BreedController extends Controller
                 ],
                 'last' => $breedData->lastPage(),
             ], 200);
-
-        } catch (\Exception $e) {
-            Log::error('Error in viewBreedingRecord', [
-                'farmer_id' => auth('farmer')->id() ?? null,
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('viewBreedingRecord: Database error', [
+                'farmer_id' => $farmer->id ?? null,
+                'page_index' => $pageIndex,
                 'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
             ]);
-
+            return response()->json([
+                'message' => 'Database error: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('viewBreedingRecord: General error', [
+                'farmer_id' => $farmer->id ?? null,
+                'page_index' => $pageIndex,
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
             return response()->json([
                 'message' => 'Error retrieving breeding records: ' . $e->getMessage(),
                 'status' => 201,
