@@ -753,54 +753,52 @@ class HomeController extends Controller
         }
     }
 
-    public function getAnimalData(Request $request)
+     public function getAnimalData(Request $request)
     {
-        try {
-            // Check if POST data exists
-            if (!$request->isMethod('post') || empty($request->all())) {
-                Log::warning('GetAnimalData: Missing POST data', [
-                    'ip' => $request->ip(),
-                    'url' => $request->fullUrl(),
-                ]);
-                return response()->json([
-                    'message' => 'Please Insert Data',
-                    'status' => 201,
-                ], 422);
-            }
+        Log::info('getAnimalData request', [
+            'tag_no' => $request->input('tag_no'),
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
 
-            // Validate inputs
-            $validator = Validator::make($request->all(), [
-                // 'farmer_id' => 'required|integer|exists:tbl_farmers,id',
-                'tag_no' => 'required|string',
+        // Validate inputs
+        $token = $request->header('Authentication');
+        $validator = Validator::make(array_merge($request->all(), ['Authentication' => $token]), [
+            'tag_no' => 'required|string',
+            // 'Authentication' => 'required|string',
+        ], [
+            'Authentication.required' => 'Authentication token is required',
+            'tag_no.required' => 'Tag number is required',
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('getAnimalData: Validation failed', [
+                'errors' => $validator->errors(),
+                'ip' => $request->ip(),
+                'url' => $request->fullUrl(),
             ]);
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
 
-            if ($validator->fails()) {
-                Log::warning('GetAnimalData: Validation failed', [
-                    'ip' => $request->ip(),
-                    'errors' => $validator->errors(),
-                    'url' => $request->fullUrl(),
-                ]);
-                return response()->json([
-                    'message' => $validator->errors()->first(),
-                    'status' => 201,
-                ], 422);
-            }
-
-            // Authenticate farmer
-            $farmer = Farmer::where('id', $request->input('farmer_id'))
+        try {
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
                 ->where('is_active', 1)
                 ->first();
 
-            Log::debug('GetAnimalData: Farmer query result', [
-                'farmer_id' => $request->input('farmer_id'),
-                'farmer_found' => $farmer ? $farmer->id : null,
+            Log::debug('getAnimalData: Farmer query result', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'farmer_found' => $farmer ? true : false,
                 'ip' => $request->ip(),
             ]);
 
             if (!$farmer) {
-                Log::warning('GetAnimalData: Authentication failed', [
+                Log::warning('getAnimalData: Authentication failed', [
+                    'token' => $token,
                     'ip' => $request->ip(),
-                    'farmer_id' => $request->input('farmer_id'),
                 ]);
                 return response()->json([
                     'message' => 'Permission Denied!',
@@ -813,15 +811,16 @@ class HomeController extends Controller
                 ->where('farmer_id', $farmer->id)
                 ->where('tag_no', $request->input('tag_no'));
 
-            Log::debug('GetAnimalData: Query SQL', [
+            Log::debug('getAnimalData: Query SQL', [
                 'sql' => $query->toSql(),
                 'bindings' => $query->getBindings(),
+                'ip' => $request->ip(),
             ]);
 
             $animal = $query->first();
 
             if (!$animal) {
-                Log::warning('GetAnimalData: No animal found', [
+                Log::warning('getAnimalData: No animal found', [
                     'farmer_id' => $farmer->id,
                     'tag_no' => $request->input('tag_no'),
                     'ip' => $request->ip(),
@@ -842,7 +841,7 @@ class HomeController extends Controller
                 'animal_gender' => $animal->animal_gender,
             ];
 
-            Log::info('GetAnimalData: Animal data retrieved successfully', [
+            Log::info('getAnimalData: Animal data retrieved successfully', [
                 'farmer_id' => $farmer->id,
                 'tag_no' => $animal->tag_no,
                 'ip' => $request->ip(),
@@ -854,22 +853,24 @@ class HomeController extends Controller
                 'data' => $data,
             ], 200);
         } catch (\Illuminate\Database\QueryException $e) {
-            Log::error('GetAnimalData: Database error', [
+            Log::error('getAnimalData: Database error', [
                 'farmer_id' => $farmer->id ?? null,
                 'tag_no' => $request->input('tag_no') ?? null,
                 'error' => $e->getMessage(),
                 'sql' => $e->getSql(),
                 'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
             ]);
             return response()->json([
                 'message' => 'Database error: ' . $e->getMessage(),
                 'status' => 201,
             ], 500);
         } catch (\Exception $e) {
-            Log::error('GetAnimalData: General error', [
+            Log::error('getAnimalData: General error', [
                 'farmer_id' => $farmer->id ?? null,
                 'tag_no' => $request->input('tag_no') ?? null,
                 'error' => $e->getMessage(),
+                'ip' => $request->ip(),
             ]);
             return response()->json([
                 'message' => 'Error processing request: ' . $e->getMessage(),
