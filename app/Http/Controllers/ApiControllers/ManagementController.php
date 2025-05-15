@@ -590,7 +590,7 @@ $entryIds = DB::table(DB::raw("({$subQuery->toSql()}) as sub"))
                 'image2' => 'nullable|file|mimes:jpg,jpeg,png|max:25000',
                 'image3' => 'nullable|file|mimes:jpg,jpeg,png|max:25000',
                 'image4' => 'nullable|file|mimes:jpg,jpeg,png|max:25000',
-                'video' => 'nullable|file|mimes:mp4,avi,mov,mpeg,mkv|max:50000',
+                'video' => 'nullable|file|mimes:mp4,avi,jpg,jpeg,png,mov,mpeg,mkv|max:50000',
             ]);
 
             if ($validator->fails()) {
