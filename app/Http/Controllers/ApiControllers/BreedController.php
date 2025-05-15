@@ -266,7 +266,7 @@ class BreedController extends Controller
                     'other5' => $health->other5,
                     'milk_loss' => $health->milk_loss,
                     'treatment_cost' => $health->treatment_cost,
-                    'date' => $health->date ? $health->date->format('d/m/Y') : '',
+                   'date' => $health->date ? \Carbon\Carbon::parse($health->date)->format('d/m/Y') : '',
                 ];
                 $i++;
             }
