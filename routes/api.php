@@ -248,4 +248,4 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
     Route::get('homeGetBull-Tag-No', [HomeController::class, 'getBullTagNo']);
 
     
-    Route::post('homeGetSemenBulls', [HomeController::class, 'getSemenBulls']);
+    Route::get('homeGetSemenBulls', [HomeController::class, 'getSemenBulls']);
