@@ -2560,7 +2560,7 @@ class HomeController extends Controller
         // Validate authentication header
         $token = $request->header('Authentication');
         $validator = Validator::make(['Authentication' => $token], [
-            'Authentication' => 'required|string',
+            // 'Authentication' => 'required|string',
         ], [
             'Authentication.required' => 'Authentication token is required',
         ]);
