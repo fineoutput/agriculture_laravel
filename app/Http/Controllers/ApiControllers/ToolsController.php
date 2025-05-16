@@ -697,30 +697,71 @@ class ToolsController extends Controller
 
     public function snfCalculator(Request $request)
     {
+        Log::info('snfCalculator request', [
+            'type' => $request->input('type'),
+            'fat' => $request->input('fat'),
+            'snf' => $request->input('snf'),
+            'clr' => $request->input('clr'),
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
+
         try {
+            // Check if type or fat is provided
             if (!$request->hasAny(['type', 'fat'])) {
+                Log::warning('snfCalculator: Missing type or fat parameter', [
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => 'Please Insert Data',
                     'status' => 201,
                 ], 422);
             }
 
-            // /** @var \App\Models\Farmer $farmer *//
-            $farmer = auth('farmer')->user();
-            Log::info('SNFCalculator auth attempt', [
-                'farmer_id' => $farmer ? $farmer->id : null,
-                'is_active' => $farmer ? ($farmer->is_active ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
-                'ip_address' => $request->ip(),
+            // Validate authentication header
+            $token = $request->header('Authentication');
+            $validator = Validator::make(['Authentication' => $token], [
+                // 'Authentication' => 'required|string',
+            ], [
+                'Authentication.required' => 'Authentication token is required',
             ]);
 
-            if (!$farmer || !$farmer->is_active) {
+            if ($validator->fails()) {
+                Log::warning('snfCalculator: Validation failed for authentication', [
+                    'errors' => $validator->errors(),
+                    'ip' => $request->ip(),
+                    'url' => $request->fullUrl(),
+                ]);
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'status' => 201,
+                ], 422);
+            }
+
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            Log::info('snfCalculator: Auth attempt', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'is_active' => $farmer ? $farmer->is_active : null,
+                'authentication_header' => $token,
+                'ip' => $request->ip(),
+            ]);
+
+            if (!$farmer) {
+                Log::warning('snfCalculator: Authentication failed', [
+                    'token' => $token,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => 'Permission Denied!',
                     'status' => 201,
                 ], 403);
             }
 
+            // Validate inputs
             $validator = Validator::make($request->all(), [
                 'type' => 'required|in:SNF,CLR',
                 'snf' => 'nullable|numeric|min:0',
@@ -729,6 +770,11 @@ class ToolsController extends Controller
             ]);
 
             if ($validator->fails()) {
+                Log::warning('snfCalculator: Input validation failed', [
+                    'errors' => $validator->errors(),
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => $validator->errors()->first(),
                     'status' => 201,
@@ -742,14 +788,22 @@ class ToolsController extends Controller
 
             // Validate input combinations
             if ($type === 'CLR' && is_null($clr)) {
+                Log::warning('snfCalculator: CLR required for type CLR', [
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => 'CLR is required when type is CLR',
                     'status' => 201,
                 ], 422);
             }
             if ($type === 'SNF' && is_null($snf)) {
+                Log::warning('snfCalculator: SNF required for type SNF', [
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
-                    'message' => 'SNF is required when type is SNF',
+                    'message' => 'SNF is required when type SNF',
                     'status' => 201,
                 ], 422);
             }
@@ -776,7 +830,10 @@ class ToolsController extends Controller
             // Update service record
             $service_record = ServiceRecord::first();
             if (!$service_record) {
-                Log::warning('No service record found in tbl_service_records');
+                Log::warning('snfCalculator: No service record found in tbl_service_records', [
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => 'Service record not found!',
                     'status' => 201,
@@ -796,17 +853,41 @@ class ToolsController extends Controller
                 'only_date' => now()->format('Y-m-d'),
             ]);
 
+            Log::info('snfCalculator: Success', [
+                'farmer_id' => $farmer->id,
+                'type' => $type,
+                'fat' => $fat,
+                'snf' => $snf,
+                'clr' => $clr,
+                'percentage' => $percentage,
+                'ip' => $request->ip(),
+            ]);
+
             return response()->json([
                 'message' => 'Success!',
                 'status' => 200,
                 'data' => $data,
             ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error in snfCalculator', [
-                'farmer_id' => auth('farmer')->id() ?? null,
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('snfCalculator: Database error', [
+                'farmer_id' => $farmer->id ?? null,
+                'type' => $request->input('type'),
                 'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
             ]);
-
+            return response()->json([
+                'message' => 'Database error: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('snfCalculator: Error', [
+                'farmer_id' => $farmer->id ?? null,
+                'type' => $request->input('type'),
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
             return response()->json([
                 'message' => 'Error calculating SNF/CLR: ' . $e->getMessage(),
                 'status' => 201,
