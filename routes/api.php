@@ -113,7 +113,6 @@ Route::get('SemenTransaction', [DoctorController::class, 'getSemenTransactions']
 
 Route::middleware(['auth:vendor'])->group(function () {
     Route::post('products-all', [ToolsController::class, 'vendorAllProducts']);
-    Route::post('Vendors', [ToolsController::class, 'getVendors']);
 
     ////vendorController
     Route::get('vendorordersnew', [VendorController::class, 'newOrders']);
@@ -312,3 +311,6 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
 
     
     Route::get('Tools-expert-category', [ToolsController::class, 'expertCategory']);
+
+    
+    Route::post('Tools-GetVendors', [ToolsController::class, 'getVendors']);

@@ -1997,22 +1997,72 @@ class ToolsController extends Controller
     }
 
 
+    private function calculateDistanceInKm($lat1, $lon1, $lat2, $lon2)
+    {
+        $earthRadius = 6371; // Earth's radius in kilometers
+
+        $lat1 = deg2rad($lat1);
+        $lon1 = deg2rad($lon1);
+        $lat2 = deg2rad($lat2);
+        $lon2 = deg2rad($lon2);
+
+        $dlat = $lat2 - $lat1;
+        $dlon = $lon2 - $lon1;
+
+        $a = sin($dlat / 2) * sin($dlat / 2) +
+             cos($lat1) * cos($lat2) * sin($dlon / 2) * sin($dlon / 2);
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $earthRadius * $c;
+    }
+
     public function getVendors(Request $request)
     {
+        Log::info('getVendors request', [
+            'latitude' => $request->input('latitude'),
+            'longitude' => $request->input('longitude'),
+            'radius' => $request->input('radius'),
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
+
         try {
-            // /** @var \App\Models\Farmer $farmer */
-            $farmer = auth('farmer')->user();
-            Log::info('GetVendors auth attempt', [
-                'farmer_id' => $farmer ? $farmer->id : null,
-                'is_active' => $farmer ? ($farmer->is_active ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
-                'ip_address' => $request->ip(),
+            // Validate authentication header
+            $token = $request->header('Authentication');
+            $validator = Validator::make(['Authentication' => $token], [
+                'Authentication' => 'required|string',
+            ], [
+                'Authentication.required' => 'Authentication token is required',
             ]);
 
-            if (!$farmer || !$farmer->is_active) {
-                Log::warning('GetVendors: Authentication failed or farmer inactive', [
-                    'farmer_id' => $farmer ? $farmer->id : null,
-                    'is_active' => $farmer ? $farmer->is_active : null,
+            if ($validator->fails()) {
+                Log::warning('getVendors: Validation failed for authentication', [
+                    'errors' => $validator->errors(),
+                    'ip' => $request->ip(),
+                    'url' => $request->fullUrl(),
+                ]);
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'status' => 201,
+                ], 422);
+            }
+
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            Log::info('getVendors: Auth attempt', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'is_active' => $farmer ? $farmer->is_active : null,
+                'authentication_header' => $token,
+                'ip' => $request->ip(),
+            ]);
+
+            if (!$farmer) {
+                Log::warning('getVendors: Authentication failed', [
+                    'token' => $token,
+                    'ip' => $request->ip(),
                 ]);
                 return response()->json([
                     'message' => 'Permission Denied!',
@@ -2020,6 +2070,7 @@ class ToolsController extends Controller
                 ], 403);
             }
 
+            // Validate inputs
             $validator = Validator::make($request->all(), [
                 'latitude' => 'required|numeric|between:-90,90',
                 'longitude' => 'required|numeric|between:-180,180',
@@ -2027,7 +2078,11 @@ class ToolsController extends Controller
             ]);
 
             if ($validator->fails()) {
-                Log::warning('GetVendors: Validation failed', ['errors' => $validator->errors()]);
+                Log::warning('getVendors: Input validation failed', [
+                    'errors' => $validator->errors(),
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => $validator->errors()->first(),
                     'status' => 201,
@@ -2038,6 +2093,7 @@ class ToolsController extends Controller
             $longitude = (float) $request->input('longitude');
             $radius = (float) $request->input('radius');
 
+            // Fetch vendors
             $vendors = Vendor::where('is_active', 1)
                             ->where('is_approved', 1)
                             ->whereNotNull('latitude')
@@ -2100,12 +2156,13 @@ class ToolsController extends Controller
                 'mr' => $mr_data,
             ];
 
-            Log::info('GetVendors: Query results', [
+            Log::info('getVendors: Query results', [
                 'farmer_id' => $farmer->id,
                 'latitude' => $latitude,
                 'longitude' => $longitude,
                 'radius' => $radius,
                 'vendors_count' => count($en_data),
+                'ip' => $request->ip(),
             ]);
 
             return response()->json([
@@ -2113,13 +2170,26 @@ class ToolsController extends Controller
                 'status' => 200,
                 'data' => $data,
             ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error in getVendors', [
-                'farmer_id' => auth('farmer')->id() ?? null,
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('getVendors: Database error', [
+                'farmer_id' => $farmer->id ?? null,
+                'latitude' => $request->input('latitude'),
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
             ]);
-
+            return response()->json([
+                'message' => 'Database error: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('getVendors: Error', [
+                'farmer_id' => $farmer->id ?? null,
+                'latitude' => $request->input('latitude'),
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
             return response()->json([
                 'message' => 'Error retrieving vendors: ' . $e->getMessage(),
                 'status' => 201,
