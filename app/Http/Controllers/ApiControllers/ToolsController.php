@@ -1252,30 +1252,62 @@ class ToolsController extends Controller
         }
     }
 
-    public function expertAdvice(Request $request)
+    public function toolsExpertAdvice(Request $request)
     {
+        Log::info('expertAdvice request', [
+            'expert_id' => $request->input('expert_id'),
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
+
         try {
+            // Check if expert_id is provided
             if (!$request->has('expert_id')) {
-                Log::warning('ExpertAdvice: Missing expert_id parameter', ['ip' => $request->ip()]);
+                Log::warning('expertAdvice: Missing expert_id parameter', [
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => 'Please provide expert_id',
                     'status' => 201,
                 ], 422);
             }
 
-            /** @var \App\Models\Farmer $farmer */
-            $farmer = auth('farmer')->user();
-            Log::info('ExpertAdvice auth attempt', [
-                'farmer_id' => $farmer ? $farmer->id : null,
-                'is_active' => $farmer ? ($farmer->is_active ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
-                'ip_address' => $request->ip(),
+            // Validate authentication header
+            $token = $request->header('Authentication');
+            $validator = Validator::make(['Authentication' => $token], [
+                'Authentication' => 'required|string',
+            ], [
+                'Authentication.required' => 'Authentication token is required',
             ]);
 
-            if (!$farmer || !$farmer->is_active) {
-                Log::warning('ExpertAdvice: Authentication failed or farmer inactive', [
-                    'farmer_id' => $farmer ? $farmer->id : null,
-                    'is_active' => $farmer ? $farmer->is_active : null,
+            if ($validator->fails()) {
+                Log::warning('expertAdvice: Validation failed for authentication', [
+                    'errors' => $validator->errors(),
+                    'ip' => $request->ip(),
+                    'url' => $request->fullUrl(),
+                ]);
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'status' => 201,
+                ], 422);
+            }
+
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            Log::info('expertAdvice: Auth attempt', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'is_active' => $farmer ? $farmer->is_active : null,
+                'authentication_header' => $token,
+                'ip' => $request->ip(),
+            ]);
+
+            if (!$farmer) {
+                Log::warning('expertAdvice: Authentication failed', [
+                    'token' => $token,
+                    'ip' => $request->ip(),
                 ]);
                 return response()->json([
                     'message' => 'Permission Denied!',
@@ -1283,12 +1315,17 @@ class ToolsController extends Controller
                 ], 403);
             }
 
+            // Validate input
             $validator = Validator::make($request->all(), [
                 'expert_id' => 'required|integer',
             ]);
 
             if ($validator->fails()) {
-                Log::warning('ExpertAdvice: Validation failed', ['errors' => $validator->errors()]);
+                Log::warning('expertAdvice: Input validation failed', [
+                    'errors' => $validator->errors(),
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => $validator->errors()->first(),
                     'status' => 201,
@@ -1297,6 +1334,7 @@ class ToolsController extends Controller
 
             $expert_id = $request->input('expert_id');
 
+            // Fetch expert doctors
             $doctors = Doctor::where('is_active', 1)
                              ->where('is_approved', 1)
                              ->where('is_expert', 1)
@@ -1321,7 +1359,7 @@ class ToolsController extends Controller
                 }
 
                 if (is_array($expert_category) && in_array($expert_id, $expert_category)) {
-                    $image = !empty($doctor->image) ? url($doctor->image) : '';
+                    $image = !empty($doctor->image) ? asset($doctor->image) : '';
                     $state = State::where('id', $doctor->state)->first();
 
                     $common_data = [
@@ -1373,9 +1411,11 @@ class ToolsController extends Controller
                 'mr' => $mr_data,
             ];
 
-            Log::info('ExpertAdvice: Query results', [
+            Log::info('expertAdvice: Query results', [
+                'farmer_id' => $farmer->id,
                 'expert_id' => $expert_id,
                 'doctors_count' => count($en_data),
+                'ip' => $request->ip(),
             ]);
 
             return response()->json([
@@ -1383,13 +1423,26 @@ class ToolsController extends Controller
                 'status' => 200,
                 'data' => $data,
             ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error in expertAdvice', [
-                'farmer_id' => auth('farmer')->id() ?? null,
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('expertAdvice: Database error', [
+                'farmer_id' => $farmer->id ?? null,
+                'expert_id' => $request->input('expert_id'),
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
             ]);
-
+            return response()->json([
+                'message' => 'Database error: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('expertAdvice: Error', [
+                'farmer_id' => $farmer->id ?? null,
+                'expert_id' => $request->input('expert_id'),
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
             return response()->json([
                 'message' => 'Error retrieving experts: ' . $e->getMessage(),
                 'status' => 201,

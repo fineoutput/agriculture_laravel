@@ -70,7 +70,6 @@ Route::middleware(['auth:farmer'])->group(function () {
     Route::post('project-test', [ToolsController::class, 'projectTest']);
     Route::post('snf-calculator', [ToolsController::class, 'snfCalculator']);
     Route::post('calculate-distance', [ToolsController::class, 'calculateDistance']);
-    Route::post('expert-advice', [ToolsController::class, 'expertAdvice']);
     Route::post('ReqDoc', [ToolsController::class, 'requestDoctor']);
     Route::get('expert-category', [ToolsController::class, 'expertCategory']);
     // The above api wont work beacuse of false CC avenue key
@@ -308,3 +307,6 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
 
     
     Route::post('Tools-doctorOn-call', [ToolsController::class, 'DoctorOnCall']);
+
+    
+    Route::post('Tools-expert-advice', [ToolsController::class, 'toolsExpertAdvice']);
