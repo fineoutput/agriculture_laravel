@@ -1279,7 +1279,7 @@ class FarmerController extends Controller
             $validator = Validator::make([
                 'Authentication' => $token,
             ], [
-                'Authentication' => 'required|string',
+                // 'Authentication' => 'required|string',
             ], [
                 'Authentication.required' => 'Authentication token is required',
             ]);
