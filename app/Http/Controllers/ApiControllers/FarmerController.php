@@ -1263,4 +1263,168 @@ class FarmerController extends Controller
             ], 500);
         }
     }
+
+    public function updateFarmerProfile(Request $request)
+    {
+        Log::info('updateProfile request', [
+            'authentication_header' => $request->header('Authentication'),
+            'inputs' => $request->except('image'),
+            'has_image' => $request->hasFile('image'),
+            'ip' => $request->ip(),
+        ]);
+
+        try {
+            // Validate headers
+            $token = $request->header('Authentication');
+            $validator = Validator::make([
+                'Authentication' => $token,
+            ], [
+                'Authentication' => 'required|string',
+            ], [
+                'Authentication.required' => 'Authentication token is required',
+            ]);
+
+            if ($validator->fails()) {
+                Log::warning('updateProfile: Validation failed for headers', [
+                    'errors' => $validator->errors(),
+                    'ip' => $request->ip(),
+                    'url' => $request->fullUrl(),
+                ]);
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'status' => 201,
+                ], 422);
+            }
+
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            Log::info('updateProfile: Auth attempt', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'is_active' => $farmer ? $farmer->is_active : null,
+                'authentication_header' => $token,
+                'ip' => $request->ip(),
+            ]);
+
+            if (!$farmer) {
+                Log::warning('updateProfile: Authentication failed', [
+                    'token' => $token,
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            // Validate inputs
+            $validator = Validator::make($request->all(), [
+                'name' => 'required|string|max:255',
+                'district' => 'required|string|max:255',
+                'city' => 'required|string|max:255',
+                'village' => 'required|string|max:255',
+                'state' => 'required|string|max:255',
+                'phone' => 'nullable|string|max:15',
+                'pincode' => 'nullable|string|max:10',
+                'gst_no' => 'nullable|string|max:15',
+                'image' => 'nullable|image|mimes:jpg,jpeg,png|max:25000',
+            ]);
+
+            if ($validator->fails()) {
+                Log::warning('updateProfile: Input validation failed', [
+                    'errors' => $validator->errors(),
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'status' => 201,
+                ], 422);
+            }
+
+            // Handle image upload
+            $imagePath = $farmer->image;
+            if ($request->hasFile('image')) {
+                $image = $request->file('image');
+                $filename = 'image' . now()->format('YmdHis') . '.' . $image->getClientOriginalExtension();
+                $imagePath = 'farmer_images/' . $filename;
+                $uploadPath = public_path('farmer_images');
+
+                // Ensure directory exists
+                if (!file_exists($uploadPath)) {
+                    mkdir($uploadPath, 0755, true);
+                }
+
+                // Move uploaded file
+                if (!$image->move($uploadPath, $filename)) {
+                    Log::error('updateProfile: Image upload failed', [
+                        'farmer_id' => $farmer->id,
+                        'filename' => $filename,
+                        'ip' => $request->ip(),
+                    ]);
+                    return response()->json([
+                        'message' => 'Failed to upload image',
+                        'status' => 201,
+                    ], 422);
+                }
+
+                Log::info('updateProfile: Image uploaded', [
+                    'farmer_id' => $farmer->id,
+                    'image_path' => $imagePath,
+                    'ip' => $request->ip(),
+                ]);
+            }
+
+            // Prepare update data
+            $dataUpdate = [
+                'name' => $request->input('name'),
+                'district' => $request->input('district'),
+                'city' => $request->input('city'),
+                'village' => $request->input('village'),
+                'state' => $request->input('state'),
+                'phone' => $request->input('phone'),
+                'pincode' => $request->input('pincode'),
+                'gst_no' => $request->input('gst_no'),
+                'image' => $imagePath,
+            ];
+
+            // Update farmer profile
+            $farmer->update($dataUpdate);
+
+            Log::info('updateProfile: Success', [
+                'farmer_id' => $farmer->id,
+                'updated_fields' => array_keys($dataUpdate),
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json([
+                'message' => 'Success!',
+                'status' => 200,
+            ], 200);
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('updateProfile: Database error', [
+                'farmer_id' => $farmer->id ?? null,
+                'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Database error: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('updateProfile: Error', [
+                'farmer_id' => $farmer->id ?? null,
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Error updating profile: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
 }
