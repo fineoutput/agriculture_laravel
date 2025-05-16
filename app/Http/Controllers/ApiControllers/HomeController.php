@@ -8,6 +8,7 @@ use App\Models\BreedingRecord;
 use App\Models\Farmer;
 use App\Models\Group;
 use App\Models\Slider;
+use App\Models\OptionImage;
 use App\Models\State;
 use App\Models\FarmerSlider;
 use App\Models\City;
@@ -2658,6 +2659,129 @@ class HomeController extends Controller
             ]);
             return response()->json([
                 'message' => 'Error processing request: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
+
+     public function getOptionSalePurchaseImages(Request $request)
+    {
+        Log::info('getOptionSalePurchaseImages request', [
+            'lang' => $request->header('Lang', 'en'),
+            'fcm_token' => $request->header('Fcm_token'),
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
+
+        try {
+            // Validate headers
+            $token = $request->header('Authentication');
+            $lang = $request->header('Lang', 'en');
+            $validator = Validator::make([
+                'Authentication' => $token,
+                'Lang' => $lang,
+            ], [
+                'Authentication' => 'required|string',
+                'Lang' => 'nullable|string|in:en,hi,mr,pn',
+            ], [
+                'Authentication.required' => 'Authentication token is required',
+                'Lang.in' => 'The Lang header must be one of: en, hi, mr, pn',
+            ]);
+
+            if ($validator->fails()) {
+                Log::warning('getOptionSalePurchaseImages: Validation failed for headers', [
+                    'errors' => $validator->errors(),
+                    'ip' => $request->ip(),
+                    'url' => $request->fullUrl(),
+                ]);
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'status' => 201,
+                ], 422);
+            }
+
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            Log::info('getOptionSalePurchaseImages: Auth attempt', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'is_active' => $farmer ? $farmer->is_active : null,
+                'authentication_header' => $token,
+                'ip' => $request->ip(),
+            ]);
+
+            if (!$farmer) {
+                Log::warning('getOptionSalePurchaseImages: Authentication failed', [
+                    'token' => $token,
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            // Update FCM token if different
+            $fcm_token = $request->header('Fcm_token');
+            if (!empty($fcm_token) && $fcm_token !== $farmer->fcm_token) {
+                $farmer->update(['fcm_token' => $fcm_token]);
+                Log::info('getOptionSalePurchaseImages: FCM token updated', [
+                    'farmer_id' => $farmer->id,
+                    'fcm_token' => $fcm_token,
+                    'ip' => $request->ip(),
+                ]);
+            }
+
+            // Fetch sale/purchase option images
+            $slider_data = OptionImage::all();
+
+            $slider = $slider_data->map(function ($slide) {
+                return [
+                    'image1' => !empty($slide->image1) ? asset($slide->image1) : '',
+                    'image2' => !empty($slide->image2) ? asset($slide->image2) : '',
+                    'image3' => !empty($slide->image3) ? asset($slide->image3) : '',
+                    'image4' => !empty($slide->image4) ? asset($slide->image4) : '',
+                ];
+            })->toArray();
+
+            Log::info('getOptionSalePurchaseImages: Query results', [
+                'farmer_id' => $farmer->id,
+                'language' => $lang,
+                'slider_count' => count($slider),
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json([
+                'message' => 'Success!',
+                'status' => 200,
+                'data' => [
+                    'slider' => $slider,
+                ],
+            ], 200);
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('getOptionSalePurchaseImages: Database error', [
+                'farmer_id' => $farmer->id ?? null,
+                'lang' => $request->header('Lang', 'en'),
+                'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Database error: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('getOptionSalePurchaseImages: Error', [
+                'farmer_id' => $farmer->id ?? null,
+                'lang' => $request->header('Lang', 'en'),
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Error retrieving images: ' . $e->getMessage(),
                 'status' => 201,
             ], 500);
         }

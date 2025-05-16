@@ -318,3 +318,6 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
 
     
     Route::post('Tools-snf-calculator', [ToolsController::class, 'snfCalculator']);
+
+
+    Route::get('SalePurchase-Option-images', [HomeController::class, 'getOptionSalePurchaseImages']);
