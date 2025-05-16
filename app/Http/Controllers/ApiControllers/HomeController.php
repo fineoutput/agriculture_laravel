@@ -24,6 +24,7 @@ use App\Models\SubscriptionBuy;
 use App\Models\Canister;
 use App\Models\HealthInfo;
 use App\Models\MilkRecord;
+use App\Models\SalePurchaseSlider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -2782,6 +2783,127 @@ class HomeController extends Controller
             ]);
             return response()->json([
                 'message' => 'Error retrieving images: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
+    }
+
+    public function getSalePurchaseSliders(Request $request)
+    {
+        Log::info('getSalePurchaseSliders request', [
+            'lang' => $request->header('Lang', 'en'),
+            'fcm_token' => $request->header('Fcm_token'),
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
+
+        try {
+            // Validate headers
+            $token = $request->header('Authentication');
+            $lang = $request->header('Lang', 'en');
+            $validator = Validator::make([
+                'Authentication' => $token,
+                'Lang' => $lang,
+            ], [
+                'Authentication' => 'required|string',
+                'Lang' => 'nullable|string|in:en,hi,mr,pn',
+            ], [
+                'Authentication.required' => 'Authentication token is required',
+                'Lang.in' => 'The Lang header must be one of: en, hi, mr, pn',
+            ]);
+
+            if ($validator->fails()) {
+                Log::warning('getSalePurchaseSliders: Validation failed for headers', [
+                    'errors' => $validator->errors(),
+                    'ip' => $request->ip(),
+                    'url' => $request->fullUrl(),
+                ]);
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'status' => 201,
+                ], 422);
+            }
+
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            Log::info('getSalePurchaseSliders: Auth attempt', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'is_active' => $farmer ? $farmer->is_active : null,
+                'authentication_header' => $token,
+                'ip' => $request->ip(),
+            ]);
+
+            if (!$farmer) {
+                Log::warning('getSalePurchaseSliders: Authentication failed', [
+                    'token' => $token,
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            // Update FCM token if different
+            $fcm_token = $request->header('Fcm_token');
+            if (!empty($fcm_token) && $fcm_token !== $farmer->fcm_token) {
+                $farmer->update(['fcm_token' => $fcm_token]);
+                Log::info('getSalePurchaseSliders: FCM token updated', [
+                    'farmer_id' => $farmer->id,
+                    'fcm_token' => $fcm_token,
+                    'ip' => $request->ip(),
+                ]);
+            }
+
+            // Fetch active sale/purchase sliders
+            $slider_data = SalePurchaseSlider::where('is_active', 1)->get();
+
+            $slider = $slider_data->map(function ($slide) {
+                return [
+                    'image' => !empty($slide->image) ? asset($slide->image) : '',
+                    'eq_image' => !empty($slide->eq_image) ? asset($slide->eq_image) : '',
+                ];
+            })->toArray();
+
+            Log::info('getSalePurchaseSliders: Query results', [
+                'farmer_id' => $farmer->id,
+                'language' => $lang,
+                'slider_count' => count($slider),
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json([
+                'message' => 'Success!',
+                'status' => 200,
+                'data' => [
+                    'slider' => $slider,
+                ],
+            ], 200);
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('getSalePurchaseSliders: Database error', [
+                'farmer_id' => $farmer->id ?? null,
+                'lang' => $request->header('Lang', 'en'),
+                'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Database error: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('getSalePurchaseSliders: Error', [
+                'farmer_id' => $farmer->id ?? null,
+                'lang' => $request->header('Lang', 'en'),
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Error retrieving sliders: ' . $e->getMessage(),
                 'status' => 201,
             ], 500);
         }
