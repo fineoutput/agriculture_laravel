@@ -1867,22 +1867,57 @@ class ToolsController extends Controller
 
 
 
-    public function expertCategory(Request $request)
+   public function expertCategory(Request $request)
     {
+        Log::info('expertCategory request', [
+            'lang' => $request->header('Lang', 'en'),
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
+
         try {
-            /** @var \App\Models\Farmer $farmer */
-            $farmer = auth('farmer')->user();
-            Log::info('ExpertCategory auth attempt', [
-                'farmer_id' => $farmer ? $farmer->id : null,
-                'is_active' => $farmer ? ($farmer->is_active ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
-                'ip_address' => $request->ip(),
+            // Validate headers
+            $token = $request->header('Authentication');
+            $lang = $request->header('Lang', 'en');
+            $validator = Validator::make([
+                'Authentication' => $token,
+                'Lang' => $lang,
+            ], [
+                'Authentication' => 'required|string',
+                'Lang' => 'nullable|string|in:en,hi,mr,pn',
+            ], [
+                'Authentication.required' => 'Authentication token is required',
+                'Lang.in' => 'The Lang header must be one of: en, hi, mr, pn',
             ]);
 
-            if (!$farmer || !$farmer->is_active) {
-                Log::warning('ExpertCategory: Authentication failed or farmer inactive', [
-                    'farmer_id' => $farmer ? $farmer->id : null,
-                    'is_active' => $farmer ? $farmer->is_active : null,
+            if ($validator->fails()) {
+                Log::warning('expertCategory: Validation failed for headers', [
+                    'errors' => $validator->errors(),
+                    'ip' => $request->ip(),
+                    'url' => $request->fullUrl(),
+                ]);
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'status' => 201,
+                ], 422);
+            }
+
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            Log::info('expertCategory: Auth attempt', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'is_active' => $farmer ? $farmer->is_active : null,
+                'authentication_header' => $token,
+                'ip' => $request->ip(),
+            ]);
+
+            if (!$farmer) {
+                Log::warning('expertCategory: Authentication failed', [
+                    'token' => $token,
+                    'ip' => $request->ip(),
                 ]);
                 return response()->json([
                     'message' => 'Permission Denied!',
@@ -1890,9 +1925,8 @@ class ToolsController extends Controller
                 ], 403);
             }
 
-            // Determine language from Lang header, default to 'en'
-            $language = $request->header('Lang', 'en');
-            $language = in_array($language, ['en', 'hi', 'mr', 'pn']) ? $language : 'en';
+            // Determine language, default to 'en' if invalid
+            $language = in_array($lang, ['en', 'hi', 'mr', 'pn']) ? $lang : 'en';
 
             // Fetch active expertise categories
             $categories = ExpertiseCategory::where('is_active', 1)->get();
@@ -1902,17 +1936,17 @@ class ToolsController extends Controller
                 $cat_image = '';
                 switch ($language) {
                     case 'hi':
-                        $cat_image = $category->image_hindi ? url($category->image_hindi) : '';
+                        $cat_image = $category->image_hindi ? asset($category->image_hindi) : '';
                         break;
                     case 'mr':
-                        $cat_image = $category->image_marathi ? url($category->image_marathi) : '';
+                        $cat_image = $category->image_marathi ? asset($category->image_marathi) : '';
                         break;
                     case 'pn':
-                        $cat_image = $category->image_punjabi ? url($category->image_punjabi) : '';
+                        $cat_image = $category->image_punjabi ? asset($category->image_punjabi) : '';
                         break;
                     case 'en':
                     default:
-                        $cat_image = $category->image ? url($category->image) : '';
+                        $cat_image = $category->image ? asset($category->image) : '';
                         break;
                 }
 
@@ -1923,10 +1957,11 @@ class ToolsController extends Controller
                 ];
             }
 
-            Log::info('ExpertCategory: Query results', [
+            Log::info('expertCategory: Query results', [
                 'farmer_id' => $farmer->id,
                 'language' => $language,
                 'categories_count' => count($category_data),
+                'ip' => $request->ip(),
             ]);
 
             return response()->json([
@@ -1934,13 +1969,26 @@ class ToolsController extends Controller
                 'status' => 200,
                 'data' => $category_data,
             ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error in expertCategory', [
-                'farmer_id' => auth('farmer')->id() ?? null,
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('expertCategory: Database error', [
+                'farmer_id' => $farmer->id ?? null,
+                'lang' => $request->header('Lang', 'en'),
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
             ]);
-
+            return response()->json([
+                'message' => 'Database error: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('expertCategory: Error', [
+                'farmer_id' => $farmer->id ?? null,
+                'lang' => $request->header('Lang', 'en'),
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
             return response()->json([
                 'message' => 'Error retrieving categories: ' . $e->getMessage(),
                 'status' => 201,
