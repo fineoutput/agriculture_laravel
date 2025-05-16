@@ -307,4 +307,4 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
     Route::post('FeedDoctorOnCall', [FeedController::class, 'doctorOnCall']);
 
     
-    Route::post('Tools-doctor-call', [ToolsController::class, 'DoctorOnCall']);
+    Route::post('Tools-doctorOn-call', [ToolsController::class, 'DoctorOnCall']);
