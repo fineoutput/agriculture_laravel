@@ -66,7 +66,6 @@ Route::middleware(['auth:farmer'])->group(function () {
 
 
     /////////toolsController
-    Route::post('project-requirements', [ToolsController::class, 'projectRequirements']);
     Route::post('project-test', [ToolsController::class, 'projectTest']);
     Route::post('snf-calculator', [ToolsController::class, 'snfCalculator']);
     Route::post('calculate-distance', [ToolsController::class, 'calculateDistance']);
@@ -314,3 +313,6 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
 
     
     Route::post('Tools-GetVendors', [ToolsController::class, 'getVendors']);
+
+    
+    Route::post('Tools-project-requirements', [ToolsController::class, 'projectRequirements']);

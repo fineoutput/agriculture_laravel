@@ -221,37 +221,80 @@ class ToolsController extends Controller
         }
     }
 
-    public function projectRequirements(Request $request)
+     public function projectRequirements(Request $request)
     {
+        Log::info('projectRequirements request', [
+            'number_of_cows' => $request->input('number_of_cows'),
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
+
         try {
+            // Check if number_of_cows is provided
             if (!$request->has('number_of_cows')) {
+                Log::warning('projectRequirements: Missing number_of_cows parameter', [
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => 'Please Insert Data',
                     'status' => 201,
                 ], 422);
             }
 
-            // /** @var \App\Models\Farmer $farmer */
-            $farmer = auth('farmer')->user();
-            Log::info('ProjectRequirements auth attempt', [
-                'farmer_id' => $farmer ? $farmer->id : null,
-                'is_active' => $farmer ? ($farmer->is_active ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
-                'ip_address' => $request->ip(),
+            // Validate authentication header
+            $token = $request->header('Authentication');
+            $validator = Validator::make(['Authentication' => $token], [
+                'Authentication' => 'required|string',
+            ], [
+                'Authentication.required' => 'Authentication token is required',
             ]);
 
-            if (!$farmer || !$farmer->is_active) {
+            if ($validator->fails()) {
+                Log::warning('projectRequirements: Validation failed for authentication', [
+                    'errors' => $validator->errors(),
+                    'ip' => $request->ip(),
+                    'url' => $request->fullUrl(),
+                ]);
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'status' => 201,
+                ], 422);
+            }
+
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            Log::info('projectRequirements: Auth attempt', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'is_active' => $farmer ? $farmer->is_active : null,
+                'authentication_header' => $token,
+                'ip' => $request->ip(),
+            ]);
+
+            if (!$farmer) {
+                Log::warning('projectRequirements: Authentication failed', [
+                    'token' => $token,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => 'Permission Denied!',
                     'status' => 201,
                 ], 403);
             }
 
+            // Validate input
             $validator = Validator::make($request->all(), [
                 'number_of_cows' => 'required|numeric|min:1',
             ]);
 
             if ($validator->fails()) {
+                Log::warning('projectRequirements: Input validation failed', [
+                    'errors' => $validator->errors(),
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => $validator->errors()->first(),
                     'status' => 201,
@@ -262,7 +305,11 @@ class ToolsController extends Controller
             $excel_path = public_path('excel/25_cows.xlsx');
 
             if (!file_exists($excel_path)) {
-                Log::error('Excel file not found', ['path' => $excel_path]);
+                Log::error('projectRequirements: Excel file not found', [
+                    'path' => $excel_path,
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => 'Excel file not found!',
                     'status' => 201,
@@ -294,7 +341,10 @@ class ToolsController extends Controller
             // Update service record
             $service_record = ServiceRecord::first();
             if (!$service_record) {
-                Log::warning('No service record found in tbl_service_records');
+                Log::warning('projectRequirements: No service record found in tbl_service_records', [
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => 'Service record not found!',
                     'status' => 201,
@@ -314,18 +364,39 @@ class ToolsController extends Controller
                 'only_date' => now()->format('Y-m-d'),
             ]);
 
+            Log::info('projectRequirements: Success', [
+                'farmer_id' => $farmer->id,
+                'number_of_cows' => $number_of_cows,
+                'calculated_value' => $calculated_value,
+                'ip' => $request->ip(),
+            ]);
+
             return response()->json([
                 'message' => 'Success!',
                 'status' => 200,
                 'data' => $base64_pdf,
                 'filename' => 'project_requirements.pdf',
             ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error in projectRequirements', [
-                'farmer_id' => auth('farmer')->id() ?? null,
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('projectRequirements: Database error', [
+                'farmer_id' => $farmer->id ?? null,
+                'number_of_cows' => $request->input('number_of_cows'),
                 'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
             ]);
-
+            return response()->json([
+                'message' => 'Database error: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('projectRequirements: Error', [
+                'farmer_id' => $farmer->id ?? null,
+                'number_of_cows' => $request->input('number_of_cows'),
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
             return response()->json([
                 'message' => 'Error processing project requirements: ' . $e->getMessage(),
                 'status' => 201,
