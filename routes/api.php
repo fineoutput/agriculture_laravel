@@ -70,7 +70,6 @@ Route::middleware(['auth:farmer'])->group(function () {
     Route::post('project-test', [ToolsController::class, 'projectTest']);
     Route::post('snf-calculator', [ToolsController::class, 'snfCalculator']);
     Route::post('calculate-distance', [ToolsController::class, 'calculateDistance']);
-    Route::post('doctor-call', [ToolsController::class, 'doctorOnCall']);
     Route::post('expert-advice', [ToolsController::class, 'expertAdvice']);
     Route::post('ReqDoc', [ToolsController::class, 'requestDoctor']);
     Route::get('expert-category', [ToolsController::class, 'expertCategory']);
@@ -305,4 +304,7 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
     Route::post('Tools-AllProducts', [ToolsController::class, 'allProducts']);
 
     
-    Route::post('ToolsDoctorOnCall', [FeedController::class, 'doctorOnCall']);
+    Route::post('FeedDoctorOnCall', [FeedController::class, 'doctorOnCall']);
+
+    
+    Route::post('Tools-doctor-call', [ToolsController::class, 'DoctorOnCall']);
