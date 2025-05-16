@@ -745,30 +745,71 @@ class ToolsController extends Controller
 
     public function allProducts(Request $request)
     {
+        Log::info('allProducts request', [
+            'is_admin' => $request->input('is_admin'),
+            'vendor_id' => $request->input('vendor_id'),
+            'search' => $request->input('search'),
+            'page_index' => $request->header('Index', 1),
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
+
         try {
+            // Check if is_admin is provided
             if (!$request->has('is_admin')) {
+                Log::warning('allProducts: No data provided', [
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => 'Please Insert Data',
                     'status' => 201,
                 ], 422);
             }
 
-            // /** @var \App\Models\Farmer $farmer */
-            $farmer = auth('farmer')->user();
-            Log::info('AllProducts auth attempt', [
-                'farmer_id' => $farmer ? $farmer->id : null,
-                'is_active' => $farmer ? ($farmer->is_active ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
-                'ip_address' => $request->ip(),
+            // Validate authentication header
+            $token = $request->header('Authentication');
+            $validator = Validator::make(['Authentication' => $token], [
+                // 'Authentication' => 'required|string',
+            ], [
+                'Authentication.required' => 'Authentication token is required',
             ]);
 
-            if (!$farmer || !$farmer->is_active) {
+            if ($validator->fails()) {
+                Log::warning('allProducts: Validation failed for authentication', [
+                    'errors' => $validator->errors(),
+                    'ip' => $request->ip(),
+                    'url' => $request->fullUrl(),
+                ]);
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'status' => 201,
+                ], 422);
+            }
+
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            Log::info('allProducts: Auth attempt', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'is_active' => $farmer ? $farmer->is_active : null,
+                'authentication_header' => $token,
+                'ip' => $request->ip(),
+            ]);
+
+            if (!$farmer) {
+                Log::warning('allProducts: Authentication failed', [
+                    'token' => $token,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => 'Permission Denied!',
                     'status' => 201,
                 ], 403);
             }
 
+            // Validate inputs
             $validator = Validator::make($request->all(), [
                 'is_admin' => 'required|string',
                 'vendor_id' => 'nullable|integer',
@@ -776,6 +817,11 @@ class ToolsController extends Controller
             ]);
 
             if ($validator->fails()) {
+                Log::warning('allProducts: Input validation failed', [
+                    'errors' => $validator->errors(),
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => $validator->errors()->first(),
                     'status' => 201,
@@ -785,10 +831,10 @@ class ToolsController extends Controller
             $is_admin = $request->input('is_admin');
             $vendor_id = $request->input('vendor_id');
             $search = $request->input('search');
+            $perPage = 50;
             $page_index = (int) $request->header('Index', 1);
-            $limit = 50;
-            $start = ($page_index - 1) * $limit;
 
+            // Build product query
             $query = Product::query()->where('is_active', 1);
 
             if ($is_admin === 'admin') {
@@ -807,10 +853,8 @@ class ToolsController extends Controller
                 });
             }
 
-            $count = $query->count();
-            $products = $query->offset($start)->limit($limit)->get();
-            $pages = (int) ceil($count / $limit);
-            $pagination = $this->createPagination($page_index, $pages);
+            // Fetch paginated products
+            $products = $query->paginate($perPage, ['*'], 'page', $page_index);
 
             $en_data = [];
             $hi_data = [];
@@ -823,14 +867,14 @@ class ToolsController extends Controller
                     $imageArray = json_decode($pro->image, true);
                     if (is_array($imageArray) && !empty($imageArray)) {
                         foreach ($imageArray as $img) {
-                            $image[] = url($img);
+                            $image[] = asset($img);
                         }
                     } else {
-                        $image[] = url($pro->image);
+                        $image[] = asset($pro->image);
                     }
                 }
 
-                $video = !empty($pro->video) ? url($pro->video) : '';
+                $video = !empty($pro->video) ? asset($pro->video) : '';
                 $stock = $pro->inventory != 0 ? 'In Stock' : 'Out of Stock';
                 $discount = (int) $pro->mrp - (int) $pro->selling_price;
                 $percent = $discount > 0 ? round($discount / $pro->mrp * 100) : 0;
@@ -873,27 +917,56 @@ class ToolsController extends Controller
                 ]);
             }
 
-            $data = [
-                'en' => $en_data,
-                'hi' => $hi_data,
-                'pn' => $pn_data,
-                'mr' => $mr_data,
-            ];
+            Log::info('allProducts: Success', [
+                'farmer_id' => $farmer->id,
+                'is_admin' => $is_admin,
+                'vendor_id' => $vendor_id,
+                'search' => $search,
+                'total_products' => $products->total(),
+                'page' => $page_index,
+                'ip' => $request->ip(),
+            ]);
 
             return response()->json([
                 'message' => 'Success!',
                 'status' => 200,
-                'data' => $data,
+                'data' => [
+                    'en' => $en_data,
+                    'hi' => $hi_data,
+                    'pn' => $pn_data,
+                    'mr' => $mr_data,
+                ],
                 'is_cod' => $farmer->cod,
-                'pagination' => $pagination,
-                'last' => $pages,
+                'pagination' => [
+                    'current_page' => $products->currentPage(),
+                    'last_page' => $products->lastPage(),
+                    'per_page' => $products->perPage(),
+                    'total' => $products->total(),
+                    'from' => $products->firstItem(),
+                    'to' => $products->lastItem(),
+                ],
+                'last' => $products->lastPage(),
             ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error in allProducts', [
-                'farmer_id' => auth('farmer')->id() ?? null,
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('allProducts: Database error', [
+                'farmer_id' => $farmer->id ?? null,
+                'is_admin' => $request->input('is_admin'),
                 'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
             ]);
-
+            return response()->json([
+                'message' => 'Database error: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('allProducts: Error', [
+                'farmer_id' => $farmer->id ?? null,
+                'is_admin' => $request->input('is_admin'),
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
             return response()->json([
                 'message' => 'Error retrieving products: ' . $e->getMessage(),
                 'status' => 201,
