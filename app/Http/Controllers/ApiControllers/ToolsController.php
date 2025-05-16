@@ -499,7 +499,7 @@ class ToolsController extends Controller
             // Validate authentication header
             $token = $request->header('Authentication');
             $validator = Validator::make(['Authentication' => $token], [
-                'Authentication' => 'required|string',
+                // 'Authentication' => 'required|string',
             ], [
                 'Authentication.required' => 'Authentication token is required',
             ]);
@@ -541,7 +541,7 @@ class ToolsController extends Controller
 
             // Validate input
             $validator = Validator::make($request->all(), [
-                'breeding_date' => 'required|date_format:Y-m-d',
+                'breeding_date' => 'required|date_format:d-m-Y',
             ]);
 
             if ($validator->fails()) {
