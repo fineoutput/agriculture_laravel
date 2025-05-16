@@ -478,35 +478,78 @@ class ToolsController extends Controller
 
     public function pregnancyCalculator(Request $request)
     {
+        Log::info('pregnancyCalculator request', [
+            'breeding_date' => $request->input('breeding_date'),
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
+
         try {
+            // Check if breeding_date is provided
             if (!$request->has('breeding_date')) {
+                Log::warning('pregnancyCalculator: No data provided', [
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => 'Please Insert Data',
                     'status' => 201,
                 ], 422);
             }
 
-            // /** @var \App\Models\Farmer $farmer */
-            $farmer = auth('farmer')->user();
-            Log::info('PregnancyCalculator auth attempt', [
-                'farmer_id' => $farmer ? $farmer->id : null,
-                'is_active' => $farmer ? ($farmer->is_active ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
-                'ip_address' => $request->ip(),
+            // Validate authentication header
+            $token = $request->header('Authentication');
+            $validator = Validator::make(['Authentication' => $token], [
+                'Authentication' => 'required|string',
+            ], [
+                'Authentication.required' => 'Authentication token is required',
             ]);
 
-            if (!$farmer || !$farmer->is_active) {
+            if ($validator->fails()) {
+                Log::warning('pregnancyCalculator: Validation failed for authentication', [
+                    'errors' => $validator->errors(),
+                    'ip' => $request->ip(),
+                    'url' => $request->fullUrl(),
+                ]);
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'status' => 201,
+                ], 422);
+            }
+
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            Log::info('pregnancyCalculator: Auth attempt', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'is_active' => $farmer ? $farmer->is_active : null,
+                'authentication_header' => $token,
+                'ip' => $request->ip(),
+            ]);
+
+            if (!$farmer) {
+                Log::warning('pregnancyCalculator: Authentication failed', [
+                    'token' => $token,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => 'Permission Denied!',
                     'status' => 201,
                 ], 403);
             }
 
+            // Validate input
             $validator = Validator::make($request->all(), [
                 'breeding_date' => 'required|date_format:Y-m-d',
             ]);
 
             if ($validator->fails()) {
+                Log::warning('pregnancyCalculator: Input validation failed', [
+                    'errors' => $validator->errors(),
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => $validator->errors()->first(),
                     'status' => 201,
@@ -533,7 +576,10 @@ class ToolsController extends Controller
             // Update service record
             $service_record = ServiceRecord::first();
             if (!$service_record) {
-                Log::warning('No service record found in tbl_service_records');
+                Log::warning('pregnancyCalculator: No service record found in tbl_service_records', [
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => 'Service record not found!',
                     'status' => 201,
@@ -553,15 +599,22 @@ class ToolsController extends Controller
                 'only_date' => now()->format('Y-m-d'),
             ]);
 
+            Log::info('pregnancyCalculator: Success', [
+                'farmer_id' => $farmer->id,
+                'breeding_date' => $request->input('breeding_date'),
+                'ip' => $request->ip(),
+            ]);
+
             return response()->json([
                 'message' => 'Success!',
                 'status' => 200,
                 'data' => $data,
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error in pregnancyCalculator', [
-                'farmer_id' => auth('farmer')->id() ?? null,
+            Log::error('pregnancyCalculator: Error', [
+                'farmer_id' => $farmer->id ?? null,
                 'error' => $e->getMessage(),
+                'ip' => $request->ip(),
             ]);
 
             return response()->json([
