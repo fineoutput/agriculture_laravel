@@ -64,30 +64,69 @@ class ToolsController extends Controller
     }
     public function silageMaking(Request $request)
     {
+        Log::info('silageMaking request', [
+            'number_of_cows' => $request->input('number_of_cows'),
+            'feeding' => $request->input('feeding'),
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
+
         try {
+            // Check if any required data is provided
             if (!$request->hasAny(['number_of_cows', 'feeding', 'total_feeding_days', 'density', 'breadth', 'height', 'number_of_pits'])) {
+                Log::warning('silageMaking: No data provided', [
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => 'Please Insert Data',
                     'status' => 201,
                 ], 422);
             }
 
-            // /** @var \App\Models\Farmer $farmer */
-            $farmer = auth('farmer')->user();
-            Log::info('SilageMaking auth attempt', [
-                'farmer_id' => $farmer ? $farmer->id : null,
-                'is_active' => $farmer ? ($farmer->is_active ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
-                'ip_address' => $request->ip(),
+            // Validate authentication header
+            $token = $request->header('Authentication');
+            $validator = Validator::make(['Authentication' => $token], [
+                'Authentication' => 'required|string',
+            ], [
+                'Authentication.required' => 'Authentication token is required',
             ]);
 
-            if (!$farmer || !$farmer->is_active) {
+            if ($validator->fails()) {
+                Log::warning('silageMaking: Validation failed for authentication', [
+                    'errors' => $validator->errors(),
+                    'ip' => $request->ip(),
+                    'url' => $request->fullUrl(),
+                ]);
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'status' => 201,
+                ], 422);
+            }
+
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            Log::info('silageMaking: Auth attempt', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'is_active' => $farmer ? $farmer->is_active : null,
+                'authentication_header' => $token,
+                'ip' => $request->ip(),
+            ]);
+
+            if (!$farmer) {
+                Log::warning('silageMaking: Authentication failed', [
+                    'token' => $token,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => 'Permission Denied!',
                     'status' => 201,
                 ], 403);
             }
 
+            // Validate inputs
             $validator = Validator::make($request->all(), [
                 'number_of_cows' => 'required|numeric|min:1',
                 'feeding' => 'required|numeric|min:0',
@@ -99,6 +138,11 @@ class ToolsController extends Controller
             ]);
 
             if ($validator->fails()) {
+                Log::warning('silageMaking: Input validation failed', [
+                    'errors' => $validator->errors(),
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => $validator->errors()->first(),
                     'status' => 201,
@@ -126,9 +170,13 @@ class ToolsController extends Controller
                 'fodder_required' => $fodder_required,
             ];
 
+            // Update service record
             $service_record = ServiceRecord::first();
             if (!$service_record) {
-                Log::warning('No service record found in tbl_service_records');
+                Log::warning('silageMaking: No service record found in tbl_service_records', [
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => 'Service record not found!',
                     'status' => 201,
@@ -148,15 +196,22 @@ class ToolsController extends Controller
                 'only_date' => now()->format('Y-m-d'),
             ]);
 
+            Log::info('silageMaking: Success', [
+                'farmer_id' => $farmer->id,
+                'silage_qty_required' => $silage_qty_required,
+                'ip' => $request->ip(),
+            ]);
+
             return response()->json([
                 'message' => 'Success!',
                 'status' => 200,
                 'data' => $data,
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error in silageMaking', [
-                'farmer_id' => auth('farmer')->id() ?? null,
+            Log::error('silageMaking: Error', [
+                'farmer_id' => $farmer->id ?? null,
                 'error' => $e->getMessage(),
+                'ip' => $request->ip(),
             ]);
 
             return response()->json([
