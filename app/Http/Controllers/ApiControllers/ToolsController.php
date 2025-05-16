@@ -1134,8 +1134,8 @@ class ToolsController extends Controller
 
             // Validate inputs
             $validator = Validator::make($request->all(), [
-                'latitude' => 'required|numeric|between:-90,90',
-                'longitude' => 'required|numeric|between:-180,180',
+                'latitude' => 'required|numeric',
+                'longitude' => 'required|numeric',
                 'radius' => 'required|numeric|min:0|max:40',
             ]);
 
