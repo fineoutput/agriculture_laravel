@@ -13,6 +13,7 @@ use App\Models\State;
 use App\Models\Order1;
 use App\Models\Product;
 use App\Models\Cart;
+use App\Models\GiftCard;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -20,7 +21,6 @@ use Illuminate\Support\Facades\Mail;
 use Razorpay\Api\Api; // Add this import
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\FacadesLog;
 
 class FarmerController extends Controller
 {
@@ -1140,5 +1140,127 @@ class FarmerController extends Controller
             'message' => 'Payment failed callback received',
             'status' => 201,
         ], 200);
+    }
+
+    public function getFarmerProfile(Request $request)
+    {
+        Log::info('getFarmerProfile request', [
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
+
+        try {
+            // Validate headers
+            $token = $request->header('Authentication');
+            $validator = Validator::make([
+                'Authentication' => $token,
+            ], [
+                'Authentication' => 'required|string',
+            ], [
+                'Authentication.required' => 'Authentication token is required',
+            ]);
+
+            if ($validator->fails()) {
+                Log::warning('getFarmerProfile: Validation failed for headers', [
+                    'errors' => $validator->errors(),
+                    'ip' => $request->ip(),
+                    'url' => $request->fullUrl(),
+                ]);
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'status' => 201,
+                ], 422);
+            }
+
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            Log::info('getFarmerProfile: Auth attempt', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'is_active' => $farmer ? $farmer->is_active : null,
+                'authentication_header' => $token,
+                'ip' => $request->ip(),
+            ]);
+
+            if (!$farmer) {
+                Log::warning('getFarmerProfile: Authentication failed', [
+                    'token' => $token,
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            // Fetch gift card data if giftcard_id exists
+            $gift_data = [];
+            if (!empty($farmer->giftcard_id)) {
+                $gift_card = GiftCard::select('amount', 'image', 'gift_count', 'allocated')
+                    ->where('id', $farmer->giftcard_id)
+                    ->where('is_active', 1)
+                    ->first();
+
+                if ($gift_card) {
+                    $gift_data = [
+                        'gift_amount' => $gift_card->amount,
+                        'gift_count' => $gift_card->gift_count,
+                        'gift_allocated' => $gift_card->allocated,
+                        'gift_image' => !empty($gift_card->image) ? asset('assets/uploads/gift_card/' . $gift_card->image) : '',
+                    ];
+                }
+            }
+
+            // Prepare profile data
+            $data = [
+                'name' => $farmer->name,
+                'district' => $farmer->district,
+                'city' => $farmer->city,
+                'state' => $farmer->state,
+                'state_id' => $farmer->village,
+                'phone' => $farmer->phone,
+                'pincode' => $farmer->pincode,
+                'image' => !empty($farmer->image) ? asset($farmer->image) : '',
+                'no_animals' => $farmer->no_animals,
+                'gst_no' => $farmer->gst_no,
+                'gift' => $gift_data,
+            ];
+
+            Log::info('getFarmerProfile: Success', [
+                'farmer_id' => $farmer->id,
+                'giftcard_id' => $farmer->giftcard_id ?? null,
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json([
+                'message' => 'Success!',
+                'status' => 200,
+                'data' => $data,
+            ], 200);
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('getFarmerProfile: Database error', [
+                'farmer_id' => $farmer->id ?? null,
+                'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Database error: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('getFarmerProfile: Error', [
+                'farmer_id' => $farmer->id ?? null,
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Error retrieving profile: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        }
     }
 }

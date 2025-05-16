@@ -324,3 +324,6 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
 
 
     Route::get('home-SalePurchase-Slider', [HomeController::class, 'getSalePurchaseSliders']);
+
+    
+    Route::get('farmer-GetProfile', [FarmerController::class, 'getFarmerProfile']);
