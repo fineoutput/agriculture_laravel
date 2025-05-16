@@ -1067,30 +1067,64 @@ class ToolsController extends Controller
         }
     }
 
-    public function doctorOnCall(Request $request)
+     public function doctorOnCall(Request $request)
     {
+        Log::info('doctorOnCall request', [
+            'latitude' => $request->input('latitude'),
+            'longitude' => $request->input('longitude'),
+            'radius' => $request->input('radius'),
+            'authentication_header' => $request->header('Authentication'),
+            'ip' => $request->ip(),
+        ]);
+
         try {
+            // Check if required parameters are provided
             if (!$request->has(['latitude', 'longitude', 'radius'])) {
-                Log::warning('DoctorOnCall: Missing required parameters', ['ip' => $request->ip()]);
+                Log::warning('doctorOnCall: Missing required parameters', [
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => 'Please provide latitude, longitude, and radius',
                     'status' => 201,
                 ], 422);
             }
 
-            /** @var \App\Models\Farmer $farmer */
-            $farmer = auth('farmer')->user();
-            Log::info('DoctorOnCall auth attempt', [
-                'farmer_id' => $farmer ? $farmer->id : null,
-                'is_active' => $farmer ? ($farmer->is_active ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
-                'ip_address' => $request->ip(),
+            // Validate authentication header
+            $token = $request->header('Authentication');
+            $validator = Validator::make(['Authentication' => $token], [
+                'Authentication' => 'required|string',
+            ], [
+                'Authentication.required' => 'Authentication token is required',
             ]);
 
-            if (!$farmer || !$farmer->is_active) {
-                Log::warning('DoctorOnCall: Authentication failed or farmer inactive', [
-                    'farmer_id' => $farmer ? $farmer->id : null,
-                    'is_active' => $farmer ? $farmer->is_active : null,
+            if ($validator->fails()) {
+                Log::warning('doctorOnCall: Validation failed for authentication', [
+                    'errors' => $validator->errors(),
+                    'ip' => $request->ip(),
+                    'url' => $request->fullUrl(),
+                ]);
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'status' => 201,
+                ], 422);
+            }
+
+            // Authenticate farmer by token
+            $farmer = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            Log::info('doctorOnCall: Auth attempt', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'is_active' => $farmer ? $farmer->is_active : null,
+                'authentication_header' => $token,
+                'ip' => $request->ip(),
+            ]);
+
+            if (!$farmer) {
+                Log::warning('doctorOnCall: Authentication failed', [
+                    'token' => $token,
+                    'ip' => $request->ip(),
                 ]);
                 return response()->json([
                     'message' => 'Permission Denied!',
@@ -1098,16 +1132,19 @@ class ToolsController extends Controller
                 ], 403);
             }
 
+            // Validate inputs
             $validator = Validator::make($request->all(), [
-                'latitude' => 'required|numeric',
-                'longitude' => 'required|numeric',
-                'radius' => 'required|numeric',
+                'latitude' => 'required|numeric|between:-90,90',
+                'longitude' => 'required|numeric|between:-180,180',
+                'radius' => 'required|numeric|min:0|max:40',
             ]);
-            // between:-90,90
-            // between:-180,180
-            // min:0|max:40
+
             if ($validator->fails()) {
-                Log::warning('DoctorOnCall: Validation failed', ['errors' => $validator->errors()]);
+                Log::warning('doctorOnCall: Input validation failed', [
+                    'errors' => $validator->errors(),
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'message' => $validator->errors()->first(),
                     'status' => 201,
@@ -1118,6 +1155,7 @@ class ToolsController extends Controller
             $longitude = $request->input('longitude');
             $radius = $request->input('radius');
 
+            // Fetch doctors
             $doctors = Doctor::where('is_active', 1)
                              ->where('is_approved', 1)
                              ->where('is_expert', 0)
@@ -1134,8 +1172,8 @@ class ToolsController extends Controller
                 $distanceMeters = $this->distance($latitude, $longitude, $doctor->latitude, $doctor->longitude);
                 $distanceKm = (int) ($distanceMeters / 1000); // Convert to kilometers, truncate to integer
 
-                if ($distanceKm <= $radius && $radius <= 40) {
-                    $image = !empty($doctor->image) ? url($doctor->image) : '';
+                if ($distanceKm <= $radius) {
+                    $image = !empty($doctor->image) ? asset($doctor->image) : '';
 
                     $common_data = [
                         'id' => $doctor->id,
@@ -1173,11 +1211,13 @@ class ToolsController extends Controller
                 'mr' => $mr_data,
             ];
 
-            Log::info('DoctorOnCall: Query results', [
+            Log::info('doctorOnCall: Query results', [
+                'farmer_id' => $farmer->id,
                 'latitude' => $latitude,
                 'longitude' => $longitude,
                 'radius' => $radius,
                 'doctors_count' => count($en_data),
+                'ip' => $request->ip(),
             ]);
 
             return response()->json([
@@ -1185,13 +1225,26 @@ class ToolsController extends Controller
                 'status' => 200,
                 'data' => $data,
             ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error in doctorOnCall', [
-                'farmer_id' => auth('farmer')->id() ?? null,
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('doctorOnCall: Database error', [
+                'farmer_id' => $farmer->id ?? null,
+                'latitude' => $request->input('latitude'),
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'ip' => $request->ip(),
             ]);
-
+            return response()->json([
+                'message' => 'Database error: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('doctorOnCall: Error', [
+                'farmer_id' => $farmer->id ?? null,
+                'latitude' => $request->input('latitude'),
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
             return response()->json([
                 'message' => 'Error retrieving doctors: ' . $e->getMessage(),
                 'status' => 201,
