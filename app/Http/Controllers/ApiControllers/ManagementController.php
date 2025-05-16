@@ -906,8 +906,8 @@ $entryIds = DB::table(DB::raw("({$subQuery->toSql()}) as sub"))
 
             // Validate input
             $validator = Validator::make($request->all(), [
-                'Latitude' => 'required|numeric',
-                'Longitude' => 'required|numeric',
+                'Latitude' => 'nullable|numeric',
+                'Longitude' => 'nullable|numeric',
                 'Information_Type' => 'nullable|string|in:animal_sale,animal_purchase,equipment_Sale,equipment_purchase',
             ]);
 
