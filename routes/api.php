@@ -329,4 +329,4 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
     Route::get('farmer-GetProfile', [FarmerController::class, 'getFarmerProfile']);
 
 
-    Route::get('farmer-Update-Profile', [FarmerController::class, 'updateFarmerProfile']);
+    Route::post('farmer-Update-Profile', [FarmerController::class, 'updateFarmerProfile']);
