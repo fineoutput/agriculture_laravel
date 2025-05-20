@@ -141,28 +141,55 @@ use Illuminate\Support\Facades\Session;
         }
         
 
-        public function deleteSlider($id)
-{
-    $slider = FarmerSlider::findOrFail($id);
+//         public function deleteSlider($id)
+// {
+//     $slider = FarmerSlider::findOrFail($id);
 
-    $images = json_decode($slider->image, true);
-    if (is_array($images)) {
-        foreach ($images as $img) {
-            if (file_exists(public_path($img))) {
-                unlink(public_path($img));
+//     $images = json_decode($slider->image, true);
+//     if (is_array($images)) {
+//         foreach ($images as $img) {
+//             if (file_exists(public_path($img))) {
+//                 unlink(public_path($img));
+//             }
+//         }
+//     } else {
+//         if (file_exists(public_path($slider->image))) {
+//             unlink(public_path($slider->image));
+//         }
+//     }
+
+//     $slider->delete();
+
+//     Session::flash('success', 'Slider deleted successfully!');
+//     return redirect()->route('farmer_slider.list');
+// }
+
+public function destroy($id)
+{
+    try {
+        $slider = FarmerSlider::findOrFail($id);
+
+        // Delete associated image(s) if they exist
+        $images = json_decode($slider->image, true);
+        if (is_array($images)) {
+            foreach ($images as $img) {
+                if (file_exists(public_path($img))) {
+                    unlink(public_path($img));
+                }
             }
-        }
-    } else {
-        if (file_exists(public_path($slider->image))) {
+        } elseif (!empty($slider->image) && file_exists(public_path($slider->image))) {
             unlink(public_path($slider->image));
         }
+
+        $slider->delete();
+
+        return redirect()->back()->with('success', 'Slider deleted successfully!');
+    } catch (\Exception $e) {
+        \Log::error('Delete Slider Error: ' . $e->getMessage());
+        return redirect()->back()->withErrors(['Something went wrong while deleting the slider.']);
     }
-
-    $slider->delete();
-
-    Session::flash('success', 'Slider deleted successfully!');
-    return redirect()->route('farmer_slider.list');
 }
+
 
 
         public function toggleSliderStatus($id)

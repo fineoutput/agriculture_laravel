@@ -96,7 +96,8 @@ Route::get('farmer_slider/add', [FarmerSliderController::class, 'createForm'])->
 Route::post('farmer_slider/store', [FarmerSliderController::class, 'storeSlider'])->name('store_farmer_slider');
 Route::get('farmer_slider/edit/{id}', [FarmerSliderController::class, 'editForm'])->name('edit_farmer_slider');
 Route::post('farmer_slider/update/{id}', [FarmerSliderController::class, 'updateSlider'])->name('update_farmer_slider');
-Route::get('farmer_slider/delete/{id}', [FarmerSliderController::class, 'deleteSlider'])->name('delete_farmer_slider');
+Route::delete('farmer_slider/delete/{id}', [FarmerSliderController::class, 'destroy'])->name('delete_farmer_slider');
+
 Route::get('farmer_slider/toggle/{id}', [FarmerSliderController::class, 'toggleSliderStatus'])->name('toggle_farmer_slider_status');
 
 ////////////////disease

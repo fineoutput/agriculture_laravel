@@ -89,7 +89,12 @@
                           <td>
                             @if($slider->id)
                                 <a href="{{ route('edit_farmer_slider', ['id' => $slider->id]) }}" class="btn btn-warning btn-sm">Edit</a>
-                                <a href="{{ route('delete_farmer_slider', ['id' => $slider->id]) }}" class="btn btn-danger btn-sm">Delete</a>
+                                <form action="{{ route('delete_farmer_slider', ['id' => $slider->id]) }}" method="POST" style="display:inline-block;">
+    @csrf
+    @method('DELETE')
+    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this slider?')">Delete</button>
+</form>
+
                                 <a href="{{ route('toggle_farmer_slider_status', ['id' => $slider->id]) }}" class="btn btn-secondary btn-sm">Toggle Status</a>
                             @else
                                 <span class="text-danger">Invalid Slider ID</span>
