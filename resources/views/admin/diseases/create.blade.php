@@ -56,7 +56,7 @@
                 <div class="form-group row">
                   <label class="col-sm-2 col-form-label"><strong>Description</strong> <span class="text-danger">*</span></label>
                   <div class="col-sm-10">
-                    <textarea name="content" id="editor1" class="form-control" required>{{ old('content') }}</textarea>
+                    <textarea name="content" id="editor1" class="form-control" required>{!! old('content') !!}</textarea>
                   </div>
                 </div>
 
@@ -83,11 +83,16 @@
 
   </div> <!-- container-fluid -->
 </div> <!-- content -->
+  <script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
+  <script>
+    CKEDITOR.replace('editor1', {
+      enterMode: CKEDITOR.ENTER_BR,
+      shiftEnterMode: CKEDITOR.ENTER_P,
+      autoParagraph: false
+    });
+  </script>
 @endsection
 
 @push('scripts')
-<script src="{{ asset('assets/admin/plugins/ckeditor/ckeditor.js') }}"></script>
-<script>
-  CKEDITOR.replace('editor1');
-</script>
+
 @endpush
