@@ -108,10 +108,35 @@
         </div> <!-- end page-content-wrapper -->
     </div> <!-- container-fluid -->
 </div> <!-- content -->
+
+<script>
+    console.log('..............');
+    document.getElementById('name').addEventListener('input', function(){
+        
+        const name = this.value.trim().replace(/\s+/g, '');
+        const id = name.slice(0, 4).padEnd(4, 'X').toUpperCase();
+        const randomString = Math.random().toString(36).substring(2, 8).toUpperCase();
+        const reffralCode = id + randomString;
+        document.getElementById('refer').value = reffralCode;
+    })
+</script>
 @endsection
 
 @push('scripts')
+
 <script type="text/javascript">
+
+    //    $('#name').on('input', function() {
+    //     console.log('.......................');
+        
+    //         const name = this.value.trim().replace(/\s+/g, '');
+    //         const id = name.slice(0, 4).padEnd(4, 'X').toUpperCase();
+    //         const randomString = Math.random().toString(36).substring(2, 8).toUpperCase();
+    //         const referralCode = id + randomString;
+    //         $('#refer').val(referralCode);
+    //     });
+
+
     $(document).ready(function() {
         // Limit file uploads to 2
         $('#images').on('change', function() {
@@ -122,13 +147,7 @@
         });
 
         // Generate referral code based on name
-        $('#name').on('input', function() {
-            const name = this.value.trim().replace(/\s+/g, '');
-            const id = name.slice(0, 4).padEnd(4, 'X').toUpperCase();
-            const randomString = Math.random().toString(36).substring(2, 8).toUpperCase();
-            const referralCode = id + randomString;
-            $('#refer').val(referralCode);
-        });
+ 
 
         // Restrict Aadhar to 12 digits
         $('#aadhar').on('input', function(event) {

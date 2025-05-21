@@ -189,7 +189,7 @@ Route::post('farmers/qtyupdate', [FarmersController::class, 'updateQty'])->name(
     Route::get('/manager/view_doctors/{idd}', [ManagerController::class, 'viewDoctors'])->name('admin.manager.view_doctors');
     Route::get('/manager/view_vendors/{idd}', [ManagerController::class, 'viewVendors'])->name('admin.manager.view_vendors');
     Route::get('/manager/updatemanagerStatus/{idd}/{t}', [ManagerController::class, 'updateManagerStatus'])->name('admin.manager.update_status');
-    Route::get('/manager/delete_manager/{idd}', [ManagerController::class, 'deleteManager'])->name('admin.manager.delete');
+    Route::delete('/manager/delete_manager/{id}', [ManagerController::class, 'deleteManager'])->name('admin.manager.delete');
 
 /////////GiftCard
 

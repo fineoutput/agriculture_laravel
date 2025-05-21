@@ -123,11 +123,11 @@ class ManagerController extends Controller
     public function deleteManager($idd)
     {
         $id = base64_decode($idd);
-        $adminId = auth('admin')->id();
+        // $adminId = auth('admin')->id();
 
-        if (auth('admin')->user()->position !== 'Super Admin') {
-            return redirect()->back()->with('emessage', "Sorry, you don't have permission to delete anything");
-        }
+        // if (auth('admin')->user()->position !== 'Super Admin') {
+        //     return redirect()->back()->with('emessage', "Sorry, you don't have permission to delete anything");
+        // }
 
         $manager = Manager::findOrFail($id);
         $images = json_decode($manager->images, true);
@@ -143,7 +143,7 @@ class ManagerController extends Controller
         $deleted = $manager->delete();
 
         if ($deleted) {
-            return redirect()->route('admin.manager.view')->with('smessage', 'Successfully deleted');
+            return redirect()->back()->with('smessage', 'Successfully deleted');
         }
         return redirect()->back()->with('emessage', 'Error occurred');
     }

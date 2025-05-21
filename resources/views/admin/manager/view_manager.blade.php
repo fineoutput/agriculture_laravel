@@ -125,7 +125,14 @@
                                                                     @else
                                                                         <li><a href="{{ route('admin.manager.update_status', [base64_encode($manager->id), 'active']) }}">Active</a></li>
                                                                     @endif
-                                                                    <li><a href="javascript:;" class="dCnf" data-mydata="{{ $count - 1 }}">Delete</a></li>
+                                                                    <li>
+    <form action="{{ route('admin.manager.delete', base64_encode($manager->id)) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete The manager?');" style="display:inline;">
+    @csrf
+    @method('DELETE')
+    <button type="submit" class="btn btn-link" style="padding: 0; color: #337ab7;">Delete</button>
+</form>
+
+</li>
                                                                 </ul>
                                                             </div>
                                                             <div style="display:none" id="cnfbox{{ $count - 1 }}" class="confirmation-box">
