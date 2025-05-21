@@ -99,6 +99,34 @@
                                             @enderror
                                         </div>
                                     </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="image_marathi"><strong>Image Marathi</strong></label>
+                                            <input type="file" name="image_marathi" id="image_marathi" class="form-control" accept="image/jpeg,image/png" />
+                                            @if($expertise_category_data->image_marathi)
+                                                <img src="{{ asset($expertise_category_data->image_marathi) }}" height="50" width="100" alt="Current Image marathi" style="margin-top: 10px;">
+                                            @else
+                                                <span style="margin-top: 10px; display: block;">Sorry No Image Found</span>
+                                            @endif
+                                            @error('image_marathi')
+                                                <span class="text-danger">{{ $message }}</span>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="image_gujrati"><strong>Image Punjabi</strong></label>
+                                            <input type="file" name="image_gujrati" id="image_gujrati" class="form-control" accept="image/jpeg,image/png" />
+                                            @if($expertise_category_data->image_gujrati)
+                                                <img src="{{ asset($expertise_category_data->image_gujrati) }}" height="50" width="100" alt="Current Image Gujrati" style="margin-top: 10px;">
+                                            @else
+                                                <span style="margin-top: 10px; display: block;">Sorry No Image Found</span>
+                                            @endif
+                                            @error('image_gujrati')
+                                                <span class="text-danger">{{ $message }}</span>
+                                            @enderror
+                                        </div>
+                                    </div>
                                     <div class="col-md-12">
                                         <button type="submit" class="btn btn-success">Save</button>
                                     </div>

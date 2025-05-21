@@ -39,6 +39,8 @@ class ExpertiseCategoryController extends Controller
             'image' => 'nullable|image|mimes:jpg,jpeg,png|max:25000',
             'image_hindi' => 'nullable|image|mimes:jpg,jpeg,png|max:25000',
             'image_punjabi' => 'nullable|image|mimes:jpg,jpeg,png|max:25000',
+            'image_marathi' => 'nullable|image|mimes:jpg,jpeg,png|max:25000',
+            'image_gujrati' => 'nullable|image|mimes:jpg,jpeg,png|max:25000',
         ]);
 
         if ($validator->fails()) {
@@ -49,6 +51,8 @@ class ExpertiseCategoryController extends Controller
         $imagePath = null;
         $imageHindiPath = null;
         $imagePunjabiPath = null;
+        $imageMarathiPath = null;
+        $imageGujratiPath = null;
 
         $destinationPath = public_path('assets/uploads/expertise_category');
         if (!file_exists($destinationPath)) {
@@ -75,6 +79,18 @@ class ExpertiseCategoryController extends Controller
             $file->move($destinationPath, $fileName);
             $imagePunjabiPath = "assets/uploads/expertise_category/{$fileName}";
         }
+        if ($request->hasFile('image_marathi')) {
+            $file = $request->file('image_marathi');
+            $fileName = 'expertise_category4' . now()->format('YmdHis') . '.' . $file->getClientOriginalExtension();
+            $file->move($destinationPath, $fileName);
+            $imageMarathiPath = "assets/uploads/expertise_category/{$fileName}";
+        }
+        if ($request->hasFile('image_gujrati')) {
+            $file = $request->file('image_gujrati');
+            $fileName = 'expertise_category5' . now()->format('YmdHis') . '.' . $file->getClientOriginalExtension();
+            $file->move($destinationPath, $fileName);
+            $imageGujratiPath = "assets/uploads/expertise_category/{$fileName}";
+        }
 
         $data = [
             'name' => $request->name,
@@ -89,6 +105,8 @@ class ExpertiseCategoryController extends Controller
             if ($imagePath) $data['image'] = $imagePath;
             if ($imageHindiPath) $data['image_hindi'] = $imageHindiPath;
             if ($imagePunjabiPath) $data['image_punjabi'] = $imagePunjabiPath;
+            if ($imageMarathiPath) $data['image_marathi'] = $imageMarathiPath;
+            if ($imageGujratiPath) $data['image_gujrati'] = $imageGujratiPath;
             $last_id = ExpertiseCategory::create($data);
         } elseif ($typ == 2) {
             // Update existing expertise category
@@ -97,6 +115,8 @@ class ExpertiseCategoryController extends Controller
             $data['image'] = $imagePath ?? $expertise->image;
             $data['image_hindi'] = $imageHindiPath ?? $expertise->image_hindi;
             $data['image_punjabi'] = $imagePunjabiPath ?? $expertise->image_punjabi;
+            $data['image_marathi'] = $imageMarathiPath ?? $expertise->image_marathi;
+            $data['image_gujrati'] = $imageGujratiPath ?? $expertise->image_gujrati;
             unset($data['ip'], $data['added_by'], $data['is_active'], $data['date']); // Don't update these on edit
             $last_id = $expertise->update($data);
         } else {
@@ -130,15 +150,15 @@ class ExpertiseCategoryController extends Controller
     {
         $id = base64_decode($idd);
 
-        if (auth('admin')->user()->position !== 'Super Admin') {
-            return redirect()->back()->with('emessage', 'Sorry, you are not a Super Admin and don’t have permission to delete anything');
-        }
+        // if (auth('admin')->user()->position !== 'Super Admin') {
+        //     return redirect()->back()->with('emessage', 'Sorry, you are not a Super Admin and don’t have permission to delete anything');
+        // }
 
         $expertise = ExpertiseCategory::find($id);
         if ($expertise) {
             // Optionally delete images here if needed
             $expertise->delete();
-            return redirect()->route('admin.expertise_category.view');
+            return redirect()->back();
         }
 
         return redirect()->back()->with('emessage', 'Sorry, an error occurred');

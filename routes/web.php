@@ -208,7 +208,7 @@ Route::post('farmers/qtyupdate', [FarmersController::class, 'updateQty'])->name(
     Route::get('/ExpertiseCategory/update_expertise_category/{idd}', [ExpertiseCategoryController::class, 'updateExpertiseCategory'])->name('admin.expertise_category.update');
     Route::post('/ExpertiseCategory/add_expertise_category_data/{t}/{iw?}', [ExpertiseCategoryController::class, 'addExpertiseCategoryData'])->name('admin.expertise_category.add_data');
     Route::get('/ExpertiseCategory/updateexpertise_categoryStatus/{idd}/{t}', [ExpertiseCategoryController::class, 'updateExpertiseCategoryStatus'])->name('admin.expertise_category.update_status');
-    Route::post('/ExpertiseCategory/delete_expertise_category/{idd}', [ExpertiseCategoryController::class, 'deleteExpertiseCategory'])->name('admin.expertise_category.delete');
+    Route::delete('/ExpertiseCategory/delete_expertise_category/{id}', [ExpertiseCategoryController::class, 'deleteExpertiseCategory'])->name('admin.expertise_category.delete');
 
     //////optionImage
     Route::get('/OptionImageController/View_slider', [OptionImageController::class, 'viewSlider'])->name('admin.option_image.view');

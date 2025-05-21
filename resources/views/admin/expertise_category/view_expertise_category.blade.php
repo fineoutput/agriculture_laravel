@@ -61,6 +61,8 @@
                                                 <th>Image</th>
                                                 <th>Image Hindi</th>
                                                 <th>Image Punjabi</th>
+                                                <th>Image Marathi</th>
+                                                <th>Image Gujrati</th>
                                                 <th>Status</th>
                                                 <th>Action</th>
                                             </tr>
@@ -85,13 +87,28 @@
                                                             <span>Sorry No Image Found</span>
                                                         @endif
                                                     </td>
-                                                    <td>
+                                                     <td>
                                                         @if($data->image_punjabi)
                                                             <img src="{{ asset($data->image_punjabi) }}" height="50" width="100" alt="Image Punjabi">
                                                         @else
                                                             <span>Sorry No Image Found</span>
                                                         @endif
                                                     </td>
+                                                    <td>
+                                                        @if($data->image_marathi)
+                                                            <img src="{{ asset($data->image_marathi) }}" height="50" width="100" alt="Image Marathi">
+                                                        @else
+                                                            <span>Sorry No Image Found</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @if($data->image_gujrati)
+                                                            <img src="{{ asset($data->image_gujrati) }}" height="50" width="100" alt="Image Gujrati">
+                                                        @else
+                                                            <span>Sorry No Image Found</span>
+                                                        @endif
+                                                    </td>
+                                                   
                                                     <td>
                                                         @if($data->is_active)
                                                             <span class="label bg-green">Active</span>
@@ -111,10 +128,15 @@
                                                                     <li><a href="{{ route('admin.expertise_category.update_status', [base64_encode($data->id), 'active']) }}">Active</a></li>
                                                                 @endif
                                                                 <li><a href="{{ route('admin.expertise_category.update', base64_encode($data->id)) }}">Edit</a></li>
-                                                                <li><a href="javascript:;" class="dCnf" data-mydata="{{ $i - 1 }}">Delete</a></li>
+                                                                <li><form action="{{ route('admin.expertise_category.delete', base64_encode($data->id)) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete The expertise_category?');" style="display:inline;">
+    @csrf
+    @method('DELETE')
+    <button type="submit" class="btn btn-link" style="padding: 0; color: #337ab7;">Delete</button>
+</form>
+</li>
                                                             </ul>
                                                         </div>
-                                                        <div style="display:none" id="cnfbox{{ $i - 1 }}" class="confirmation-box">
+                                                        {{-- <div style="display:none" id="cnfbox{{ $i - 1 }}" class="confirmation-box">
                                                             <p>Are you sure you want to delete this?</p>
                                                             <form action="{{ route('admin.expertise_category.delete', base64_encode($data->id)) }}" method="POST" style="display: inline;">
                                                                 @csrf
@@ -122,7 +144,7 @@
                                                                 <button type="submit" class="btn btn-danger btn-sm">Yes</button>
                                                             </form>
                                                             <button class="btn btn-default btn-sm cans" data-mydatas="{{ $i - 1 }}">No</button>
-                                                        </div>
+                                                        </div> --}}
                                                     </td>
                                                 </tr>
                                             @endforeach
