@@ -197,7 +197,7 @@ Route::post('farmers/qtyupdate', [FarmersController::class, 'updateQty'])->name(
     Route::get('/Giftcard/add_giftcard', [GiftcardController::class, 'addGiftcard'])->name('admin.giftcard.add');
     Route::get('/Giftcard/update_giftcard/{idd}', [GiftcardController::class, 'updateGiftcard'])->name('admin.giftcard.update');
     Route::post('/Giftcard/add_giftcard_data/{t}/{iw?}', [GiftcardController::class, 'addGiftcardData'])->name('admin.giftcard.add_data');
-    Route::post('/Giftcard/delete_gift/{id}', [GiftcardController::class, 'deleteGift'])->name('admin.giftcard.delete');
+    Route::delete('/Giftcard/delete_gift/{id}', [GiftcardController::class, 'deleteGift'])->name('admin.giftcard.delete');
     Route::get('/Giftcard/updateGiftCardStatus/{idd}/{t}', [GiftcardController::class, 'updateGiftCardStatus'])->name('admin.giftcard.update_status');
     Route::get('/Giftcard/allocated/{alt_id}', [GiftcardController::class, 'allocated'])->name('admin.giftcard.allocated');
 

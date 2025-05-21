@@ -98,9 +98,9 @@ class GiftcardController extends Controller
     {
         $decoded_id = base64_decode($id);
 
-        if (auth('admin')->user()->position !== 'Super Admin') {
-            return view('errors.error500admin', ['e' => "Sorry, You Don't Have Permission To Delete Anything."]);
-        }
+        // if (auth('admin')->user()->position !== 'Super Admin') {
+        //     return view('errors.error500admin', ['e' => "Sorry, You Don't Have Permission To Delete Anything."]);
+        // }
 
         $gift = GiftCard::find($decoded_id);
         if ($gift) {
@@ -109,10 +109,10 @@ class GiftcardController extends Controller
                 unlink($image_path);
             }
             $gift->delete();
-            return redirect()->route('admin.giftcard.index')->with('smessage', 'Gift card deleted successfully');
+            return redirect()->back()->with('smessage', 'Gift card deleted successfully');
         }
 
-        return redirect()->route('admin.giftcard.index')->with('emessage', 'Gift card not found or already deleted');
+        return redirect()->back()->with('emessage', 'Gift card not found or already deleted');
     }
 
     public function updateGiftCardStatus($idd, $t)

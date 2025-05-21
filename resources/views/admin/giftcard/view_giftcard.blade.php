@@ -94,10 +94,15 @@
                                                                 @endif
                                                                 <li><a href="{{ route('admin.giftcard.update', base64_encode($data->id)) }}">Edit</a></li>
                                                                 <li><a href="{{ route('admin.giftcard.allocated', base64_encode($data->id)) }}">Allocate</a></li>
-                                                                <li><a href="javascript:;" class="dCnf" data-mydata="{{ $i - 1 }}">Delete</a></li>
+                                                                <li><form action="{{ route('admin.giftcard.delete', base64_encode($data->id)) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete The Gift Card?');" style="display:inline;">
+    @csrf
+    @method('DELETE')
+    <button type="submit" class="btn btn-link" style="padding: 0; color: #337ab7;">Delete</button>
+</form>
+</li>
                                                             </ul>
                                                         </div>
-                                                        <div style="display:none" id="cnfbox{{ $i - 1 }}" class="confirmation-box">
+                                                        {{-- <div style="display:none" id="cnfbox{{ $i - 1 }}" class="confirmation-box">
                                                             <p>Are you sure you want to delete this?</p>
                                                             <form action="{{ route('admin.giftcard.delete', base64_encode($data->id)) }}" method="POST" style="display: inline;">
                                                                 @csrf
@@ -105,7 +110,7 @@
                                                                 <button type="submit" class="btn btn-danger btn-sm">Yes</button>
                                                             </form>
                                                             <button class="btn btn-default btn-sm cans" data-mydatas="{{ $i - 1 }}">No</button>
-                                                        </div>
+                                                        </div> --}}
                                                     </td>
                                                 </tr>
                                             @endforeach
