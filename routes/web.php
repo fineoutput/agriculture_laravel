@@ -163,7 +163,7 @@ Route::post('farmers/qtyupdate', [FarmersController::class, 'updateQty'])->name(
     Route::get('/SalePurchaseSlider/add_slider', [SalePurchaseSliderController::class, 'addSlider'])->name('admin.salepurchaseslider.add');
     Route::post('/SalePurchaseSlider/add_slider_data/{t}/{iw?}', [SalePurchaseSliderController::class, 'addSliderData'])->name('admin.salepurchaseslider.add_data');
     Route::get('/SalePurchaseSlider/update_slider/{idd}', [SalePurchaseSliderController::class, 'updateSlider'])->name('admin.salepurchaseslider.update');
-    Route::get('/SalePurchaseSlider/delete_slider/{idd}', [SalePurchaseSliderController::class, 'deleteSlider'])->name('admin.salepurchaseslider.delete');
+    Route::delete('/SalePurchaseSlider/delete_slider/{idd}', [SalePurchaseSliderController::class, 'destroy'])->name('admin.salepurchaseslider.delete');
     Route::get('/SalePurchaseSlider/updatesliderStatus/{idd}/{t}', [SalePurchaseSliderController::class, 'updateSliderStatus'])->name('admin.salepurchaseslider.update_status');
 
 /////VendorSlider
