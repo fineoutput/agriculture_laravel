@@ -173,7 +173,7 @@ Route::post('farmers/qtyupdate', [FarmersController::class, 'updateQty'])->name(
     Route::get('/vendor_slider/add_vendorslider', [VendorSliderController::class, 'addVendorSlider'])->name('admin.vendorslider.add');
     Route::post('/vendor_slider/add_vendorslider_data/{t}/{iw?}', [VendorSliderController::class, 'addVendorSliderData'])->name('admin.vendorslider.add_data');
     Route::get('/vendor_slider/update_vendorslider/{idd}', [VendorSliderController::class, 'updateVendorSlider'])->name('admin.vendorslider.update');
-    Route::get('/vendor_slider/delete_vendorslider/{idd}', [VendorSliderController::class, 'deleteVendorSlider'])->name('admin.vendorslider.delete');
+    Route::delete('/vendor_slider/delete_vendorslider/{idd}', [VendorSliderController::class, 'destroy'])->name('admin.vendorslider.delete');
     Route::get('/vendor_slider/updatevendorsliderStatus/{idd}/{t}', [VendorSliderController::class, 'updateVendorSliderStatus'])->name('admin.vendorslider.update_status');
     
     // Vendor Slider Request Routes

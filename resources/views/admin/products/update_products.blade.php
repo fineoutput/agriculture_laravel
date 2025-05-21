@@ -34,6 +34,14 @@
                                 <input type="text" name="name_punjabi" class="form-control" value="{{ $products->name_punjabi }}" required>
                             </div>
                             <div class="form-group">
+                                <label>Name (Marathi)</label>
+                                <input type="text" name="name_punjabi" class="form-control" value="{{ $products->name_punjabi }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Name (Gujrati)</label>
+                                <input type="text" name="name_punjabi" class="form-control" value="{{ $products->name_punjabi }}" required>
+                            </div>
+                            <div class="form-group">
                                 <label>Description (English)</label>
                                 <textarea name="description_english" class="form-control" required>{{ $products->description_english }}</textarea>
                             </div>
@@ -43,6 +51,14 @@
                             </div>
                             <div class="form-group">
                                 <label>Description (Punjabi)</label>
+                                <textarea name="description_punjabi" class="form-control" required>{{ $products->description_punjabi }}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Description (Marathi)</label>
+                                <textarea name="description_punjabi" class="form-control" required>{{ $products->description_punjabi }}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Description (Gujrati)</label>
                                 <textarea name="description_punjabi" class="form-control" required>{{ $products->description_punjabi }}</textarea>
                             </div>
                             <div class="form-group">

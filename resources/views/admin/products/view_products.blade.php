@@ -51,9 +51,13 @@
                                             <th>Name (English)</th>
                                             <th>Name (Hindi)</th>
                                             <th>Name (Punjabi)</th>
+                                            <th>Name (Marathi)</th>
+                                            <th>Name (Gujrati)</th>
                                             <th>Description (English)</th>
                                             <th>Description (Hindi)</th>
                                             <th>Description (Punjabi)</th>
+                                            <th>Description (Marathi)</th>
+                                            <th>Description (Gujrati)</th>
                                             <th>Images</th>
                                             <th>Video</th>
                                             <th>MRP</th>
@@ -84,9 +88,13 @@
                                                 <td>{{ $data->name_english }}</td>
                                                 <td>{{ $data->name_hindi }}</td>
                                                 <td>{{ $data->name_punjabi }}</td>
+                                                <td>{{ $data->name_marathi }}</td>
+                                                <td>{{ $data->name_gujrati }}</td>
                                                 <td>{{ $data->description_english }}</td>
                                                 <td>{{ $data->description_hindi }}</td>
                                                 <td>{{ $data->description_punjabi }}</td>
+                                                <td>{{ $data->description_marathi }}</td>
+                                                <td>{{ $data->description_gujrati }}</td>
                                                 <td>
                                                     @if($data->image)
                                                         @php $imageArray = json_decode($data->image, true); @endphp
@@ -128,7 +136,7 @@
                                                     @endif
                                                 </td>
                                                 <td>
-                                                    <input type="checkbox" class="mycheckbox" data-id="{{ $data->id }}" name="checkbox" {{ $data->cod ? 'checked' : '' }}>
+                                                    <input type="checkbox" class="mycheckbox" data-id="{{ $data->id }}" name="checkbox" {{ $data->cod ? 1 : 0 }}>
                                                 </td>
                                                 <td>
                                                     <div class="btn-group" id="btns{{ $index + 1 }}">

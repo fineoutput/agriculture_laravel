@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\VendorSlider;
 use App\Models\VendorSliderRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class VendorSliderController extends Controller
@@ -102,15 +103,41 @@ class VendorSliderController extends Controller
         ]);
     }
 
-    public function deleteVendorSlider($idd)
-    {
-        if (auth()->guard('admin')->user()->position !== 'Super Admin') {
-            return view('errors.error500admin', ['e' => "Sorry You Don't Have Permission To Delete Anything."]);
-        }
+    // public function deleteVendorSlider($idd)
+    // {
+    //     if (auth()->guard('admin')->user()->position !== 'Super Admin') {
+    //         return view('errors.error500admin', ['e' => "Sorry You Don't Have Permission To Delete Anything."]);
+    //     }
 
+    //     $id = base64_decode($idd);
+    //     $slider = VendorSlider::findOrFail($id);
+
+    //     $images = json_decode($slider->image, true);
+    //     if (is_array($images)) {
+    //         foreach ($images as $img) {
+    //             if (file_exists(public_path($img))) {
+    //                 unlink(public_path($img));
+    //             }
+    //         }
+    //     }
+
+    //     $zapak = $slider->delete();
+    //     if ($zapak) {
+    //         return redirect()->route('admin.vendorslider.view');
+    //     }
+    //     return "Error";
+    // }
+
+   
+     public function destroy($idd)
+{
+    try {
+        // Decode the base64 ID
         $id = base64_decode($idd);
+
         $slider = VendorSlider::findOrFail($id);
 
+        // Delete associated image(s) if they exist
         $images = json_decode($slider->image, true);
         if (is_array($images)) {
             foreach ($images as $img) {
@@ -118,15 +145,18 @@ class VendorSliderController extends Controller
                     unlink(public_path($img));
                 }
             }
+        } elseif (!empty($slider->image) && file_exists(public_path($slider->image))) {
+            unlink(public_path($slider->image));
         }
 
-        $zapak = $slider->delete();
-        if ($zapak) {
-            return redirect()->route('admin.vendorslider.view');
-        }
-        return "Error";
+        $slider->delete();
+
+        return redirect()->back()->with('smessage', 'Slider deleted successfully!');
+    } catch (\Exception $e) {
+        Log::error('Delete Slider Error: ' . $e->getMessage());
+        return redirect()->back()->with('emessage', 'Something went wrong while deleting the slider.');
     }
-
+}
     public function updateVendorSliderStatus($idd, $t)
     {
         $id = base64_decode($idd);

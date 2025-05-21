@@ -83,7 +83,13 @@
                                                                     <li><a href="{{ route('admin.vendorslider.update_status', [base64_encode($data->id), 'active']) }}">Active</a></li>
                                                                 @endif
                                                                 <li><a href="{{ route('admin.vendorslider.update', base64_encode($data->id)) }}">Edit</a></li>
-                                                                <li><a href="javascript:;" class="dCnf" data-mydata="{{ $index + 1 }}">Delete</a></li>
+                                                                <li>
+    <form action="{{ route('admin.vendorslider.delete', base64_encode($data->id)) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this slider?');" style="display:inline;">
+        @csrf
+        @method('DELETE')
+        <button type="submit" class="btn btn-link" style="padding: 0; color: #337ab7;">Delete</button>
+    </form>
+</li>
                                                             </ul>
                                                         </div>
                                                     </div>
