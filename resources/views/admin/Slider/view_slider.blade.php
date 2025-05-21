@@ -75,15 +75,22 @@
                                                                     <li><a href="{{ route('admin.Slider.update_status', [base64_encode($slider->id), 'active']) }}">Active</a></li>
                                                                 @endif
                                                                 <li><a href="{{ route('admin.Slider.update', base64_encode($slider->id)) }}">Edit</a></li>
-                                                                <li><a href="javascript:;" class="dCnf" data-mydata="{{ $index + 1 }}">Delete</a></li>
+                                                                <li>
+    <form action="{{ route('admin.Slider.delete', base64_encode($slider->id)) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this slider?');" style="display:inline;">
+        @csrf
+        @method('DELETE')
+        <button type="submit" class="btn btn-link" style="padding: 0; color: #337ab7;">Delete</button>
+    </form>
+</li>
+
                                                             </ul>
                                                         </div>
                                                     </div>
-                                                    <div style="display:none" id="cnfbox{{ $index + 1 }}">
+                                                    {{-- <div style="display:none" id="cnfbox{{ $index + 1 }}">
                                                         <p>Are you sure you want to delete this?</p>
                                                         <a href="{{ route('admin.Slider.delete', base64_encode($slider->id)) }}" class="btn btn-danger">Yes</a>
                                                         <a href="javascript:;" class="cans btn btn-default" data-mydatas="{{ $index + 1 }}">No</a>
-                                                    </div>
+                                                    </div> --}}
                                                 </td>
                                             </tr>
                                         @endforeach

@@ -153,9 +153,9 @@ Route::post('farmers/qtyupdate', [FarmersController::class, 'updateQty'])->name(
     Route::get('/Slider/add_slider', [SliderController::class, 'addSlider'])->name('admin.Slider.add');
     Route::post('/Slider/add_slider_data/{t}/{iw?}', [SliderController::class, 'addSliderData'])->name('admin.Slider.add_data');
     Route::get('/Slider/update_slider/{idd}', [SliderController::class, 'updateSlider'])->name('admin.Slider.update');
-    Route::get('/Slider/delete_slider/{idd}', [SliderController::class, 'deleteSlider'])->name('admin.Slider.delete');
+    // Route::get('/Slider/delete_slider/{idd}', [SliderController::class, 'deleteSlider'])->name('admin.Slider.delete');
     Route::get('/Slider/updatesliderStatus/{idd}/{t}', [SliderController::class, 'updateSliderStatus'])->name('admin.Slider.update_status');
-
+    Route::delete('Slider/delete/{idd}', [SliderController::class, 'destroy'])->name('admin.Slider.delete');
 
 
     //////salePurchase
