@@ -238,6 +238,9 @@
                         <li>
                             <a href="{{route('admin.subcategory_images.view')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Sub-Category Images</span></a>
                         </li>
+                        <li>
+                            <a href="{{route('admin.pushnotifications.view')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Push Notification</span></a>
+                        </li>
                         {{-- <li>
                             <a href="{{route('admin.equipment_sale_purchase.view')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Equipement Sale Purchase</span></a>
                         </li> --}}

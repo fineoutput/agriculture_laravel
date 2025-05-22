@@ -136,7 +136,14 @@
                                                     @endif
                                                 </td>
                                                 <td>
-                                                    <input type="checkbox" class="mycheckbox" data-id="{{ $data->id }}" name="checkbox" {{ $data->cod ? 1 : 0 }}>
+                                                    @if(isset($data->id))
+    <form action="{{ route('admin.products.cod_data', $data->id) }}" method="POST">
+        @csrf
+        <input type="checkbox" name="cod" {{ $data->cod == 1 ? 'checked' : '' }} onchange="this.form.submit()">
+    </form>
+@endif
+
+                                                    {{-- <input type="checkbox" class="mycheckbox" data-id="{{ $data->id }}" name="checkbox" {{ $data->cod ? 1 : 0 }}> --}}
                                                 </td>
                                                 <td>
                                                     <div class="btn-group" id="btns{{ $index + 1 }}">
@@ -195,51 +202,5 @@
 @endsection
 
 @push('scripts')
-<script src="{{ asset('assets/admin/plugins/datatables/jquery.dataTables.js') }}"></script>
-<script src="{{ asset('assets/admin/plugins/datatables/dataTables.bootstrap.js') }}"></script>
-<script type="text/javascript">
-    $(document).ready(function() {
-        $('#userTable').DataTable({
-            responsive: true
-        });
 
-        $(document.body).on('click', '.dCnf', function() {
-            var i = $(this).data('mydata');
-            $("#btns" + i).hide();
-            $("#cnfbox" + i).show();
-        });
-
-        $(document.body).on('click', '.cans', function() {
-            var i = $(this).data('mydatas');
-            $("#btns" + i).show();
-            $("#cnfbox" + i).hide();
-        });
-
-        if ($('.mycheckbox').length) {
-            $('.mycheckbox').on('change', function() {
-                var isChecked = $(this).prop('checked');
-                var userId = $(this).data('id');
-
-                $.ajax({
-                    type: 'POST',
-                    url: '{{ route("admin.products.cod_data") }}',
-                    data: {
-                        userId: userId,
-                        isChecked: isChecked,
-                        _token: '{{ csrf_token() }}'
-                    },
-                    success: function(response) {
-                        alert('Successfully updated');
-                        console.log(response);
-                    },
-                    error: function(xhr, status, error) {
-                        console.error(xhr.responseText);
-                    }
-                });
-            });
-        } else {
-            console.error('Checkbox element not found.');
-        }
-    });
-</script>
 @endpush

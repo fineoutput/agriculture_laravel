@@ -31,6 +31,7 @@ use App\Http\Controllers\Admin\VendorAppOrdersController;
 use App\Http\Controllers\Admin\AnimalSalePurchaseController;
 use App\Http\Controllers\Admin\Admin_orders;
 use App\Http\Controllers\Admin\VendorOrderController;
+use App\Http\Controllers\Admin\PushNotificationsController;
 
 
 /*
@@ -151,7 +152,7 @@ Route::get('/farmers/semen-tank-list/{farmer_id}', [FarmersController::class, 'v
     Route::get('/Products/delete_products/{idd}', [ProductController::class, 'deleteProducts'])->name('admin.products.delete');
     Route::get('/Products/updateproductsStatus/{idd}/{t}', [ProductController::class, 'updateProductsStatus'])->name('admin.products.update_status');
     Route::get('/Products/approvedProduct/{idd}', [ProductController::class, 'approvedProduct'])->name('admin.products.approve');
-    Route::post('/Products/product_cod_data', [ProductController::class, 'productCodData'])->name('admin.products.cod_data');
+    Route::post('/Products/productCod/{id}', [ProductController::class, 'productCodData'])->name('admin.products.cod_data');
 
 /////////////slider2
 
@@ -305,6 +306,11 @@ Route::get('/farmers/semen-tank-list/{farmer_id}', [FarmersController::class, 'v
     Route::get('/vendor-orders/cancelled', [VendorOrderController::class, 'cancelledOrder'])->name('admin.vendor_orders.cancelled');
     Route::get('/vendor-orders/rejected', [VendorOrderController::class, 'rejectedOrder'])->name('admin.vendor_orders.rejected');
 
+
+
+    ////push notification
+    Route::get('/Pushnotifications/view_pushnotifications', [PushNotificationsController::class, 'viewPushNotifications'])->name('admin.pushnotifications.view');
+    Route::post('/Pushnotifications/add_pushnotifications', [PushNotificationsController::class, 'addPushNotifications'])->name('admin.pushnotifications.add');
 });             
 
 });

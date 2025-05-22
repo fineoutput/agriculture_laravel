@@ -289,16 +289,31 @@ class ProductController extends Controller
         return view('errors.error500admin', ['e' => 'Error Occurred']);
     }
 
-    public function productCodData(Request $request)
+    // public function productCodData(Request $request)
+    // {
+    //     if (!$request->ajax()) {
+    //         abort(400, 'Invalid request');
+    //     }
+
+    //     $user_id = $request->userId;
+    //     $is_checked = filter_var($request->isChecked, FILTER_VALIDATE_BOOLEAN);
+    //     $zapak = Product::where('id', $user_id)->update(['cod' => $is_checked ? 1 : 0]);
+
+    //     return response()->json(['success' => $zapak]);
+    // }
+
+    public function productCodData(Request $request, $id)
     {
-        if (!$request->ajax()) {
-            abort(400, 'Invalid request');
-        }
+       try {
+        $zapak = Product::findOrFail($id);
+        $cod = $request->has('cod') ? 1 : 0; // Checkbox checked = 1, unchecked = 0
 
-        $user_id = $request->userId;
-        $is_checked = filter_var($request->isChecked, FILTER_VALIDATE_BOOLEAN);
-        $zapak = Product::where('id', $user_id)->update(['cod' => $is_checked ? 1 : 0]);
+        $zapak->update(['cod' => $cod]);
 
-        return response()->json(['success' => $zapak]);
+        return redirect()->back()->with('smessage', 'COD status updated successfully');
+    } catch (\Exception $e) {
+        Log::error('COD Update Error: ' . $e->getMessage());
+        return redirect()->back()->with('emessage', 'Error updating COD status: ' . $e->getMessage());
+    }
     }
 }
