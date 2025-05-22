@@ -110,14 +110,20 @@ Route::get('toggle-status/{id}', [DiseaseController::class, 'toggleStatus'])->na
 Route::get('delete/{id}', [DiseaseController::class, 'destroy'])->name('disease.delete');
 
 //////Farmer
-Route::get('farmers', [FarmersController::class, 'index'])->name('admin.farmers.index');
-Route::get('farmers/updateFarmersStatus/{id}/{status}', [FarmersController::class, 'updateFarmerStatus'])->name('admin.farmers.status');
+Route::get('farmers', [FarmersController::class, 'viewFarmers'])->name('admin.farmers.index');
+Route::get('farmers/updateFarmersStatus/{id}/{status}', [FarmersController::class, 'updateFarmersStatus'])->name('admin.farmers.update_status');
 Route::get('farmers/delete/{id}', [FarmersController::class, 'delete'])->name('admin.farmers.delete');
-Route::get('farmers/viewrecords/{id}', [FarmersController::class, 'viewRecords'])->name('admin.farmers.records');
-Route::post('farmers/store_cod_data', [FarmersController::class, 'storeCod'])->name('admin.farmers.store_cod');
-Route::post('farmers/qtyupdate', [FarmersController::class, 'updateQty'])->name('admin.farmers.qtyupdate');
-
-
+Route::get('/farmers/records/{idd}', [FarmersController::class, 'viewRecords'])->name('admin.farmers.records');
+Route::post('farmers/store_cod_data/{id}', [FarmersController::class, 'storeCodData'])->name('admin.farmers.update_cod');
+Route::post('/farmers/qty-update', [FarmersController::class, 'qtyUpdate'])->name('admin.farmers.qty_update');
+Route::get('/farmers/health-info/{farmer_id}', [FarmersController::class, 'viewHealthInfo'])->name('admin.farmers.view_health_info');
+Route::get('/farmers/breeding-records/{farmer_id}', [FarmersController::class, 'viewBreedingRecord'])->name('admin.farmers.view_breeding_records');
+Route::get('/farmers/daily-records/{farmer_id}', [FarmersController::class, 'viewDailyRecords'])->name('admin.farmers.view_daily_records');
+Route::get('/farmers/milk-records/{farmer_id}', [FarmersController::class, 'viewMilkRecords'])->name('admin.farmers.view_milk_records');
+Route::get('/farmers/medical-expenses/{farmer_id}', [FarmersController::class, 'viewMedicalExpenses'])->name('admin.farmers.view_medical_expenses');
+Route::get('/farmers/sale-purchase/{farmer_id}', [FarmersController::class, 'viewSalePurchase'])->name('admin.farmers.view_sale_purchase');
+Route::get('/farmers/stock-list/{farmer_id}', [FarmersController::class, 'viewStockHandling'])->name('admin.farmers.view_stock_list');
+Route::get('/farmers/semen-tank-list/{farmer_id}', [FarmersController::class, 'viewTank'])->name('admin.farmers.view_semen_tank_list');
 ///////Doctors
     Route::get('/new', [DoctorsController::class, 'newDoctors'])->name('admin.doctor.new');
     Route::get('/accepted', [DoctorsController::class, 'acceptedDoctors'])->name('admin.doctor.accepted');
