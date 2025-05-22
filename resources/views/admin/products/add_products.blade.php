@@ -35,11 +35,11 @@
                             </div>
                             <div class="form-group">
                                 <label>Name (Marathi)</label>
-                                <input type="text" name="name_punjabi" class="form-control" required>
+                                <input type="text" name="name_marathi" class="form-control" required>
                             </div>
                             <div class="form-group">
                                 <label>Name (Gujrati)</label>
-                                <input type="text" name="name_punjabi" class="form-control" required>
+                                <input type="text" name="name_gujrati" class="form-control" required>
                             </div>
                             <div class="form-group">
                                 <label>Description (English)</label>
@@ -69,26 +69,37 @@
                                 <label>Video</label>
                                 <input type="file" name="video" class="form-control">
                             </div>
-                            <div class="form-group">
-                                <label>MRP</label>
-                                <input type="number" name="mrp" class="form-control" step="0.01">
-                            </div>
-                            <div class="form-group">
-                                <label>Selling Price</label>
-                                <input type="number" name="selling_price" class="form-control" step="0.01">
-                            </div>
-                            <div class="form-group">
-                                <label>GST</label>
-                                <input type="number" name="gst" class="form-control" step="0.01">
-                            </div>
-                            <div class="form-group">
-                                <label>GST Price</label>
-                                <input type="number" name="gst_price" class="form-control" step="0.01">
-                            </div>
-                            <div class="form-group">
-                                <label>Selling Price (w/o GST)</label>
-                                <input type="number" name="selling_price_wo_gst" class="form-control" step="0.01">
-                            </div>
+                             <tr>
+                      <td> <strong id="mp">Farmer MRP</strong> <span style="color:red;">*</span></strong> </td>
+                      <td>
+                        <input type="text" name="mrp" class="form-control" onkeypress="return isNumberKey(event)" placeholder="" 
+                         value="" />
+                      </td>
+                    </tr>
+                    <tr>
+                      <td> <strong id="spp">Farmer Selling Price</strong> <span style="color:red;">*</span></strong> </td>
+                      <td>
+                        <input type="text" name="selling_price" class="form-control" id="sellingprice" placeholder=""  value="" />
+                      </td>
+                    </tr>
+                    <tr>
+                      <td> <strong>Farmer GST%</strong> <span style="color:red;">*</span></strong> </td>
+                      <td>
+                        <input type="text" name="gst" class="form-control" onkeypress="return isNumberKey(event)" placeholder=""  value="" id="gst" />
+                      </td>
+                    </tr>
+                    <tr>
+                      <td> <strong>Farmer GST Price</strong> <span style="color:red;">*</span></strong> </td>
+                      <td>
+                        <input type="text" name="gst_price" class="form-control" placeholder="" onkeypress="return isNumberKey(event)"  value="" id="gstprice" />
+                      </td>
+                    </tr>
+                    <tr>
+                      <td> <strong>Farmer Selling Price(without GST)</strong> <span style="color:red;">*</span></strong> </td>
+                      <td>
+                        <input type="text" name="selling_price_wo_gst" class="form-control" placeholder="" onkeypress="return isNumberKey(event)"  value="" id="sp" />
+                      </td>
+                    </tr>
                             <div class="form-group">
                                 <label>Inventory</label>
                                 <input type="number" name="inventory" class="form-control" required>
@@ -116,30 +127,40 @@
                                 <label>Show Product</label>
                                 <input type="checkbox" name="show_product" value="1">
                             </div>
-                            <div class="form-group">
-                                <label>Vendor Min Quantity</label>
-                                <input type="number" name="vendor_min_qty" class="form-control">
-                            </div>
-                            <div class="form-group">
-                                <label>Vendor Selling Price (w/o GST)</label>
-                                <input type="number" name="vendor_selling_price_wo_gst" class="form-control" step="0.01">
-                            </div>
-                            <div class="form-group">
-                                <label>Vendor GST Price</label>
-                                <input type="number" name="vendor_gst_price" class="form-control" step="0.01">
-                            </div>
-                            <div class="form-group">
-                                <label>Vendor GST</label>
-                                <input type="number" name="vendor_gst" class="form-control" step="0.01">
-                            </div>
-                            <div class="form-group">
-                                <label>Vendor Selling Price</label>
-                                <input type="number" name="vendor_selling_price" class="form-control" step="0.01">
-                            </div>
-                            <div class="form-group">
-                                <label>Vendor MRP</label>
-                                <input type="number" name="vendor_mrp" class="form-control" step="0.01">
-                            </div>
+                             <tr>
+                      <td> <strong>Vendor MRP</strong> <span style="color:red;">*</span></strong> </td>
+                      <td>
+                        <input type="text" name="vendor_mrp" onkeypress="return isNumberKeys(event)" class="form-control" placeholder=""   value=""  />
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td> <strong>Vendor Selling Price</strong> <span style="color:red;">*</span></strong> </td>
+                      <td>
+                        <input type="text" onkeypress="return isNumberKeys(event)" id="vendorsellingprice" name="vendor_selling_price" class="form-control" placeholder=""   value=""  />
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td> <strong>Vendor GST%</strong> <span style="color:red;">*</span></strong> </td>
+                      <td>
+                        <input type="text" onkeypress="return isNumberKeys(event)" id="vendorgst" name="vendor_gst" class="form-control" placeholder=""   value=""  />
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td> <strong>Vendor GST Price</strong> <span style="color:red;">*</span></strong> </td>
+                      <td>
+                        <input type="text" onkeypress="return isNumberKeys(event)" id="vendorgstprice" name="vendor_gst_price" class="form-control" placeholder=""   value=""  />
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td> <strong>Vendor Selling Price(without GST)</strong> <span style="color:red;">*</span></strong> </td>
+                      <td>
+                        <input type="text" onkeypress="return isNumberKeys(event)" id="vendorsellingpricewogst" name="vendor_selling_price_wo_gst" class="form-control" placeholder=""   value="" />
+                      </td>
+                    </tr>
                             <button type="submit" class="btn btn-primary">Submit</button>
                         </form>
                     </div>
@@ -148,4 +169,47 @@
         </div>
     </div>
 </div>
+<script>
+  function isNumberKey(evt) {
+    var charCode = (evt.which) ? evt.which : evt.keyCode
+    if (charCode > 31 && (charCode < 48 || charCode > 57))
+      return false;
+    return true;
+  }
+  $(document).ready(function() {
+    $('#gst, #sellingprice').keyup(function() {
+      var price = $('#sellingprice').val();
+      var gst = $('#gst').val();
+      var n = 100 + parseInt(gst);
+      var gst_price = price / n * 100;
+      var wgst = (price - gst_price).toFixed(2);
+      $('#gstprice').val(wgst);
+      var sprice = $('#gstprice').val();
+      $('#sp').val(gst_price.toFixed(2));
+    });
+  });
+</script>
+
+<script>
+  function isNumberKeys(evt) {
+    var charCode = (evt.which) ? evt.which : evt.keyCode;
+    if (charCode > 31 && (charCode < 48 || charCode > 57)) 
+      return false;
+    return true;
+  }
+
+  $(document).ready(function() {
+    $('#vendorgst, #vendorsellingprice').keyup(function() {
+      var price = parseFloat($('#vendorsellingprice').val());
+      var gst = parseFloat($('#vendorgst').val());
+      if (!isNaN(price) && !isNaN(gst)) {
+        var n = 100 + gst;
+        var gst_price = (price / n) * 100;
+        var wgst = (price - gst_price).toFixed(2);
+        $('#vendorgstprice').val(wgst);
+        $('#vendorsellingpricewogst').val(gst_price.toFixed(2));
+      }
+    });
+  });
+</script>
 @endsection
