@@ -134,13 +134,13 @@ Route::get('/farmers/semen-tank-list/{farmer_id}', [FarmersController::class, 'v
     Route::get('/requests', [DoctorsController::class, 'doctorRequest'])->name('admin.doctor.requests');
     Route::get('/delete/{idd}', [DoctorsController::class, 'deleteDoctor'])->name('admin.doctor.delete');
     Route::get('/update-status/{idd}/{t}', [DoctorsController::class, 'updateDoctorStatus'])->name('admin.doctor.update-status');
-    Route::get('/edit/{idd}', [DoctorsController::class, 'updateDoctor'])->name('admin.doctor.edit');
-    Route::get('/set-commission/{idd}', [DoctorsController::class, 'setCommissionDoctor'])->name('admin.doctor.set-commission');
+    Route::get('/edit_doctor/{idd}', [DoctorsController::class, 'updateDoctor'])->name('admin.doctor.edit_doctor');
+    Route::get('/set-commission/{idd}', [DoctorsController::class, 'setCommissionDoctor'])->name('admin.doctor.set_commission');
     Route::post('/update-commission/{idd}', [DoctorsController::class, 'addDoctorData2'])->name('admin.doctor.update-commission');
     Route::get('/add-fees/{y}', [DoctorsController::class, 'addFeesDoctor'])->name('admin.doctor.add-fees');
     Route::post('/store-fees/{y}', [DoctorsController::class, 'addDoctorData3'])->name('admin.doctor.store-fees');
     Route::post('/update/{y}', [DoctorsController::class, 'updateDoctorData'])->name('admin.doctor.update');
-
+    Route::get('/doctor/accepted', [DoctorsController::class, 'acceptedDoctors'])->name('admin.doctor.accepted');
 ///////Products
     Route::get('/Products/View_products', [ProductController::class, 'viewProducts'])->name('admin.products.view');
     Route::get('/Products/vendor_pending_products', [ProductController::class, 'vendorPendingProducts'])->name('admin.products.vendor_pending');

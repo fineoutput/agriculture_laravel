@@ -177,8 +177,17 @@
                         <li>
                             <a href="{{route('admin.farmers.index')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Farmers</span></a>
                         </li>
+                         <li>
+                            <a href="javascript:void(0);" class="waves-effect"><i class="bi bi-sliders"></i><span> Doctors<span class="float-right menu-arrow"><i class="mdi mdi-plus"></i></span> </span></a>
+                            <ul class="submenu">
+                                <li><a href="{{route('admin.doctor.new')}}" >All Doctors</a></li>
+                                <li><a href="{{ route('admin.doctor.normal') }}">Normal Doctors</a></li>
+                                <li><a href="{{ route('admin.doctor.accepted') }}">Expert</a></li>
+                                {{-- <li><a href="{{ route('admin.vendor.rejected') }}">Rejected Vendor</a></li> --}}
+                            </ul>
+                        </li>
                         <li>
-                            <a href="{{route('admin.doctor.new')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Doctors</span></a>
+                            
                         </li>
                         <li>
                             <a href="{{route('admin.products.view')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Products</span></a>

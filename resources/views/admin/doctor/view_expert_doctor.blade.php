@@ -1,3 +1,4 @@
+
 @extends('admin.base_template')
 
 @section('main')
@@ -6,10 +7,10 @@
         <div class="row">
             <div class="col-sm-12">
                 <div class="page-title-box">
-                    <h4 class="page-title">All New Doctors</h4>
+                    <h4 class="page-title">All Expert Doctors</h4>
                     <ol class="breadcrumb">
                         {{-- <li class="breadcrumb-item"><a href="{{ route('admin.home') }}">Home</a></li> --}}
-                        <li class="breadcrumb-item active">View Doctors</li>
+                        <li class="breadcrumb-item active">View Expert Doctors</li>
                     </ol>
                 </div>
             </div>
@@ -37,7 +38,7 @@
                                 </div>
                             @endif
 
-                            <h4 class="mt-0 header-title"><i class="fa fa-users"></i> View Doctors</h4>
+                            <h4 class="mt-0 header-title"><i class="fa fa-users"></i> View Expert Doctors</h4>
                             <hr style="margin-bottom: 20px; background-color: darkgrey;">
 
                             <div class="table-responsive">
@@ -144,12 +145,10 @@
                                                                     @endif
                                                                     @if($doctor->is_expert)
                                                                         <li><a href="{{ route('admin.doctor.update-status', ['idd' => base64_encode($doctor->id), 't' => 'normal']) }}">Convert To Normal</a></li>
-                                                                    @else
-                                                                        <li><a href="{{ route('admin.doctor.update-status', ['idd' => base64_encode($doctor->id), 't' => 'expert']) }}">Convert To Expert</a></li>
-                                                                    @endif
-                                                                    @if($doctor->is_expert)
                                                                         <li><a href="{{ route('admin.doctor.set_commission', ['idd' => base64_encode($doctor->id)]) }}">Update Expert Doctor</a></li>
                                                                         {{-- <li><a href="{{ route('admin.doctor.transactions', ['idd' => base64_encode($doctor->id)]) }}">Payment Transactions</a></li> --}}
+                                                                    @else
+                                                                        <li><a href="{{ route('admin.doctor.update-status', ['idd' => base64_encode($doctor->id), 't' => 'expert']) }}">Convert To Expert</a></li>
                                                                     @endif
                                                                     <li><a href="{{ route('admin.doctor.edit_doctor', ['idd' => base64_encode($doctor->id)]) }}">Edit</a></li>
                                                                     <li><a href="javascript:;" class="dCnf" data-id="{{ $index + 1 }}">Delete</a></li>
@@ -177,7 +176,6 @@
         </div>
     </div>
 </div>
-
 
 <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/1.6.1/js/dataTables.buttons.min.js"></script>

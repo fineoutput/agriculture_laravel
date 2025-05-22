@@ -39,7 +39,7 @@ class DoctorsController extends Controller
     
         return view('admin.doctor.view_doctor', [
             'user_name' => auth()->user()->name,
-            'doctor_data' => $doctors,
+            'doctors' => $doctors,
             'heading' => 'New Doctors'
         ]);
     }
@@ -53,7 +53,7 @@ class DoctorsController extends Controller
 
         return view('admin.doctor.view_expert_doctor', [
             'user_name' => auth()->user()->name,
-            'doctor_data' => $doctors,
+            'doctors' => $doctors,
             'heading' => 'Accepted'
         ]);
     }
@@ -67,7 +67,7 @@ class DoctorsController extends Controller
 
         return view('admin.doctor.view_normal_doctor', [
             'user_name' => auth()->user()->name,
-            'doctor_data' => $doctors,
+            'doctors' => $doctors,
             'heading' => 'Accepted'
         ]);
     }
@@ -80,7 +80,7 @@ class DoctorsController extends Controller
 
         return view('admin.doctor.total_doctor', [
             'user_name' => auth()->user()->name,
-            'doctor_data' => $doctors,
+            'doctors' => $doctors,
             'heading' => 'Accepted'
         ]);
     }
@@ -93,7 +93,7 @@ class DoctorsController extends Controller
 
         return view('admin.doctor.view_doctor', [
             'user_name' => auth()->user()->name,
-            'doctor_data' => $doctors,
+            'doctors' => $doctors,
             'heading' => 'Rejected'
         ]);
     }
@@ -181,12 +181,12 @@ class DoctorsController extends Controller
         $states = State::all();
         $expert_categories = ExpertiseCategory::where('is_active', true)->get();
 
-        return view('admin.doctor.update_doctor', [
+        return view('admin.doctor.edit_doctor', [
             'user_name' => auth()->user()->name,
             'id' => $idd,
             'doctor' => $doctor,
-            'state_data' => $states,
-            'expert_data' => $expert_categories
+            'states' => $states,
+            'expert_categories' => $expert_categories
         ]);
     }
 
