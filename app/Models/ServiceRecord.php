@@ -36,4 +36,8 @@ class ServiceRecord extends Model implements Authenticatable, JWTSubject
     {
         return ['type' => 'farmer'];
     }
+    public function farmer()
+    {
+        return $this->belongsTo(Farmer::class, 'farmer_id', 'id');
+    }
 }

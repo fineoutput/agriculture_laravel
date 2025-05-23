@@ -37,7 +37,7 @@ class ProductController extends Controller
     {
         $products = Product::where('is_admin', 0)->where('is_approved', 1)->get();
         return view('admin.products.view_products', [
-            'user_name' => auth()->guard('admin')->user->name,
+            // 'user_name' => auth()->guard('admin')->user->name,
             'products_data' => $products,
             'is_admin' => 0,
             'heading' => 'Vendor Accepted'

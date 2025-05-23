@@ -18,4 +18,9 @@ class CheckMyFeedBuy extends Model
         'gateway',
         'cc_response',
     ];
+
+    public function farmer()
+    {
+        return $this->belongsTo(Farmer::class, 'farmer_id', 'id');
+    }
 }
