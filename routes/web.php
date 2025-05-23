@@ -64,7 +64,9 @@ Route::group(['prefix' => '/'], function () {
 Route::group(['prifix' => 'admin'], function () {
     Route::get('/Home', [Home::class, 'index'])->name('admin.dash');
     Route::get('/Home/view_service_report', [Home::class, 'viewServiceReport'])->name('admin.view_service_report');
-    Route::get('/Home/view_subscribed', [SubscriptionController::class, 'viewSubscribed'])->name('admin.subscription.view_subscribed');
+
+    
+    Route::get('/subscription/View_subscribed_data', [SubscriptionController::class, 'viewSubscribedData'])->name('admin.subscription.view_subscribed_data');
     Route::get('/Home/view_check_feed', [SubscriptionController::class, 'viewCheckFeed'])->name('admin.subscription.view_check_feed');
 
     

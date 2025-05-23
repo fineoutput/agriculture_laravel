@@ -23,7 +23,7 @@
                 Managers cannot access subscribed data.
             </div>
         @else
-            <div class="page-content-wrapper">
+            <div class="page-content-wrapper mt-0">
                 <!-- Flash Messages -->
                 @if (session('smessage'))
                     <div class="alert alert-success alert-dismissible">

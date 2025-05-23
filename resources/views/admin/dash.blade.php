@@ -606,7 +606,7 @@
 </div>
                     <div class="col-xl-3 col-md-6">
   <div class="card bg-primary mini-stat position-relative">
-    <a href="{{ route('admin.subscription.view_subscribed') }}">
+    <a href="{{ route('admin.subscription.view_subscribed_data') }}">
       <div class="card-body">
         <div class="mini-stat-desc">
           <h6 class="text-uppercase verti-label text-white-50">Subscriptions Purchased</h6>
