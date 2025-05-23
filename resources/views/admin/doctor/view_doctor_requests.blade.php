@@ -22,7 +22,7 @@
                 Managers cannot access farmer to doctor requests.
             </div>
         @else
-            <div class="page-content-wrapper">
+            <div class="page-content-wrapper mt-0">
                 <!-- Flash Messages -->
                 @if (session('smessage'))
                     <div class="alert alert-success alert-dismissible">
@@ -44,7 +44,7 @@
                         <div class="panel panel-default">
                             <div class="panel-heading" style="display: flex; justify-content: space-between; align-items: center;">
                                 <h3 class="panel-title"><i class="fa fa-money fa-fw"></i> View Farmer To Doctor Requests</h3>
-                                <h4>Total Admin Earning: ₹{{ number_format($total_admin_earning, 2) }}</h4>
+                                {{-- <h4>Total Admin Earning: ₹{{ number_format($total_admin_earning, 2) }}</h4> --}}
                             </div>
                             <div class="panel-body">
                                 <div class="box-body table-responsive no-padding">

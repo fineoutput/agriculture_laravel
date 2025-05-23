@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\LoginController;
 use App\Http\Controllers\Admin\TeamController; 
+use App\Http\Controllers\Admin\SubscriptionController; 
 use App\Http\Controllers\Frontend\HomeController;
 use App\Http\Controllers\Admin\Home;
 use App\Http\Controllers\Admin\SliderController;
@@ -63,8 +64,8 @@ Route::group(['prefix' => '/'], function () {
 Route::group(['prifix' => 'admin'], function () {
     Route::get('/Home', [Home::class, 'index'])->name('admin.dash');
     Route::get('/Home/view_service_report', [Home::class, 'viewServiceReport'])->name('admin.view_service_report');
-    Route::get('/Home/view_subscribed', [Home::class, 'viewSubscribed'])->name('admin.subscription.view_subscribed');
-    Route::get('/Home/view_check_feed', [HomeController::class, 'viewCheckFeed'])->name('admin.subscription.view_check_feed');
+    Route::get('/Home/view_subscribed', [SubscriptionController::class, 'viewSubscribed'])->name('admin.subscription.view_subscribed');
+    Route::get('/Home/view_check_feed', [SubscriptionController::class, 'viewCheckFeed'])->name('admin.subscription.view_check_feed');
 
     
     

@@ -24,4 +24,14 @@ class SubscriptionBuy extends Model
         'date',
     ];
     public $timestamps = false;
+
+    public function farmer()
+    {
+        return $this->belongsTo(Farmer::class, 'farmer_id', 'id');
+    }
+
+    public function plan()
+    {
+        return $this->belongsTo(Subscription::class, 'plan_id', 'id');
+    }
 }

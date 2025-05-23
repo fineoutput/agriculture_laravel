@@ -550,12 +550,12 @@
 
                     <div class="col-xl-3 col-md-6">
     <div class="card mini-stat position-relative" style="background-color: #5f9d69;">
-        <a href="{{ route('admin.doctor.accepted') }}">
+        <a href="{{ route('admin.vendor.accepted') }}">
             <div class="card-body">
                 <div class="mini-stat-desc text-white">
-                    <h6 class="text-uppercase verti-label text-white-50">Doctors</h6>
-                    <h6 class="text-uppercase mt-0 text-white-50">Payments to Doctors</h6>
-                    <h3 class="mb-3 mt-0">₹{{ number_format($total_payments_processed_to_doctor, 2) }}</h3>
+                    <h6 class="text-uppercase verti-label text-white-50">Vendors</h6>
+                    <h6 class="text-uppercase mt-0 text-white-50">Payments to Vendors</h6>
+                    <h3 class="mb-3 mt-0">₹{{ number_format($total_payments_processed_to_vendor, 2) }}</h3>
                     <span class="ml-2">Transferred</span>
                     <div class="mini-stat-icon">
                         <i class="bi bi-clipboard-data display-2"></i>
@@ -570,7 +570,7 @@
                 <div class="row">
                     <div class="col-xl-3 col-md-6">
   <div class="card bg-dark mini-stat position-relative">
-    <a href="{{ route('admin.doctor.total') }}">
+    <a href="{{ route('admin.doctor.new') }}">
       <div class="card-body">
         <div class="mini-stat-desc">
           <h6 class="text-uppercase verti-label text-white-50">Total Doctor Requests</h6>
