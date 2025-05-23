@@ -22,7 +22,7 @@
                 Managers cannot manage pop-up images.
             </div>
         @else
-            <div class="page-content-wrapper">
+            <div class="page-content-wrapper mt-0">
                 @if (session('smessage'))
                     <div class="alert alert-success alert-dismissible">
                         <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
