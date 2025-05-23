@@ -32,6 +32,7 @@ use App\Http\Controllers\Admin\EquipmentSalePurchaseController;
 use App\Http\Controllers\Admin\VendorAppOrdersController;
 use App\Http\Controllers\Admin\AnimalSalePurchaseController;
 use App\Http\Controllers\Admin\Admin_orders;
+use App\Http\Controllers\Admin\PopupImageController;
 use App\Http\Controllers\Admin\VendorOrderController;
 use App\Http\Controllers\Admin\PushNotificationsController;
 
@@ -65,7 +66,7 @@ Route::group(['prifix' => 'admin'], function () {
     Route::get('/Home', [Home::class, 'index'])->name('admin.dash');
     Route::get('/Home/view_service_report', [Home::class, 'viewServiceReport'])->name('admin.view_service_report');
 
-    
+
     Route::get('/subscription/View_subscribed_data', [SubscriptionController::class, 'viewSubscribedData'])->name('admin.subscription.view_subscribed_data');
     Route::get('/Home/view_check_feed', [SubscriptionController::class, 'viewCheckFeed'])->name('admin.subscription.view_check_feed');
 
@@ -322,6 +323,10 @@ Route::get('/farmers/semen-tank-list/{farmer_id}', [FarmersController::class, 'v
     ////push notification
     Route::get('/Pushnotifications/view_pushnotifications', [PushNotificationsController::class, 'viewPushNotifications'])->name('admin.pushnotifications.view');
     Route::post('/Pushnotifications/add_pushnotifications', [PushNotificationsController::class, 'addPushNotifications'])->name('admin.pushnotifications.add');
+    
+
+    Route::get('/popup_images', [PopupImageController::class, 'index'])->name('admin.popup_images.index');
+    Route::post('/popup_images', [PopupImageController::class, 'store'])->name('admin.popup_images.store');
 });             
 
 });

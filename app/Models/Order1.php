@@ -36,4 +36,8 @@ class Order1 extends Model
     'date'
     ];
 
+    public function farmer()
+    {
+        return $this->belongsTo(Farmer::class, 'farmer_id', 'id');
+    }
 }

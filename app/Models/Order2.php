@@ -28,6 +28,10 @@ class Order2 extends Model
         'total_amount',
         'discount',
         'date'
-    ]
-    ;
+    ];
+
+    public function farmer()
+    {
+        return $this->belongsTo(Farmer::class, 'farmer_id', 'id');
+    }
 }
