@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
-class PopupImageController extends Controller
+class popupImageController extends Controller
 {
     public function __construct()
     {
