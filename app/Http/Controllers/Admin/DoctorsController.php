@@ -123,7 +123,7 @@ class DoctorsController extends Controller
             return $ptx && $ptx->cr ? ($request->fees - $ptx->cr) : 0;
         });
 
-        return view('admin.doctor.view_doctor_req', [
+        return view('admin.doctor.view_doctor_requests', [
             'user_name' => auth()->user()->name,
             'request_data' => $requests,
             'count' => $count

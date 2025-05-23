@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\LoginController;
 use App\Http\Controllers\Admin\TeamController; 
 use App\Http\Controllers\Frontend\HomeController;
+use App\Http\Controllers\Admin\Home;
 use App\Http\Controllers\Admin\SliderController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CategoryController;
@@ -60,6 +61,13 @@ Route::group(['prefix' => '/'], function () {
 
 //======================================= ADMIN ===================================================
 Route::group(['prifix' => 'admin'], function () {
+    Route::get('/Home', [Home::class, 'index'])->name('admin.dash');
+    Route::get('/Home/view_service_report', [Home::class, 'viewServiceReport'])->name('admin.view_service_report');
+    Route::get('/Home/view_subscribed', [Home::class, 'viewSubscribed'])->name('admin.subscription.view_subscribed');
+    Route::get('/Home/view_check_feed', [HomeController::class, 'viewCheckFeed'])->name('admin.subscription.view_check_feed');
+
+    
+    
     Route::group(['middleware'=>'admin.guest'],function(){
 
         Route::get('/admin_index', [adminlogincontroller::class, 'admin_login'])->name('admin_login');
@@ -132,7 +140,7 @@ Route::get('/farmers/semen-tank-list/{farmer_id}', [FarmersController::class, 'v
     Route::get('/total', [DoctorsController::class, 'totalDoctors'])->name('admin.doctor.total');
     Route::get('/rejected', [DoctorsController::class, 'rejectedDoctors'])->name('admin.doctor.rejected');
     Route::get('/view-pdf/{idd}', [DoctorsController::class, 'viewPdf'])->name('admin.doctor.view-pdf');
-    Route::get('/requests', [DoctorsController::class, 'doctorRequest'])->name('admin.doctor.requests');
+    Route::get('/requests', [DoctorsController::class, 'doctorRequest'])->name('admin.doctor.view_doctor_requests');
     Route::get('/delete/{idd}', [DoctorsController::class, 'deleteDoctor'])->name('admin.doctor.delete');
     Route::get('/update-status/{idd}/{t}', [DoctorsController::class, 'updateDoctorStatus'])->name('admin.doctor.update-status');
     Route::get('/edit_doctor/{idd}', [DoctorsController::class, 'updateDoctor'])->name('admin.doctor.edit_doctor');
