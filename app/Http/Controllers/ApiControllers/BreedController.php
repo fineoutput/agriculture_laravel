@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Farmer;
 use App\Models\MyAnimal;
 use App\Models\BreedingRecord;
+use App\Models\PopUpImages;
 use App\Models\Canister;
 use App\Models\Group;
 use App\Models\HealthInfo;
@@ -944,6 +945,20 @@ class BreedController extends Controller
                 'status' => 201,
             ], 500);
         }
+    }
+
+     public function getLatestImage()
+    {
+        $image = PopupImages::latest()->first();
+
+        if (!$image) {
+            return response()->json(['message' => 'No pop-up image found'], 404);
+        }
+
+        return response()->json([
+            'title' => $image->title,
+            'image_url' => $image->image_url,
+        ]);
     }
 }
 
