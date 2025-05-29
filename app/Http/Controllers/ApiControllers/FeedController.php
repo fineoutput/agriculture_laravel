@@ -16,6 +16,9 @@ use Illuminate\Support\Facades\Log;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\View;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use Barryvdh\DomPDF\Facade as PDF;
+use Barryvdh\DomPDF\PDF as DomPDFPDF;
+
 class FeedController extends Controller
 {
     public function calculateWeight(Request $request)
@@ -316,230 +319,232 @@ class FeedController extends Controller
     }
 
     public function feedCalculator(Request $request)
-    {
-        try {
-            $token = $request->header('Authentication');
-            if (!$token) {
-                Log::warning('No bearer token provided');
-                return response()->json([
-                    'message' => 'Token required!',
-                    'status' => 201,
-                ], 401);
-            }
-
-            $user = Farmer::where('auth', $token)
-                ->where('is_active', 1)
-                ->first();
-
-            if (!$user) {
-                Log::warning('Invalid or inactive user for token', ['token' => $token]);
-                return response()->json([
-                    'message' => 'Invalid token or inactive user!',
-                    'status' => 201,
-                ], 403);
-            }
-
-            // Validate input
-            $validator = Validator::make($request->all(), [
-                'ProteinData' => 'nullable|json',
-                'EnergyData' => 'nullable|json',
-                'ProductData' => 'nullable|json',
-                'MedicineData' => 'nullable|json',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'message' => $validator->errors()->first(),
-                    'status' => 201,
-                ], 422);
-            }
-
-            // Decode JSON inputs (default to empty arrays if null)
-            $proteinData = $request->ProteinData ? json_decode($request->ProteinData, true) : [];
-            $energyData = $request->EnergyData ? json_decode($request->EnergyData, true) : [];
-            $productData = $request->ProductData ? json_decode($request->ProductData, true) : [];
-            $medicineData = $request->MedicineData ? json_decode($request->MedicineData, true) : [];
-
-            // Initialize nutritional metrics
-            $cp = $ee = $cf = $tdn = $me = $ca = $p = $adf = $ndf = $nel = $rudp = $endf = $value = 0;
-
-            // Process ProteinData
-            foreach ($proteinData as $item) {
-                if (!empty($item[3])) {
-                    $cp += isset($item[4]) ? $item[4] * $item[3] / 1000 : 0;
-                    $ee += isset($item[5]) ? $item[5] * $item[3] / 1000 : 0;
-                    $cf += isset($item[6]) ? $item[6] * $item[3] / 1000 : 0;
-                    $tdn += isset($item[7]) ? $item[7] * $item[3] / 1000 : 0;
-                    $me += isset($item[8]) ? $item[8] * $item[3] / 1000 : 0;
-                    $ca += isset($item[9]) ? $item[9] * $item[3] / 1000 : 0;
-                    $p += isset($item[10]) ? $item[10] * $item[3] / 1000 : 0;
-                    $adf += isset($item[11]) ? $item[11] * $item[3] / 1000 : 0;
-                    $ndf += isset($item[12]) ? $item[12] * $item[3] / 1000 : 0;
-                    $nel += isset($item[13]) ? $item[13] * $item[3] / 1000 : 0;
-                    $rudp += isset($item[14]) ? $item[14] * $item[3] / 1000 : 0;
-                   $endf += isset($item[15]) ? (float)$item[15] * (float)$item[3] / 1000 : 0;
-                    $value += isset($item[2]) && isset($item[3]) ? $item[2] * $item[3] : 0;
-                }
-            }
-
-            // Process EnergyData
-            foreach ($energyData as $item) {
-                if (!empty($item[3])) {
-                    $cp += isset($item[4]) ? $item[4] * $item[3] / 1000 : 0;
-                    $ee += isset($item[5]) ? $item[5] * $item[3] / 1000 : 0;
-                    $cf += isset($item[6]) ? $item[6] * $item[3] / 1000 : 0;
-                    $tdn += isset($item[7]) ? $item[7] * $item[3] / 1000 : 0;
-                    $me += isset($item[8]) ? $item[8] * $item[3] / 1000 : 0;
-                    $ca += isset($item[9]) ? $item[9] * $item[3] / 1000 : 0;
-                    $p += isset($item[10]) ? $item[10] * $item[3] / 1000 : 0;
-                    $adf += isset($item[11]) ? $item[11] * $item[3] / 1000 : 0;
-                    $ndf += isset($item[12]) ? $item[12] * $item[3] / 1000 : 0;
-                    $nel += isset($item[13]) ? $item[13] * $item[3] / 1000 : 0;
-                    $rudp += isset($item[14]) ? $item[14] * $item[3] / 1000 : 0;
-                    $endf += isset($item[15]) ? (float)$item[15] * (float)$item[3] / 1000 : 0;
-                    $value += isset($item[2]) && isset($item[3]) ? $item[2] * $item[3] : 0;
-                }
-            }
-
-            // Process ProductData
-            foreach ($productData as $item) {
-                if (!empty($item[3])) {
-                    $cp += isset($item[4]) ? $item[4] * $item[3] / 1000 : 0;
-                    $ee += isset($item[5]) ? $item[5] * $item[3] / 1000 : 0;
-                    $cf += isset($item[6]) ? $item[6] * $item[3] / 1000 : 0;
-                    $tdn += isset($item[7]) ? $item[7] * $item[3] / 1000 : 0;
-                    $me += isset($item[8]) ? $item[8] * $item[3] / 1000 : 0;
-                    $ca += isset($item[9]) ? $item[9] * $item[3] / 1000 : 0;
-                    $p += isset($item[10]) ? $item[10] * $item[3] / 1000 : 0;
-                    $adf += isset($item[11]) ? $item[11] * $item[3] / 1000 : 0;
-                    $ndf += isset($item[12]) ? $item[12] * $item[3] / 1000 : 0;
-                    $nel += isset($item[13]) ? $item[13] * $item[3] / 1000 : 0;
-                    $rudp += isset($item[14]) ? $item[14] * $item[3] / 1000 : 0;
-                    $endf += isset($item[15]) ? (float)$item[15] * (float)$item[3] / 1000 : 0;
-                    $value += isset($item[2]) && isset($item[3]) ? $item[2] * $item[3] : 0;
-                }
-            }
-
-            // Process MedicineData
-            foreach ($medicineData as $item) {
-                if (!empty($item[3])) {
-                    $cp += isset($item[4]) ? $item[4] * $item[3] / 1000 : 0;
-                    $ee += isset($item[5]) ? $item[5] * $item[3] / 1000 : 0;
-                    $cf += isset($item[6]) ? $item[6] * $item[3] / 1000 : 0;
-                    $tdn += isset($item[7]) ? $item[7] * $item[3] / 1000 : 0;
-                    $me += isset($item[8]) ? $item[8] * $item[3] / 1000 : 0;
-                    $ca += isset($item[9]) ? $item[9] * $item[3] / 1000 : 0;
-                    $p += isset($item[10]) ? $item[10] * $item[3] / 1000 : 0;
-                    $adf += isset($item[11]) ? $item[11] * $item[3] / 1000 : 0;
-                    $ndf += isset($item[12]) ? $item[12] * $item[3] / 1000 : 0;
-                    $nel += isset($item[13]) ? $item[13] * $item[3] / 1000 : 0;
-                    $rudp += isset($item[14]) ? $item[14] * $item[3] / 1000 : 0;
-                    $endf += isset($item[15]) ? (float)$item[15] * (float)$item[3] / 1000 : 0;
-                    $value += isset($item[2]) && isset($item[3]) ? $item[2] * $item[3] : 0;
-                }
-            }
-
-            // Calculate fresh basis
-            $fresh = [
-                'CP' => round($cp, 2),
-                'FAT' => round($ee, 2),
-                'FIBER' => round($cf, 2),
-                'TDN' => round($tdn, 2),
-                'ENERGY' => round($me, 2),
-                'CA' => round($ca, 2),
-                'P' => round($p, 2),
-                'RUDP' => round($rudp, 2),
-                'ADF' => round($adf, 2),
-                'NDF' => round($ndf, 2),
-                'NEL' => round((0.0245 * $tdn - 0.12 * 0.454), 2),
-                'ENDF' => round($endf, 2),
-            ];
-
-            // Calculate DMB
-            $dmb_tdn = $tdn > 0 ? round(($tdn * 12 / 100 + $tdn), 2) : 0;
-            $dmb = [
-                'CP' => $cp > 0 ? round(($cp * 12 / 100 + $cp), 2) : 0,
-                'FAT' => $ee > 0 ? round(($ee * 12 / 100 + $ee), 2) : 0,
-                'FIBER' => $cf > 0 ? round(($cf * 12 / 100 + $cf), 2) : 0,
-                'TDN' => $dmb_tdn,
-                'ENERGY' => $me > 0 ? round(($me * 12 / 100 + $me), 2) : 0,
-                'CA' => $ca > 0 ? round(($ca * 12 / 100 + $ca), 2) : 0,
-                'P' => $p > 0 ? round(($p * 12 / 100 + $p), 2) : 0,
-                'RUDP' => $rudp > 0 ? round(($rudp * 12 / 100 + $rudp), 2) : 0,
-                'ADF' => $adf > 0 ? round(($adf * 12 / 100 + $adf), 2) : 0,
-                'NDF' => $ndf > 0 ? round(($ndf * 12 / 100 + $ndf), 2) : 0,
-                'NEL' => round((0.0245 * $dmb_tdn - 0.12 * 0.454), 2),
-                'ENDF' => $endf > 0 ? round(($endf * 12 / 100 + $endf), 2) : 0,
-            ];
-
-            // Prepare result for HTML
-            $result = [
-                'fresh' => $fresh,
-                'dmb' => $dmb,
-                'row_ton' => round($value, 2),
-                'row_qtl' => round($value / 10, 2),
-                'ProteinData' => $request->ProteinData,
-                'EnergyData' => $request->EnergyData,
-                'ProductData' => $request->ProductData,
-                'MedicineData' => $request->MedicineData,
-            ];
-
-            // Generate HTML
-            // $html = View::make('pdf.feed', compact('result'))->render();
-
-            // Prepare response data
-            $send = [
-                'fresh' => $fresh,
-                'dmb' => $dmb,
-                'row_ton' => round($value, 2),
-                'row_qtl' => round($value / 10, 2),
-                // 'html' => $html,
-            ];
-
-            // Update service record
-            $serviceRecord = ServiceRecord::first();
-            if ($serviceRecord) {
-                $serviceRecord->update(['feed_calculator' => $serviceRecord->feed_calculator + 1]);
-                Log::info('Service record updated for FeedCalculator', [
-                    'service_record_id' => $serviceRecord->id,
-                    'feed_calculator' => $serviceRecord->feed_calculator,
-                ]);
-            } else {
-                Log::warning('No service record found in tbl_service_records for FeedCalculator');
-            }
-
-            // Log transaction
-            $txnData = [
-                'farmer_id' => $user->id,
-                'service' => 'feed_calculator',
-                'ip' => $request->ip(),
-                'date' => now(),
-                'only_date' => now()->format('Y-m-d'),
-            ];
-            $txn = ServiceRecordTxn::create($txnData);
-            Log::info('Service record transaction logged for FeedCalculator', [
-                'txn_id' => $txn->id,
-                'farmer_id' => $user->id,
-            ]);
-
+{
+    try {
+        $token = $request->header('Authentication');
+        if (!$token) {
+            Log::warning('No bearer token provided');
             return response()->json([
-                'message' => 'Success!',
-                'status' => 200,
-                'data' => $send,
-            ], 200);
-
-        } catch (\Exception $e) {
-            Log::error('Error in feedCalculator', [
-                'farmer_id' => auth('farmer')->id() ?? null,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'message' => 'Error calculating feed: ' . $e->getMessage(),
+                'message' => 'Token required!',
                 'status' => 201,
-            ], 500);
+            ], 401);
         }
+
+        $user = Farmer::where('auth', $token)
+            ->where('is_active', 1)
+            ->first();
+
+        if (!$user) {
+            Log::warning('Invalid or inactive user for token', ['token' => $token]);
+            return response()->json([
+                'message' => 'Invalid token or inactive user!',
+                'status' => 201,
+            ], 403);
+        }
+
+        // Validate input
+        $validator = Validator::make($request->all(), [
+            'ProteinData' => 'nullable|json',
+            'EnergyData' => 'nullable|json',
+            'ProductData' => 'nullable|json',
+            'MedicineData' => 'nullable|json',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
+
+        // Decode JSON inputs (default to empty arrays if null)
+        $proteinData = $request->ProteinData ? json_decode($request->ProteinData, true) : [];
+        $energyData = $request->EnergyData ? json_decode($request->EnergyData, true) : [];
+        $productData = $request->ProductData ? json_decode($request->ProductData, true) : [];
+        $medicineData = $request->MedicineData ? json_decode($request->MedicineData, true) : [];
+
+        // Initialize nutritional metrics
+        $cp = $ee = $cf = $tdn = $me = $ca = $p = $adf = $ndf = $nel = $rudp = $endf = $value = 0;
+
+        // Process ProteinData
+        foreach ($proteinData as $item) {
+            if (!empty($item[3])) {
+                $cp += isset($item[4]) ? $item[4] * $item[3] / 1000 : 0;
+                $ee += isset($item[5]) ? $item[5] * $item[3] / 1000 : 0;
+                $cf += isset($item[6]) ? $item[6] * $item[3] / 1000 : 0;
+                $tdn += isset($item[7]) ? $item[7] * $item[3] / 1000 : 0;
+                $me += isset($item[8]) ? $item[8] * $item[3] / 1000 : 0;
+                $ca += isset($item[9]) ? $item[9] * $item[3] / 1000 : 0;
+                $p += isset($item[10]) ? $item[10] * $item[3] / 1000 : 0;
+                $adf += isset($item[11]) ? $item[11] * $item[3] / 1000 : 0;
+                $ndf += isset($item[12]) ? $item[12] * $item[3] / 1000 : 0;
+                $nel += isset($item[13]) ? $item[13] * $item[3] / 1000 : 0;
+                $rudp += isset($item[14]) ? $item[14] * $item[3] / 1000 : 0;
+                $endf += isset($item[15]) ? (float)$item[15] * (float)$item[3] / 1000 : 0;
+                $value += isset($item[2]) && isset($item[3]) ? $item[2] * $item[3] : 0;
+            }
+        }
+
+        // Process EnergyData
+        foreach ($energyData as $item) {
+            if (!empty($item[3])) {
+                $cp += isset($item[4]) ? $item[4] * $item[3] / 1000 : 0;
+                $ee += isset($item[5]) ? $item[5] * $item[3] / 1000 : 0;
+                $cf += isset($item[6]) ? $item[6] * $item[3] / 1000 : 0;
+                $tdn += isset($item[7]) ? $item[7] * $item[3] / 1000 : 0;
+                $me += isset($item[8]) ? $item[8] * $item[3] / 1000 : 0;
+                $ca += isset($item[9]) ? $item[9] * $item[3] / 1000 : 0;
+                $p += isset($item[10]) ? $item[10] * $item[3] / 1000 : 0;
+                $adf += isset($item[11]) ? $item[11] * $item[3] / 1000 : 0;
+                $ndf += isset($item[12]) ? $item[12] * $item[3] / 1000 : 0;
+                $nel += isset($item[13]) ? $item[13] * $item[3] / 1000 : 0;
+                $rudp += isset($item[14]) ? $item[14] * $item[3] / 1000 : 0;
+                $endf += isset($item[15]) ? (float)$item[15] * (float)$item[3] / 1000 : 0;
+                $value += isset($item[2]) && isset($item[3]) ? $item[2] * $item[3] : 0;
+            }
+        }
+
+        // Process ProductData
+        foreach ($productData as $item) {
+            if (!empty($item[3])) {
+                $cp += isset($item[4]) ? $item[4] * $item[3] / 1000 : 0;
+                $ee += isset($item[5]) ? $item[5] * $item[3] / 1000 : 0;
+                $cf += isset($item[6]) ? $item[6] * $item[3] / 1000 : 0;
+                $tdn += isset($item[7]) ? $item[7] * $item[3] / 1000 : 0;
+                $me += isset($item[8]) ? $item[8] * $item[3] / 1000 : 0;
+                $ca += isset($item[9]) ? $item[9] * $item[3] / 1000 : 0;
+                $p += isset($item[10]) ? $item[10] * $item[3] / 1000 : 0;
+                $adf += isset($item[11]) ? $item[11] * $item[3] / 1000 : 0;
+                $ndf += isset($item[12]) ? $item[12] * $item[3] / 1000 : 0;
+                $nel += isset($item[13]) ? $item[13] * $item[3] / 1000 : 0;
+                $rudp += isset($item[14]) ? $item[14] * $item[3] / 1000 : 0;
+                $endf += isset($item[15]) ? (float)$item[15] * (float)$item[3] / 1000 : 0;
+                $value += isset($item[2]) && isset($item[3]) ? $item[2] * $item[3] : 0;
+            }
+        }
+
+        // Process MedicineData
+        foreach ($medicineData as $item) {
+            if (!empty($item[3])) {
+                $cp += isset($item[4]) ? $item[4] * $item[3] / 1000 : 0;
+                $ee += isset($item[5]) ? $item[5] * $item[3] / 1000 : 0;
+                $cf += isset($item[6]) ? $item[6] * $item[3] / 1000 : 0;
+                $tdn += isset($item[7]) ? $item[7] * $item[3] / 1000 : 0;
+                $me += isset($item[8]) ? $item[8] * $item[3] / 1000 : 0;
+                $ca += isset($item[9]) ? $item[9] * $item[3] / 1000 : 0;
+                $p += isset($item[10]) ? $item[10] * $item[3] / 1000 : 0;
+                $adf += isset($item[11]) ? $item[11] * $item[3] / 1000 : 0;
+                $ndf += isset($item[12]) ? $item[12] * $item[3] / 1000 : 0;
+                $nel += isset($item[13]) ? $item[13] * $item[3] / 1000 : 0;
+                $rudp += isset($item[14]) ? $item[14] * $item[3] / 1000 : 0;
+                $endf += isset($item[15]) ? (float)$item[15] * (float)$item[3] / 1000 : 0;
+                $value += isset($item[2]) && isset($item[3]) ? $item[2] * $item[3] : 0;
+            }
+        }
+
+        // Calculate fresh basis
+        $fresh = [
+            'CP' => round($cp, 2),
+            'FAT' => round($ee, 2),
+            'FIBER' => round($cf, 2),
+            'TDN' => round($tdn, 2),
+            'ENERGY' => round($me, 2),
+            'CA' => round($ca, 2),
+            'P' => round($p, 2),
+            'RUDP' => round($rudp, 2),
+            'ADF' => round($adf, 2),
+            'NDF' => round($ndf, 2),
+            'NEL' => round((0.0245 * $tdn - 0.12 * 0.454), 2),
+            'ENDF' => round($endf, 2),
+        ];
+
+        // Calculate DMB
+        $dmb_tdn = $tdn > 0 ? round(($tdn * 12 / 100 + $tdn), 2) : 0;
+        $dmb = [
+            'CP' => $cp > 0 ? round(($cp * 12 / 100 + $cp), 2) : 0,
+            'FAT' => $ee > 0 ? round(($ee * 12 / 100 + $ee), 2) : 0,
+            'FIBER' => $cf > 0 ? round(($cf * 12 / 100 + $cf), 2) : 0,
+            'TDN' => $dmb_tdn,
+            'ENERGY' => $me > 0 ? round(($me * 12 / 100 + $me), 2) : 0,
+            'CA' => $ca > 0 ? round(($ca * 12 / 100 + $ca), 2) : 0,
+            'P' => $p > 0 ? round(($p * 12 / 100 + $p), 2) : 0,
+            'RUDP' => $rudp > 0 ? round(($rudp * 12 / 100 + $rudp), 2) : 0,
+            'ADF' => $adf > 0 ? round(($adf * 12 / 100 + $adf), 2) : 0,
+            'NDF' => $ndf > 0 ? round(($ndf * 12 / 100 + $ndf), 2) : 0,
+            'NEL' => round((0.0245 * $dmb_tdn - 0.12 * 0.454), 2),
+            'ENDF' => $endf > 0 ? round(($endf * 12 / 100 + $endf), 2) : 0,
+        ];
+
+        // Prepare result for Blade view
+        $result = [
+            'fresh' => $fresh,
+            'dmb' => $dmb,
+            'row_ton' => round($value, 2),
+            'row_qtl' => round($value / 10, 2),
+            'ProteinData' => $request->ProteinData,
+            'EnergyData' => $request->EnergyData,
+            'ProductData' => $request->ProductData,
+            'MedicineData' => $request->MedicineData,
+        ];
+
+        // Check if PDF download is requested
+        if ($request->query('download') === 'pdf') {
+            $pdf = PDF::loadView('pdf.feed', compact('result'));
+            return $pdf->download('feed_calculation.pdf');
+        }
+
+        // Prepare response data for JSON
+        $send = [
+            'fresh' => $fresh,
+            'dmb' => $dmb,
+            'row_ton' => round($value, 2),
+            'row_qtl' => round($value / 10, 2),
+        ];
+
+        // Update service record
+        $serviceRecord = ServiceRecord::first();
+        if ($serviceRecord) {
+            $serviceRecord->update(['feed_calculator' => $serviceRecord->feed_calculator + 1]);
+            Log::info('Service record updated for FeedCalculator', [
+                'service_record_id' => $serviceRecord->id,
+                'feed_calculator' => $serviceRecord->feed_calculator,
+            ]);
+        } else {
+            Log::warning('No service record found in tbl_service_records for FeedCalculator');
+        }
+
+        // Log transaction
+        $txnData = [
+            'farmer_id' => $user->id,
+            'service' => 'feed_calculator',
+            'ip' => $request->ip(),
+            'date' => now(),
+            'only_date' => now()->format('Y-m-d'),
+        ];
+        $txn = ServiceRecordTxn::create($txnData);
+        Log::info('Service record transaction logged for FeedCalculator', [
+            'txn_id' => $txn->id,
+            'farmer_id' => $user->id,
+        ]);
+
+        return response()->json([
+            'message' => 'Success!',
+            'status' => 200,
+            'data' => $send,
+        ], 200);
+
+    } catch (\Exception $e) {
+        Log::error('Error in feedCalculator', [
+            'farmer_id' => auth('farmer')->id() ?? null,
+            'error' => $e->getMessage(),
+        ]);
+
+        return response()->json([
+            'message' => 'Error calculating feed: ' . $e->getMessage(),
+            'status' => 201,
+        ], 500);
     }
+}
 
     public function animalRequirements(Request $request)
     {
