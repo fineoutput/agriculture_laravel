@@ -53,7 +53,7 @@
                 <tbody>
                     <tr>
                         <td colspan="3" style="border-right:none">
-                            <img src="{{ public_path('assets/logo2.png') }}" alt="Logo" style="max-width: 150px;">
+                            <img src="{{ asset('assets/logo2.png') }}" alt="Logo" style="max-width: 150px;">
                             <h5>Agristar Animal Solution Private Limited</h5>
                             <h6>Dream City, Suratgarh, Ganganagar, Rajasthan, 335804</h6>
                         </td>
@@ -72,6 +72,8 @@
                         </td>
                     </tr>
                 </tbody>
+
+                {{-- Ingredient Section --}}
                 <tbody class="primary">
                     <tr>
                         <td colspan="2">Ingredient</td>
@@ -80,63 +82,29 @@
                     </tr>
                 </tbody>
                 <tbody>
-                    @php
-                        $ration = 0;
-                    @endphp
-                    @foreach(json_decode($result['ProteinData'], true) as $prt)
-                        @if(!empty($prt[3]))
-                            <tr>
-                                <td colspan="2">{{ $prt[1] }}</td>
-                                <td class="info">{{ $prt[2] }}</td>
-                                <td>{{ $prt[3] }}</td>
-                            </tr>
-                            @php
-                                $ration += $prt[3];
-                            @endphp
-                        @endif
+                    @php $ration = 0; @endphp
+
+                    @foreach (['ProteinData', 'EnergyData', 'ProductData', 'MedicineData'] as $type)
+                        @foreach(json_decode($result[$type], true) as $item)
+                            @if(!empty($item[3]))
+                                <tr>
+                                    <td colspan="2">{{ $item[1] }}</td>
+                                    <td class="info">{{ $item[2] }}</td>
+                                    <td>{{ $item[3] }}</td>
+                                </tr>
+                                @php $ration += $item[3]; @endphp
+                            @endif
+                        @endforeach
                     @endforeach
-                    @foreach(json_decode($result['EnergyData'], true) as $enr)
-                        @if(!empty($enr[3]))
-                            <tr>
-                                <td colspan="2">{{ $enr[1] }}</td>
-                                <td class="info">{{ $enr[2] }}</td>
-                                <td>{{ $enr[3] }}</td>
-                            </tr>
-                            @php
-                                $ration += $enr[3];
-                            @endphp
-                        @endif
-                    @endforeach
-                    @foreach(json_decode($result['ProductData'], true) as $pro)
-                        @if(!empty($pro[3]))
-                            <tr>
-                                <td colspan="2">{{ $pro[1] }}</td>
-                                <td class="info">{{ $pro[2] }}</td>
-                                <td>{{ $pro[3] }}</td>
-                            </tr>
-                            @php
-                                $ration += $pro[3];
-                            @endphp
-                        @endif
-                    @endforeach
-                    @foreach(json_decode($result['MedicineData'], true) as $med)
-                        @if(!empty($med[3]))
-                            <tr>
-                                <td colspan="2">{{ $med[1] }}</td>
-                                <td class="info">{{ $med[2] }}</td>
-                                <td>{{ $med[3] }}</td>
-                            </tr>
-                            @php
-                                $ration += $med[3];
-                            @endphp
-                        @endif
-                    @endforeach
+
                     <tr>
                         <td colspan="2"></td>
-                        <td></td>
-                        <td>{{ $ration }}</td>
+                        <td><strong>Total</strong></td>
+                        <td><strong>{{ $ration }}</strong></td>
                     </tr>
                 </tbody>
+
+                {{-- Value Section --}}
                 <tbody class="labels">
                     <tr>
                         <td colspan="2">Value</td>
@@ -151,11 +119,13 @@
                     ] as $key)
                         <tr>
                             <td colspan="2">{{ $key }}</td>
-                            <td class="info">{{ $result['fresh'][$key] }}</td>
-                            <td class="success1">{{ $result['dmb'][$key] }}</td>
+                            <td class="info">{{ $result['fresh'][$key] ?? '-' }}</td>
+                            <td class="success1">{{ $result['dmb'][$key] ?? '-' }}</td>
                         </tr>
                     @endforeach
                 </tbody>
+
+                {{-- Raw Cost Section --}}
                 <tbody class="primary">
                     <tr>
                         <td colspan="5">Raw Cost</td>
@@ -164,9 +134,9 @@
                 <tbody>
                     <tr>
                         <td>TON</td>
-                        <td class="primary1">{{ $result['row_ton'] }}</td>
+                        <td class="primary1">{{ $result['row_ton'] ?? '0' }}</td>
                         <td>Qtl</td>
-                        <td class="primary1">{{ $result['row_qtl'] }}</td>
+                        <td class="primary1">{{ $result['row_qtl'] ?? '0' }}</td>
                     </tr>
                 </tbody>
             </table>
