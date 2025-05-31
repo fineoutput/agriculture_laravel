@@ -118,135 +118,145 @@ class FeedController extends Controller
     }
 
     public function dmiCalculator(Request $request)
-    {
-         try {
-            $token = $request->header('Authentication');
-            if (!$token) {
-                Log::warning('No bearer token provided');
-                return response()->json([
-                    'message' => 'Token required!',
-                    'status' => 201,
-                ], 401);
-            }
-
-            $user = Farmer::where('auth', $token)
-                ->where('is_active', 1)
-                ->first();
-
-            if (!$user) {
-                Log::warning('Invalid or inactive user for token', ['token' => $token]);
-                return response()->json([
-                    'message' => 'Invalid token or inactive user!',
-                    'status' => 201,
-                ], 403);
-            }
-
-            // Validate input
-            $validator = Validator::make($request->all(), [
-                'lactation' => 'required|string',
-                'feed_percentage' => 'required|numeric|min:0|max:100',
-                'milk_yield' => 'required|numeric|min:0',
-                'weight' => 'required|numeric|min:0',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'message' => $validator->errors()->first(),
-                    'status' => 201,
-                ], 422);
-            }
-
-            // Extract inputs
-            $lactation = $request->lactation;
-            $feed_percentage = $request->feed_percentage;
-            $milk_yield = $request->milk_yield;
-            $weight = $request->weight;
-
-            // Calculate DMI and related values
-            $dry_matter_intake = (33 / 100 * $milk_yield) + (2 / 100 * $weight);
-            $feed = $feed_percentage / 100 * $dry_matter_intake;
-            $fodder = $dry_matter_intake - $feed;
-            $feed_qty = 100 / 90 * $feed;
-            $green_fodder = 60 / 100 * $fodder;
-            $maize = 100 / 22 * $green_fodder;
-            $barseem = 100 / 17 * $green_fodder;
-            $dry_fodder = 40 / 100 * $fodder;
-            $hary = 100 / 95 * $dry_fodder;
-            $silage_dm = $fodder;
-            $silage = 100 / 30 * $silage_dm;
-
-            // Prepare data for response
-            $result = [
-                'dry_matter_intake' => round($dry_matter_intake, 2),
-                'feed' => round($feed, 2),
-                'fodder' => round($fodder, 2),
-                'feed_qty' => round($feed_qty, 2),
-                'green_fodder' => round($green_fodder, 2),
-                'maize' => round($maize, 2),
-                'barseem' => round($barseem, 2),
-                'dry_fodder' => round($dry_fodder, 2),
-                'hary' => round($hary, 2),
-                'silage_dm' => round($silage_dm, 2),
-                'silage' => round($silage, 2),
-            ];
-
-            $input = [
-                'lactation' => $lactation,
-                'feed_percentage' => $feed_percentage,
-                'milk_yield' => $milk_yield,
-                'weight' => $weight,
-            ];
-
-            // Generate HTML
-            // $html = View::make('pdf.dmi', compact('input', 'result'))->render();
-
-            // // Add HTML to response data
-            // $result['html'] = $html;
-
-            // Update service record
-            $serviceRecord = ServiceRecord::first();
-            if ($serviceRecord) {
-                $serviceRecord->update(['dmi_calculator' => $serviceRecord->dmi_calculator + 1]);
-                Log::info('Service record updated for DMI', [
-                    'service_record_id' => $serviceRecord->id,
-                    'dmi_calculator' => $serviceRecord->dmi_calculator,
-                ]);
-            } else {
-                Log::warning('No service record found in tbl_service_records for DMI');
-            }
-
-            // Log transaction
-            $txnData = [
-                'farmer_id' => $user->id,
-                'service' => 'dmi_calculator',
-                'ip' => $request->ip(),
-                'date' => now(),
-                'only_date' => now()->format('Y-m-d'),
-            ];
-            $txn = ServiceRecordTxn::create($txnData);
-            Log::info('Service record transaction logged for DMI', [
-                'txn_id' => $txn->id,
-                'farmer_id' => $user->id,
-            ]);
-
+{
+    set_time_limit(300);
+    try {
+        $token = $request->header('Authentication');
+        if (!$token) {
+            Log::warning('No bearer token provided');
             return response()->json([
-                'message' => 'Success!',
-                'status' => 200,
-                'data' => $result,
-            ], 200);
-
-        } catch (\Exception $e) {
-            Log::error('Error in dmiCalculator', [
-                'farmer_id' => auth('farmer')->id() ?? null,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'message' => 'Error calculating DMI: ' . $e->getMessage(),
+                'message' => 'Token required!',
                 'status' => 201,
-            ], 500);
+            ], 401);
         }
+
+        $user = Farmer::where('auth', $token)
+            ->where('is_active', 1)
+            ->first();
+
+        if (!$user) {
+            Log::warning('Invalid or inactive user for token', ['token' => $token]);
+            return response()->json([
+                'message' => 'Invalid token or inactive user!',
+                'status' => 201,
+            ], 403);
+        }
+
+        // Validate input
+        $validator = Validator::make($request->all(), [
+            'lactation' => 'required|string',
+            'feed_percentage' => 'required|numeric|min:0|max:100',
+            'milk_yield' => 'required|numeric|min:0',
+            'weight' => 'required|numeric|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
+
+        // Extract inputs
+        $lactation = $request->lactation;
+        $feed_percentage = $request->feed_percentage;
+        $milk_yield = $request->milk_yield;
+        $weight = $request->weight;
+
+        // Calculate DMI and related values
+        $dry_matter_intake = (33 / 100 * $milk_yield) + (2 / 100 * $weight);
+        $feed = $feed_percentage / 100 * $dry_matter_intake;
+        $fodder = $dry_matter_intake - $feed;
+        $feed_qty = 100 / 90 * $feed;
+        $green_fodder = 60 / 100 * $fodder;
+        $maize = 100 / 22 * $green_fodder;
+        $barseem = 100 / 17 * $green_fodder;
+        $dry_fodder = 40 / 100 * $fodder;
+        $hary = 100 / 95 * $dry_fodder;
+        $silage_dm = $fodder;
+        $silage = 100 / 30 * $silage_dm;
+
+        // Prepare data for response
+        $result = [
+            'dry_matter_intake' => round($dry_matter_intake, 2),
+            'feed' => round($feed, 2),
+            'fodder' => round($fodder, 2),
+            'feed_qty' => round($feed_qty, 2),
+            'green_fodder' => round($green_fodder, 2),
+            'maize' => round($maize, 2),
+            'barseem' => round($barseem, 2),
+            'dry_fodder' => round($dry_fodder, 2),
+            'hary' => round($hary, 2),
+            'silage_dm' => round($silage_dm, 2),
+            'silage' => round($silage, 2),
+        ];
+
+        $input = [
+            'lactation' => $lactation,
+            'feed_percentage' => $feed_percentage,
+            'milk_yield' => $milk_yield,
+            'weight' => $weight,
+        ];
+
+        // Generate PDF
+        $pdfName = 'dmi_report_' . Str::uuid() . '.pdf';
+        $pdfPath = public_path('feeds/pdf/' . $pdfName);
+
+        // Ensure the directory exists
+        if (!file_exists(public_path('feeds/pdf'))) {
+            mkdir(public_path('feeds/pdf'), 0777, true);
+        }
+
+        // Render the view to PDF
+        $pdf = PDF::loadView('pdf.dmi', compact('input', 'result'));
+        $pdf->save($pdfPath);
+
+        // Update service record
+        $serviceRecord = ServiceRecord::first();
+        if ($serviceRecord) {
+            $serviceRecord->update(['dmi_calculator' => $serviceRecord->dmi_calculator + 1]);
+            Log::info('Service record updated for DMI', [
+                'service_record_id' => $serviceRecord->id,
+                'dmi_calculator' => $serviceRecord->dmi_calculator,
+            ]);
+        } else {
+            Log::warning('No service record found in tbl_service_records for DMI');
+        }
+
+        // Log transaction
+        $txnData = [
+            'farmer_id' => $user->id,
+            'service' => 'dmi_calculator',
+            'ip' => $request->ip(),
+            'date' => now(),
+            'only_date' => now()->format('Y-m-d'),
+        ];
+        $txn = ServiceRecordTxn::create($txnData);
+        Log::info('Service record transaction logged for DMI', [
+            'txn_id' => $txn->id,
+            'farmer_id' => $user->id,
+        ]);
+
+        $pdfUrl = url('feeds/pdf/' . $pdfName);
+        return response()->json([
+            'message' => 'Success!',
+            'status' => 200,
+            'data' => $result,
+            'pdf_url' => $pdfUrl,
+        ], 200);
+
+    } catch (\Exception $e) {
+        Log::error('Error in dmiCalculator', [
+            'farmer_id' => auth('farmer')->id() ?? null,
+            'error' => $e->getMessage(),
+        ]);
+
+        return response()->json([
+            'message' => 'Error calculating DMI: ' . $e->getMessage(),
+            'status' => 201,
+        ], 500);
     }
+}
 
     public function feedTest(Request $request)
     {
