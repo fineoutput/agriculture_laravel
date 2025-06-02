@@ -780,180 +780,201 @@ $pdfUrl = url('feeds/pdf/' . $feedPdfName);
         }
     }
 
-    public function checkMyFeed(Request $request)
-    {
-        try {
-            // Authenticate user using 'farmer' guard
-            $user = auth('farmer')->user();
-            Log::info('CheckMyFeed auth attempt', [
-                'user_id' => $user ? $user->id : null,
-                'is_active' => $user ? ($user->is_active ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
-            ]);
-
-            if (!$user || !$user->is_active) {
-                return response()->json([
-                    'message' => 'Permission Denied!',
-                    'status' => 201,
-                ], 403);
-            }
-
-            // Check if request has data
-            if (!$request->all()) {
-                return response()->json([
-                    'message' => 'Please Insert Data',
-                    'status' => 201,
-                ], 400);
-            }
-
-            // Validate input
-            $validator = Validator::make($request->all(), [
-                'lactation' => 'required|string',
-                'live_weight' => 'nullable|numeric',
-                'pregnancy' => 'nullable|numeric',
-                'milk_yield_volume' => 'nullable|numeric',
-                'milk_yield_fat' => 'nullable|numeric',
-                'milk_yield_protein' => 'nullable|numeric',
-                'live_weight_gain' => 'nullable|numeric',
-                'milk_return' => 'nullable|numeric',
-                'material' => 'required|json',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'message' => $validator->errors()->first(),
-                    'status' => 201,
-                ], 422);
-            }
-
-            // Extract and decode inputs
-            $material = json_decode($request->material);
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                return response()->json([
-                    'message' => 'Invalid material JSON format',
-                    'status' => 201,
-                ], 422);
-            }
-
-            $input = [
-                'lactation' => $request->lactation,
-                'live_weight' => $request->live_weight,
-                'pregnancy' => $request->pregnancy,
-                'milk_yield_volume' => $request->milk_yield_volume,
-                'milk_yield_fat' => $request->milk_yield_fat,
-                'milk_yield_protein' => $request->milk_yield_protein,
-                'live_weight_gain' => $request->live_weight_gain,
-                'milk_return' => $request->milk_return,
-                'material' => $material,
-            ];
-
-            Log::info('CheckMyFeed inputs', ['input' => $input]);
-
-            // Process Excel file
-            $inputFileName = public_path('assets/excel/check_my_feed.xlsm');
-            $outputFileName = public_path('assets/excel/check_my_feed.xlsm');
-
-            try {
-                // Load the Excel file
-                $spreadsheet = IOFactory::load($inputFileName);
-
-                // Set values in Worksheet 1 (index 1)
-                $spreadsheet->setActiveSheetIndex(1)
-                    ->setCellValue('B13', $input['lactation'])
-                    ->setCellValue('C4', $input['live_weight'])
-                    ->setCellValue('C5', $input['pregnancy'])
-                    ->setCellValue('C6', $input['milk_yield_volume'])
-                    ->setCellValue('C7', $input['milk_yield_fat'])
-                    ->setCellValue('C8', $input['milk_yield_protein'])
-                    ->setCellValue('C9', $input['live_weight_gain']);
-
-                // Set value in Worksheet 3 (index 3)
-                $spreadsheet->setActiveSheetIndex(3)
-                    ->setCellValue('D12', $input['milk_return']);
-
-                // Set material values in Worksheet 2 (index 2) and Worksheet 4 (index 4)
-                $freshRow = 4; // Starting row for fresh quantities (D4)
-                $priceRow = 7; // Starting row for prices (C7)
-                foreach ($material as $mat) {
-                    $freshValue = $mat->value ? ($mat->fresh ?? 0) : 0;
-                    $priceValue = $mat->value ? ($mat->price ?? 0) : 0;
-                    $spreadsheet->setActiveSheetIndex(2)->setCellValue("D{$freshRow}", $freshValue);
-                    $spreadsheet->setActiveSheetIndex(4)->setCellValue("C{$priceRow}", $priceValue);
-                    $freshRow++;
-                    $priceRow++;
-                }
-
-                // Save as .xlsm with formulas recalculated
-                $writer = IOFactory::createWriter($spreadsheet, 'Xlsx'); // Xlsx for .xlsm
-                $writer->setPreCalculateFormulas(true);
-                $writer->save($outputFileName);
-
-                // Reload the saved .xlsm file
-                $spreadsheet = IOFactory::load($outputFileName);
-                Log::info('Excel file processed', [
-                    'input_file' => $inputFileName,
-                    'output_file' => $outputFileName,
-                ]);
-
-            } catch (\Exception $e) {
-                Log::error('Error processing Excel file', [
-                    'error' => $e->getMessage(),
-                    'file' => $inputFileName,
-                ]);
-                return response()->json([
-                    'message' => 'Error processing Excel file: ' . $e->getMessage(),
-                    'status' => 201,
-                ], 500);
-            }
-
-            // Generate HTML
-            $farmername = $user->name;
-            $html = View::make('pdf.check_my_feed', compact('input', 'spreadsheet', 'farmername'))->render();
-
-            // Update service record
-            $serviceRecord = ServiceRecord::first();
-            if ($serviceRecord) {
-                $serviceRecord->update(['check_my_feed' => $serviceRecord->check_my_feed + 1]);
-                Log::info('Service record updated for CheckMyFeed', [
-                    'service_record_id' => $serviceRecord->id,
-                    'check_my_feed' => $serviceRecord->check_my_feed,
-                ]);
-            } else {
-                Log::warning('No service record found in tbl_service_records for CheckMyFeed');
-            }
-
-            // Log transaction
-            $txnData = [
-                'farmer_id' => $user->id,
-                'service' => 'check_my_feed',
-                'ip' => $request->ip(),
-                'date' => now(),
-                'only_date' => now()->format('Y-m-d'),
-            ];
-            $txn = ServiceRecordTxn::create($txnData);
-            Log::info('Service record transaction logged for CheckMyFeed', [
-                'txn_id' => $txn->id,
-                'farmer_id' => $user->id,
-            ]);
-
+public function checkMyFeed(Request $request)
+{
+    try {
+         set_time_limit(300);
+        // Authenticate user using 'farmer' guard
+        $token = $request->header('Authentication');
+        if (!$token) {
+            Log::warning('No bearer token provided');
             return response()->json([
-                'message' => 'Success!',
-                'status' => 200,
-                'data' => $html,
-            ], 200);
-
-        } catch (\Exception $e) {
-            Log::error('Error in checkMyFeed', [
-                'farmer_id' => auth('farmer')->id() ?? null,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'message' => 'Error checking feed: ' . $e->getMessage(),
+                'message' => 'Token required!',
                 'status' => 201,
-            ], 500);
+            ], 401);
         }
+
+        $user = Farmer::where('auth', $token)
+            ->where('is_active', 1)
+            ->first();
+
+        if (!$user) {
+            Log::warning('Invalid or inactive user for token', ['token' => $token]);
+            return response()->json([
+                'message' => 'Invalid token or inactive user!',
+                'status' => 201,
+            ], 403);
+        }
+
+        // Check if request has data
+        if (!$request->all()) {
+            return response()->json([
+                'message' => 'Please Insert Data',
+                'status' => 201,
+            ], 400);
+        }
+
+        // Validate input
+        $validator = Validator::make($request->all(), [
+            'lactation' => 'required|string',
+            'live_weight' => 'nullable|numeric',
+            'pregnancy' => 'nullable|numeric',
+            'milk_yield_volume' => 'nullable|numeric',
+            'milk_yield_fat' => 'nullable|numeric',
+            'milk_yield_protein' => 'nullable|numeric',
+            'live_weight_gain' => 'nullable|numeric',
+            'milk_return' => 'nullable|numeric',
+            'material' => 'required|string', // Ensure material is a string (JSON)
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
+
+        // Decode material JSON
+        $rawMaterial = $request->material;
+        Log::debug('Raw material input', ['material' => $rawMaterial]);
+        $material = json_decode($rawMaterial, true);
+
+        // Check if JSON decoding failed or result is not an array
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            Log::error('Invalid material JSON format', ['material' => $rawMaterial, 'json_error' => json_last_error_msg()]);
+            return response()->json([
+                'message' => 'Invalid material JSON format: ' . json_last_error_msg(),
+                'status' => 201,
+            ], 422);
+        }
+
+        // Ensure material is an array; convert single object to array if needed
+        if (!is_array($material)) {
+            Log::warning('Material is not an array, attempting to wrap as array', ['material' => $material]);
+            $material = [$material];
+        }
+
+        // Handle empty material array
+        if (empty($material)) {
+            Log::warning('Material array is empty', ['material' => $rawMaterial]);
+            $material = [];
+        }
+
+        // Validate material structure
+        foreach ($material as $index => $mat) {
+            if (!is_array($mat) || !isset($mat['fresh']) || !is_numeric($mat['fresh'])) {
+                Log::error('Invalid material structure at index ' . $index, ['material' => $mat]);
+                return response()->json([
+                    'message' => 'Each material must be an array with a numeric fresh value',
+                    'status' => 201,
+                ], 422);
+            }
+        }
+
+        $input = [
+            'lactation' => $request->lactation,
+            'live_weight' => $request->live_weight,
+            'pregnancy' => $request->pregnancy,
+            'milk_yield_volume' => $request->milk_yield_volume,
+            'milk_yield_fat' => $request->milk_yield_fat,
+            'milk_yield_protein' => $request->milk_yield_protein,
+            'live_weight_gain' => $request->live_weight_gain,
+            'milk_return' => $request->milk_return,
+            'material' => $material,
+        ];
+
+        Log::info('CheckMyFeed inputs', ['input' => $input]);
+
+        // Calculate total intake
+        $totalIntake = 0;
+        if (!empty($material)) {
+            $totalIntake = array_sum(array_column($material, 'fresh'));
+        }
+
+        // Placeholder for calculated data (since Excel processing is commented out)
+        $result = [
+            'metabolisable_energy_needs' => null,
+            'metabolisable_energy_intake' => null,
+            'crude_protein_needs' => null,
+            'crude_protein_intake' => null,
+            'calcium_needs' => null,
+            'calcium_intake' => null,
+            'phosphorus_needs' => null,
+            'phosphorus_intake' => null,
+            'ndf_needs' => null,
+            'ndf_intake' => null,
+            'dry_matter_max' => null,
+            'dry_matter_intake' => null,
+            'concentrate_max' => null,
+            'concentrate_intake' => null,
+            'milk_return_kg' => $input['milk_return'],
+            'milk_return_day' => null,
+            'feed_cost_day' => null,
+            'mifc_roi_day' => null,
+            'total_intake' => $totalIntake,
+        ];
+
+        // Generate PDF
+        $farmername = $user->name;
+        $pdfName = 'check_my_feed_report_' . Str::uuid() . '.pdf';
+        $pdfPath = public_path('feeds/pdf/' . $pdfName);
+
+        // Ensure the directory exists
+        if (!file_exists(public_path('feeds/pdf'))) {
+            mkdir(public_path('feeds/pdf'), 0777, true);
+        }
+
+        // Render the view to PDF
+        $pdf = PDF::loadView('pdf.check_my_feed', compact('input', 'result', 'farmername'));
+        $pdf->save($pdfPath);
+
+        // Update service record
+        $serviceRecord = ServiceRecord::first();
+        if ($serviceRecord) {
+            $serviceRecord->update(['check_my_feed' => $serviceRecord->check_my_feed + 1]);
+            Log::info('Service record updated for CheckMyFeed', [
+                'service_record_id' => $serviceRecord->id,
+                'check_my_feed' => $serviceRecord->check_my_feed,
+            ]);
+        } else {
+            Log::warning('No service record found in tbl_service_records for CheckMyFeed');
+        }
+
+        // Log transaction
+        $txnData = [
+            'farmer_id' => $user->id,
+            'service' => 'check_my_feed',
+            'ip' => $request->ip(),
+            'date' => now(),
+            'only_date' => now()->format('Y-m-d'),
+        ];
+        $txn = ServiceRecordTxn::create($txnData);
+        Log::info('Service record transaction logged for CheckMyFeed', [
+            'txn_id' => $txn->id,
+            'farmer_id' => $user->id,
+        ]);
+
+        $pdfUrl = url('feeds/pdf/' . $pdfName);
+        return response()->json([
+            'message' => 'Success!',
+            'status' => 200,
+            'data' => $result,
+            'pdf_url' => $pdfUrl,
+        ], 200);
+
+    } catch (\Exception $e) {
+        Log::error('Error in checkMyFeed', [
+            'farmer_id' => auth('farmer')->id() ?? null,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        return response()->json([
+            'message' => 'Error checking feed: ' . $e->getMessage(),
+            'status' => 201,
+        ], 500);
     }
+}
 
     public function dairyMart(Request $request)
     {
