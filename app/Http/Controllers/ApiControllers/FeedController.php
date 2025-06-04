@@ -588,10 +588,10 @@ class FeedController extends Controller
     }
 }
 
-    public function animalRequirements(Request $request)
+public function animalRequirements(Request $request)
 {
     try {
-         set_time_limit(300);
+        set_time_limit(300);
         // Authenticate user using 'farmer' guard
         $token = $request->header('Authentication');
         if (!$token) {
@@ -720,19 +720,9 @@ class FeedController extends Controller
             'methane_emission' => null,
         ];
 
-        // Generate PDF
+        // Render the HTML view
         $farmername = $user->name;
-        $pdfName = 'animal_requirements_report_' . Str::uuid() . '.pdf';
-        $pdfPath = public_path('feeds/pdf/' . $pdfName);
-
-        // Ensure the directory exists
-        if (!file_exists(public_path('feeds/pdf'))) {
-            mkdir(public_path('feeds/pdf'), 0777, true);
-        }
-
-        // Render the view to PDF
-        $pdf = PDF::loadView('pdf.animal_requirements', compact('input', 'result', 'farmername'));
-        $pdf->save($pdfPath);
+        $htmlContent = view('pdf.animal_requirements', compact('input', 'result', 'farmername'))->render();
 
         // Update service record
         $serviceRecord = ServiceRecord::first();
@@ -760,12 +750,10 @@ class FeedController extends Controller
             'farmer_id' => $user->id,
         ]);
 
-        $pdfUrl = url('feeds/pdf/' . $pdfName);
         return response()->json([
             'message' => 'Success!',
             'status' => 200,
-            'data' => array_merge($input, $result),
-            'pdf_url' => $pdfUrl,
+            'data' => array_merge($input, $result, ['html' => $htmlContent]),
         ], 200);
 
     } catch (\Exception $e) {
