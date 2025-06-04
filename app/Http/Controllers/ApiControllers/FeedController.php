@@ -117,7 +117,7 @@ class FeedController extends Controller
         }
     }
 
-    public function dmiCalculator(Request $request)
+ public function dmiCalculator(Request $request)
 {
     set_time_limit(300);
     try {
@@ -198,18 +198,8 @@ class FeedController extends Controller
             'weight' => $weight,
         ];
 
-        // Generate PDF
-        $pdfName = 'dmi_report_' . Str::uuid() . '.pdf';
-        $pdfPath = public_path('feeds/pdf/' . $pdfName);
-
-        // Ensure the directory exists
-        if (!file_exists(public_path('feeds/pdf'))) {
-            mkdir(public_path('feeds/pdf'), 0777, true);
-        }
-
-        // Render the view to PDF
-        $pdf = PDF::loadView('pdf.dmi', compact('input', 'result'));
-        $pdf->save($pdfPath);
+        // Render the HTML view
+        $htmlContent = view('pdf.dmi', compact('input', 'result'))->render();
 
         // Update service record
         $serviceRecord = ServiceRecord::first();
@@ -237,12 +227,10 @@ class FeedController extends Controller
             'farmer_id' => $user->id,
         ]);
 
-        $pdfUrl = url('feeds/pdf/' . $pdfName);
         return response()->json([
             'message' => 'Success!',
             'status' => 200,
-            'data' => $result,
-            'pdf_url' => $pdfUrl,
+            'data' => array_merge($result, ['html' => $htmlContent]),
         ], 200);
 
     } catch (\Exception $e) {
