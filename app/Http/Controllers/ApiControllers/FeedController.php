@@ -333,53 +333,52 @@ class FeedController extends Controller
 
 
 
-    public function feedCalculator(Request $request)
-    {
-        set_time_limit(300);
-        try {
-            // Validate authentication token
-            $token = $request->header('Authentication');
-            if (!$token) {
-                Log::warning('No bearer token provided');
-                return response()->json([
-                    'message' => 'Token required!',
-                    'status' => 201,
-                ], 401);
-            }
+   public function feedCalculator(Request $request)
+{
+    set_time_limit(300);
+    try {
+        // Validate authentication token
+        $token = $request->header('Authentication');
+        if (!$token) {
+            Log::warning('No bearer token provided');
+            return response()->json([
+                'message' => 'Token required!',
+                'status' => 201,
+            ], 401);
+        }
 
-            $user = Farmer::where('auth', $token)
-                ->where('is_active', 1)
-                ->first();
+        $user = Farmer::where('auth', $token)
+            ->where('is_active', 1)
+            ->first();
 
-            if (!$user) {
-                Log::warning('Invalid or inactive user for token', ['token' => $token]);
-                return response()->json([
-                    'message' => 'Invalid token.',
-                    'status' => 201,
-                ], 403);
-            }
+        if (!$user) {
+            Log::warning('Invalid or inactive user for token', ['token' => $token]);
+            return response()->json([
+                'message' => 'Invalid token.',
+                'status' => 201,
+            ], 403);
+        }
 
-            // Validate input data types
-            $validator = Validator::make($request->all(), [
-                'proteinData' => 'nullable|json',
-                'energyData' => 'nullable|json',
-                'productData' => 'nullable|json',
-                'medicineData' => 'nullable|json',
-                'pdf' => 'nullable|file|mimes:pdf|max:10240', // Allow PDF upload, max 10MB
-            ]);
+        // Validate input data types
+        $validator = Validator::make($request->all(), [
+            'proteinData' => 'nullable|json',
+            'energyData' => 'nullable|json',
+            'productData' => 'nullable|json',
+            'medicineData' => 'nullable|json',
+        ]);
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'message' => $validator->errors()->first(),
-                    'status' => 201,
-                ], 422);
-            }
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
 
         // Decode JSON inputs
-        $proteinData = $request->ProteinData ? json_decode($request->ProteinData, true) : [];
-        $energyData = $request->EnergyData ? json_decode($request->EnergyData, true) : [];
-        $productData = $request->ProductData ? json_decode($request->ProductData, true) : [];
-        $medicineData = $request->MedicineData ? json_decode($request->MedicineData, true) : [];
+        $proteinData = $request->proteinData ? json_decode($request->proteinData, true) : [];
+        $energyData = $request->energyData ? json_decode($request->energyData, true) : [];
+        $productData = $request->productData ? json_decode($request->productData, true) : [];
+        $medicineData = $request->medicineData ? json_decode($request->medicineData, true) : [];
 
         // Log decoded inputs for debugging
         Log::debug('Decoded input data', [
@@ -419,84 +418,84 @@ class FeedController extends Controller
             }
         }
 
-            // Initialize nutritional metrics
-            $cp = $ee = $cf = $tdn = $me = $ca = $p = $adf = $ndf = $nel = $rudp = $endf = $value = 0;
+        // Initialize nutritional metrics
+        $cp = $ee = $cf = $tdn = $me = $ca = $p = $adf = $ndf = $nel = $rudp = $endf = $value = 0;
 
-            // Process ProteinData
-            foreach ($proteinData as $item) {
-                if (!empty($item[3]) && is_numeric($item[3])) {
-                    $cp += isset($item[4]) && is_numeric($item[4]) ? (float)$item[4] * (float)$item[3] / 1000 : 0;
-                    $ee += isset($item[5]) && is_numeric($item[5]) ? (float)$item[5] * (float)$item[3] / 1000 : 0;
-                    $cf += isset($item[6]) && is_numeric($item[6]) ? (float)$item[6] * (float)$item[3] / 1000 : 0;
-                    $tdn += isset($item[7]) && is_numeric($item[7]) ? (float)$item[7] * (float)$item[3] / 1000 : 0;
-                    $me += isset($item[8]) && is_numeric($item[8]) ? (float)$item[8] * (float)$item[3] / 1000 : 0;
-                    $ca += isset($item[9]) && is_numeric($item[9]) ? (float)$item[9] * (float)$item[3] / 1000 : 0;
-                    $p += isset($item[10]) && is_numeric($item[10]) ? (float)$item[10] * (float)$item[3] / 1000 : 0;
-                    $adf += isset($item[11]) && is_numeric($item[11]) ? (float)$item[11] * (float)$item[3] / 1000 : 0;
-                    $ndf += isset($item[12]) && is_numeric($item[12]) ? (float)$item[12] * (float)$item[3] / 1000 : 0;
-                    $nel += isset($item[13]) && is_numeric($item[13]) ? (float)$item[13] * (float)$item[3] / 1000 : 0;
-                    $rudp += isset($item[14]) && is_numeric($item[14]) ? (float)$item[14] * (float)$item[3] / 1000 : 0;
-                    $endf += isset($item[15]) && is_numeric($item[15]) ? (float)$item[15] * (float)$item[3] / 1000 : 0;
-                    $value += isset($item[2]) && is_numeric($item[2]) && is_numeric($item[3]) ? (float)$item[2] * (float)$item[3] : 0;
-                }
+        // Process ProteinData
+        foreach ($proteinData as $item) {
+            if (!empty($item[3]) && is_numeric($item[3])) {
+                $cp += isset($item[4]) && is_numeric($item[4]) ? (float)$item[4] * (float)$item[3] / 1000 : 0;
+                $ee += isset($item[5]) && is_numeric($item[5]) ? (float)$item[5] * (float)$item[3] / 1000 : 0;
+                $cf += isset($item[6]) && is_numeric($item[6]) ? (float)$item[6] * (float)$item[3] / 1000 : 0;
+                $tdn += isset($item[7]) && is_numeric($item[7]) ? (float)$item[7] * (float)$item[3] / 1000 : 0;
+                $me += isset($item[8]) && is_numeric($item[8]) ? (float)$item[8] * (float)$item[3] / 1000 : 0;
+                $ca += isset($item[9]) && is_numeric($item[9]) ? (float)$item[9] * (float)$item[3] / 1000 : 0;
+                $p += isset($item[10]) && is_numeric($item[10]) ? (float)$item[10] * (float)$item[3] / 1000 : 0;
+                $adf += isset($item[11]) && is_numeric($item[11]) ? (float)$item[11] * (float)$item[3] / 1000 : 0;
+                $ndf += isset($item[12]) && is_numeric($item[12]) ? (float)$item[12] * (float)$item[3] / 1000 : 0;
+                $nel += isset($item[13]) && is_numeric($item[13]) ? (float)$item[13] * (float)$item[3] / 1000 : 0;
+                $rudp += isset($item[14]) && is_numeric($item[14]) ? (float)$item[14] * (float)$item[3] / 1000 : 0;
+                $endf += isset($item[15]) && is_numeric($item[15]) ? (float)$item[15] * (float)$item[3] / 1000 : 0;
+                $value += isset($item[2]) && is_numeric($item[2]) && is_numeric($item[3]) ? (float)$item[2] * (float)$item[3] : 0;
             }
+        }
 
-            // Process EnergyData
-            foreach ($energyData as $item) {
-                if (!empty($item[3]) && is_numeric($item[3])) {
-                    $cp += isset($item[4]) && is_numeric($item[4]) ? (float)$item[4] * (float)$item[3] / 1000 : 0;
-                    $ee += isset($item[5]) && is_numeric($item[5]) ? (float)$item[5] * (float)$item[3] / 1000 : 0;
-                    $cf += isset($item[6]) && is_numeric($item[6]) ? (float)$item[6] * (float)$item[3] / 1000 : 0;
-                    $tdn += isset($item[7]) && is_numeric($item[7]) ? (float)$item[7] * (float)$item[3] / 1000 : 0;
-                    $me += isset($item[8]) && is_numeric($item[8]) ? (float)$item[8] * (float)$item[3] / 1000 : 0;
-                    $ca += isset($item[9]) && is_numeric($item[9]) ? (float)$item[9] * (float)$item[3] / 1000 : 0;
-                    $p += isset($item[10]) && is_numeric($item[10]) ? (float)$item[10] * (float)$item[3] / 1000 : 0;
-                    $adf += isset($item[11]) && is_numeric($item[11]) ? (float)$item[11] * (float)$item[3] / 1000 : 0;
-                    $ndf += isset($item[12]) && is_numeric($item[12]) ? (float)$item[12] * (float)$item[3] / 1000 : 0;
-                    $nel += isset($item[13]) && is_numeric($item[13]) ? (float)$item[13] * (float)$item[3] / 1000 : 0;
-                    $rudp += isset($item[14]) && is_numeric($item[14]) ? (float)$item[14] * (float)$item[3] / 1000 : 0;
-                    $endf += isset($item[15]) && is_numeric($item[15]) ? (float)$item[15] * (float)$item[3] / 1000 : 0;
-                    $value += isset($item[2]) && is_numeric($item[2]) && is_numeric($item[3]) ? (float)$item[2] * (float)$item[3] : 0;
-                }
+        // Process EnergyData
+        foreach ($energyData as $item) {
+            if (!empty($item[3]) && is_numeric($item[3])) {
+                $cp += isset($item[4]) && is_numeric($item[4]) ? (float)$item[4] * (float)$item[3] / 1000 : 0;
+                $ee += isset($item[5]) && is_numeric($item[5]) ? (float)$item[5] * (float)$item[3] / 1000 : 0;
+                $cf += isset($item[6]) && is_numeric($item[6]) ? (float)$item[6] * (float)$item[3] / 1000 : 0;
+                $tdn += isset($item[7]) && is_numeric($item[7]) ? (float)$item[7] * (float)$item[3] / 1000 : 0;
+                $me += isset($item[8]) && is_numeric($item[8]) ? (float)$item[8] * (float)$item[3] / 1000 : 0;
+                $ca += isset($item[9]) && is_numeric($item[9]) ? (float)$item[9] * (float)$item[3] / 1000 : 0;
+                $p += isset($item[10]) && is_numeric($item[10]) ? (float)$item[10] * (float)$item[3] / 1000 : 0;
+                $adf += isset($item[11]) && is_numeric($item[11]) ? (float)$item[11] * (float)$item[3] / 1000 : 0;
+                $ndf += isset($item[12]) && is_numeric($item[12]) ? (float)$item[12] * (float)$item[3] / 1000 : 0;
+                $nel += isset($item[13]) && is_numeric($item[13]) ? (float)$item[13] * (float)$item[3] / 1000 : 0;
+                $rudp += isset($item[14]) && is_numeric($item[14]) ? (float)$item[14] * (float)$item[3] / 1000 : 0;
+                $endf += isset($item[15]) && is_numeric($item[15]) ? (float)$item[15] * (float)$item[3] / 1000 : 0;
+                $value += isset($item[2]) && is_numeric($item[2]) && is_numeric($item[3]) ? (float)$item[2] * (float)$item[3] : 0;
             }
+        }
 
-            // Process ProductData
-            foreach ($productData as $item) {
-                if (!empty($item[3]) && is_numeric($item[3])) {
-                    $cp += isset($item[4]) && is_numeric($item[4]) ? (float)$item[4] * (float)$item[3] / 1000 : 0;
-                    $ee += isset($item[5]) && is_numeric($item[5]) ? (float)$item[5] * (float)$item[3] / 1000 : 0;
-                    $cf += isset($item[6]) && is_numeric($item[6]) ? (float)$item[6] * (float)$item[3] / 1000 : 0;
-                    $tdn += isset($item[7]) && is_numeric($item[7]) ? (float)$item[7] * (float)$item[3] / 1000 : 0;
-                    $me += isset($item[8]) && is_numeric($item[8]) ? (float)$item[8] * (float)$item[3] / 1000 : 0;
-                    $ca += isset($item[9]) && is_numeric($item[9]) ? (float)$item[9] * (float)$item[3] / 1000 : 0;
-                    $p += isset($item[10]) && is_numeric($item[10]) ? (float)$item[10] * (float)$item[3] / 1000 : 0;
-                    $adf += isset($item[11]) && is_numeric($item[11]) ? (float)$item[11] * (float)$item[3] / 1000 : 0;
-                    $ndf += isset($item[12]) && is_numeric($item[12]) ? (float)$item[12] * (float)$item[3] / 1000 : 0;
-                    $nel += isset($item[13]) && is_numeric($item[13]) ? (float)$item[13] * (float)$item[3] / 1000 : 0;
-                    $rudp += isset($item[14]) && is_numeric($item[14]) ? (float)$item[14] * (float)$item[3] / 1000 : 0;
-                    $endf += isset($item[15]) && is_numeric($item[15]) ? (float)$item[15] * (float)$item[3] / 1000 : 0;
-                    $value += isset($item[2]) && is_numeric($item[2]) && is_numeric($item[3]) ? (float)$item[2] * (float)$item[3] : 0;
-                }
+        // Process ProductData
+        foreach ($productData as $item) {
+            if (!empty($item[3]) && is_numeric($item[3])) {
+                $cp += isset($item[4]) && is_numeric($item[4]) ? (float)$item[4] * (float)$item[3] / 1000 : 0;
+                $ee += isset($item[5]) && is_numeric($item[5]) ? (float)$item[5] * (float)$item[3] / 1000 : 0;
+                $cf += isset($item[6]) && is_numeric($item[6]) ? (float)$item[6] * (float)$item[3] / 1000 : 0;
+                $tdn += isset($item[7]) && is_numeric($item[7]) ? (float)$item[7] * (float)$item[3] / 1000 : 0;
+                $me += isset($item[8]) && is_numeric($item[8]) ? (float)$item[8] * (float)$item[3] / 1000 : 0;
+                $ca += isset($item[9]) && is_numeric($item[9]) ? (float)$item[9] * (float)$item[3] / 1000 : 0;
+                $p += isset($item[10]) && is_numeric($item[10]) ? (float)$item[10] * (float)$item[3] / 1000 : 0;
+                $adf += isset($item[11]) && is_numeric($item[11]) ? (float)$item[11] * (float)$item[3] / 1000 : 0;
+                $ndf += isset($item[12]) && is_numeric($item[12]) ? (float)$item[12] * (float)$item[3] / 1000 : 0;
+                $nel += isset($item[13]) && is_numeric($item[13]) ? (float)$item[13] * (float)$item[3] / 1000 : 0;
+                $rudp += isset($item[14]) && is_numeric($item[14]) ? (float)$item[14] * (float)$item[3] / 1000 : 0;
+                $endf += isset($item[15]) && is_numeric($item[15]) ? (float)$item[15] * (float)$item[3] / 1000 : 0;
+                $value += isset($item[2]) && is_numeric($item[2]) && is_numeric($item[3]) ? (float)$item[2] * (float)$item[3] : 0;
             }
+        }
 
-            // Process MedicineData
-            foreach ($medicineData as $item) {
-                if (!empty($item[3]) && is_numeric($item[3])) {
-                    $cp += isset($item[4]) && is_numeric($item[4]) ? (float)$item[4] * (float)$item[3] / 1000 : 0;
-                    $ee += isset($item[5]) && is_numeric($item[5]) ? (float)$item[5] * (float)$item[3] / 1000 : 0;
-                    $cf += isset($item[6]) && is_numeric($item[6]) ? (float)$item[6] * (float)$item[3] / 1000 : 0;
-                    $tdn += isset($item[7]) && is_numeric($item[7]) ? (float)$item[7] * (float)$item[3] / 1000 : 0;
-                    $me += isset($item[8]) && is_numeric($item[8]) ? (float)$item[8] * (float)$item[3] / 1000 : 0;
-                    $ca += isset($item[9]) && is_numeric($item[9]) ? (float)$item[9] * (float)$item[3] / 1000 : 0;
-                    $p += isset($item[10]) && is_numeric($item[10]) ? (float)$item[10] * (float)$item[3] / 1000 : 0;
-                    $adf += isset($item[11]) && is_numeric($item[11]) ? (float)$item[11] * (float)$item[3] / 1000 : 0;
-                    $ndf += isset($item[12]) && is_numeric($item[12]) ? (float)$item[12] * (float)$item[3] / 1000 : 0;
-                    $nel += isset($item[13]) && is_numeric($item[13]) ? (float)$item[13] * (float)$item[3] / 1000 : 0;
-                    $rudp += isset($item[14]) && is_numeric($item[14]) ? (float)$item[14] * (float)$item[3] / 1000 : 0;
-                    $endf += isset($item[15]) && is_numeric($item[15]) ? (float)$item[15] * (float)$item[3] / 1000 : 0;
-                    $value += isset($item[2]) && is_numeric($item[2]) && is_numeric($item[3]) ? (float)$item[2] * (float)$item[3] : 0;
-                }
+        // Process MedicineData
+        foreach ($medicineData as $item) {
+            if (!empty($item[3]) && is_numeric($item[3])) {
+                $cp += isset($item[4]) && is_numeric($item[4]) ? (float)$item[4] * (float)$item[3] / 1000 : 0;
+                $ee += isset($item[5]) && is_numeric($item[5]) ? (float)$item[5] * (float)$item[3] / 1000 : 0;
+                $cf += isset($item[6]) && is_numeric($item[6]) ? (float)$item[6] * (float)$item[3] / 1000 : 0;
+                $tdn += isset($item[7]) && is_numeric($item[7]) ? (float)$item[7] * (float)$item[3] / 1000 : 0;
+                $me += isset($item[8]) && is_numeric($item[8]) ? (float)$item[8] * (float)$item[3] / 1000 : 0;
+                $ca += isset($item[9]) && is_numeric($item[9]) ? (float)$item[9] * (float)$item[3] / 1000 : 0;
+                $p += isset($item[10]) && is_numeric($item[10]) ? (float)$item[10] * (float)$item[3] / 1000 : 0;
+                $adf += isset($item[11]) && is_numeric($item[11]) ? (float)$item[11] * (float)$item[3] / 1000 : 0;
+                $ndf += isset($item[12]) && is_numeric($item[12]) ? (float)$item[12] * (float)$item[3] / 1000 : 0;
+                $nel += isset($item[13]) && is_numeric($item[13]) ? (float)$item[13] * (float)$item[3] / 1000 : 0;
+                $rudp += isset($item[14]) && is_numeric($item[14]) ? (float)$item[14] * (float)$item[3] / 1000 : 0;
+                $endf += isset($item[15]) && is_numeric($item[15]) ? (float)$item[15] * (float)$item[3] / 1000 : 0;
+                $value += isset($item[2]) && is_numeric($item[2]) && is_numeric($item[3]) ? (float)$item[2] * (float)$item[3] : 0;
             }
+        }
 
         // Calculate fresh basis
         $fresh = [
@@ -531,41 +530,20 @@ class FeedController extends Controller
             'ENDF' => $endf > 0 ? round(($endf * 12 / 100 + $endf), 2) : 0,
         ];
 
-            // Initialize response data
-            $send = [
-                'fresh' => $fresh,
-                'dmb' => $dmb,
-                'row_ton' => round($value, 2),
-                'row_qtl' => round($value / 10, 2),
-                
-            ];
+        // Prepare data for the view
+        $result = [
+            'ProteinData' => json_encode($proteinData),
+            'EnergyData' => json_encode($energyData),
+            'ProductData' => json_encode($productData),
+            'MedicineData' => json_encode($medicineData),
+            'fresh' => $fresh,
+            'dmb' => $dmb,
+            'row_ton' => round($value, 2),
+            'row_qtl' => round($value / 10, 2),
+        ];
 
-            // Handle PDF file upload
-           $feedPdfName = 'feed_report_' . Str::uuid() . '.pdf';
-$pdfPath = public_path('feeds/pdf/' . $feedPdfName);
-
-// Ensure the directory exists
-if (!file_exists(public_path('feeds/pdf'))) {
-    mkdir(public_path('feeds/pdf'), 0777, true);
-}
-
-// Render the view to PDF
-$result = [
-    'ProteinData' => json_encode($proteinData), // JSON string as expected by the view
-    'EnergyData' => json_encode($energyData),
-    'ProductData' => json_encode($productData),
-    'MedicineData' => json_encode($medicineData),
-    'fresh' => $fresh,
-    'dmb' => $dmb,
-    'row_ton' => round($value, 2),
-    'row_qtl' => round($value / 10, 2),
-];
-
-// Render the view to PDF
-$pdf = PDF::loadView('pdf.feed', ['result' => $result]);
-
-
-$pdf->save($pdfPath);
+        // Render the HTML view
+        $htmlContent = view('pdf.feed', ['result' => $result])->render();
 
         // Update service record
         $serviceRecord = ServiceRecord::first();
@@ -592,12 +570,20 @@ $pdf->save($pdfPath);
             'txn_id' => $txn->id,
             'farmer_id' => $user->id,
         ]);
-$pdfUrl = url('feeds/pdf/' . $feedPdfName);
+
+        // Prepare response
+        $send = [
+            'fresh' => $fresh,
+            'dmb' => $dmb,
+            'row_ton' => round($value, 2),
+            'row_qtl' => round($value / 10, 2),
+            'html' => $htmlContent,
+        ];
+
         return response()->json([
             'message' => 'Success!',
             'status' => 200,
             'data' => $send,
-            'pdf_url' => $pdfUrl,
         ], 200);
 
     } catch (\Exception $e) {
@@ -1111,7 +1097,7 @@ public function checkMyFeed(Request $request)
     public function expertAdvice(Request $request)
     {
         try {
-            // Fetch expert doctors
+            
             $experts = Doctor::where('is_active2', 1)->get();
             Log::info('ExpertAdvice experts fetched', ['count' => $experts->count()]);
 
