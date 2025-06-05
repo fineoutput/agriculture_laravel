@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\View;
+use DateTimeZone;
+
 use PhpOffice\PhpSpreadsheet\IOFactory;
 // use Barryvdh\DomPDF\Facade as PDF;
 // use Barryvdh\DomPDF\PDF as DomPDFPDF;
@@ -773,7 +775,7 @@ public function animalRequirements(Request $request)
 public function checkMyFeed(Request $request)
 {
     try {
-         set_time_limit(300);
+        set_time_limit(300);
         // Authenticate user using 'farmer' guard
         $token = $request->header('Authentication');
         if (!$token) {
@@ -881,7 +883,7 @@ public function checkMyFeed(Request $request)
             $totalIntake = array_sum(array_column($material, 'fresh'));
         }
 
-        // Placeholder for calculated data (since Excel processing is commented out)
+        // Placeholder for calculated data
         $result = [
             'metabolisable_energy_needs' => null,
             'metabolisable_energy_intake' => null,
@@ -904,19 +906,9 @@ public function checkMyFeed(Request $request)
             'total_intake' => $totalIntake,
         ];
 
-        // Generate PDF
+        // Render the HTML view
         $farmername = $user->name;
-        $pdfName = 'check_my_feed_report_' . Str::uuid() . '.pdf';
-        $pdfPath = public_path('feeds/pdf/' . $pdfName);
-
-        // Ensure the directory exists
-        if (!file_exists(public_path('feeds/pdf'))) {
-            mkdir(public_path('feeds/pdf'), 0777, true);
-        }
-
-        // Render the view to PDF
-        $pdf = PDF::loadView('pdf.check_my_feed', compact('input', 'result', 'farmername'));
-        $pdf->save($pdfPath);
+        $htmlContent = view('pdf.check_my_feed', compact('input', 'result', 'farmername'))->render();
 
         // Update service record
         $serviceRecord = ServiceRecord::first();
@@ -944,12 +936,10 @@ public function checkMyFeed(Request $request)
             'farmer_id' => $user->id,
         ]);
 
-        $pdfUrl = url('feeds/pdf/' . $pdfName);
         return response()->json([
             'message' => 'Success!',
             'status' => 200,
-            'data' => $result,
-            'pdf_url' => $pdfUrl,
+            'data' => array_merge($result, ['html' => $htmlContent]),
         ], 200);
 
     } catch (\Exception $e) {
@@ -1168,22 +1158,29 @@ public function checkMyFeed(Request $request)
     {
         try {
             // Authenticate farmer using 'farmer' guard
-            $farmer = auth('farmer')->user();
-            Log::info('BuyFeed auth attempt', [
-                'farmer_id' => $farmer ? $farmer->id : null,
-                'is_active' => $farmer ? ($farmer->is_active ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
-            ]);
+            $token = $request->header('Authentication');
+        if (!$token) {
+            Log::warning('No bearer token provided');
+            return response()->json([
+                'message' => 'Token required!',
+                'status' => 201,
+            ], 401);
+        }
 
-            if (!$farmer || !$farmer->is_active) {
-                return response()->json([
-                    'message' => 'Permission Denied!',
-                    'status' => 201,
-                ], 403);
-            }
+        $user = Farmer::where('auth', $token)
+            ->where('is_active', 1)
+            ->first();
+
+        if (!$user) {
+            Log::warning('Invalid or inactive user for token', ['token' => $token]);
+            return response()->json([
+                'message' => 'Invalid token.',
+                'status' => 201,
+            ], 403);
+        }
 
             // Check for existing paid plan
-            $existingPlan = CheckMyFeedBuy::where('farmer_id', $farmer->id)
+            $existingPlan = CheckMyFeedBuy::where('farmer_id', $user->id)
                 ->where('payment_status', 1)
                 ->first();
 
@@ -1199,7 +1196,7 @@ public function checkMyFeed(Request $request)
             $currentDate = now(new DateTimeZone('Asia/Kolkata'))->format('Y-m-d H:i:s');
 
             $transaction = CheckMyFeedBuy::create([
-                'farmer_id' => $farmer->id,
+                'farmer_id' => $user->id,
                 'price' => config('ccavenue.feed_amount'),
                 'payment_status' => 0,
                 'txn_id' => $txnId,
