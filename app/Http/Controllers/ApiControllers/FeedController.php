@@ -17,6 +17,7 @@ use Illuminate\Support\Str;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\View;
 use DateTimeZone;
+use PhpOffice\PhpSpreadsheet\Calculation\Calculation;
 
 
 
@@ -605,19 +606,18 @@ public function animalRequirements(Request $request)
     try {
         set_time_limit(300);
 
-        // Get authentication header
+        // 1. Authenticate Farmer
         $token = $request->header('Authentication');
         if (!$token) {
             return response()->json(['message' => 'Token required!', 'status' => 201], 401);
         }
 
-        // Fetch farmer
         $farmer = Farmer::where('auth', $token)->where('is_active', 1)->first();
         if (!$farmer) {
             return response()->json(['message' => 'Permission Denied!', 'status' => 201], 403);
         }
 
-        // Validate request
+        // 2. Validate Request
         $validator = Validator::make($request->all(), [
             'group' => 'required|string',
             'feeding_system' => 'required|string',
@@ -637,9 +637,13 @@ public function animalRequirements(Request $request)
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['message' => $validator->errors()->first(), 'status' => 201], 422);
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201
+            ], 422);
         }
 
+        // 3. Extract Inputs
         $input = $request->only([
             'group', 'feeding_system', 'weight', 'milk_production',
             'days_milk', 'milk_fat', 'milk_protein', 'milk_lactose',
@@ -649,14 +653,12 @@ public function animalRequirements(Request $request)
 
         Log::info('AnimalRequirements Input: ', $input);
 
-        // Load Excel
+        // 4. Load Excel
         $inputFileName = public_path('assets/excel/animal_requirement.xlsx');
-        $outputFileName = public_path('assets/excel/animal_requirement.xlsx');
-
         $spreadsheet = IOFactory::load($inputFileName);
         $sheet = $spreadsheet->getActiveSheet();
 
-        // Write input values
+        // 5. Fill input cells
         $sheet->setCellValue('F21', $input['group']);
         $sheet->setCellValue('F22', $input['feeding_system']);
         $sheet->setCellValue('F23', $input['weight']);
@@ -673,28 +675,28 @@ public function animalRequirements(Request $request)
         $sheet->setCellValue('I26', $input['thi']);
         $sheet->setCellValue('I27', $input['fat_4']);
 
-        $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
-        $writer->setPreCalculateFormulas(true);
-        $writer->save($outputFileName);
+        // 6. Calculate formulas manually using PHPSpreadsheet
+        $calculation = Calculation::getInstance($spreadsheet);
+        $calculation->calculateWorksheetFormulas($sheet);
 
-        // Reload to read calculated values
-        $spreadsheet = IOFactory::load($outputFileName);
-        $sheet = $spreadsheet->getActiveSheet();
+        // 7. (Optional) Save updated file
+        // $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+        // $writer->save(public_path('assets/excel/animal_requirement_updated.xlsx'));
 
-        // Pass Excel object and input to view
+        // 8. Prepare view data
         $viewData = [
             'input' => $input,
             'objPHPExcel' => $spreadsheet,
         ];
         $html = view('pdf.animal_requirements', $viewData)->render();
 
-        // Update service record
+        // 9. Update service record
         $record = ServiceRecord::first();
         if ($record) {
             $record->increment('animal_req');
         }
 
-        // Log transaction
+        // 10. Log service usage
         $ip = $request->ip();
         $now = now();
         ServiceRecordTxn::create([
@@ -705,6 +707,7 @@ public function animalRequirements(Request $request)
             'only_date' => $now->toDateString(),
         ]);
 
+        // 11. Return response
         return response()->json([
             'message' => 'Success!',
             'status' => 200,
@@ -714,7 +717,9 @@ public function animalRequirements(Request $request)
         ]);
 
     } catch (\Exception $e) {
-        Log::error('animalRequirements error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+        Log::error('animalRequirements error: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString()
+        ]);
         return response()->json([
             'message' => 'Something went wrong: ' . $e->getMessage(),
             'status' => 500,
