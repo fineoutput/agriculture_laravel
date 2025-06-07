@@ -792,7 +792,9 @@ class FeedController extends Controller
             return response()->json([
                 'message' => 'Success!',
                 'status' => 200,
-                'data' => $html,
+                'data' => [
+                    'html' => $html
+                ],
             ]);
 
         } catch (\Exception $e) {
