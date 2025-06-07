@@ -69,7 +69,7 @@
                         </td>
                         <td colspan="2" style="border-left:none">
                             <p><b>Date</b><span class="ht">{{ now()->format('Y-m-d') }}</span></p>
-                            <p><b>Farmer</b><span class="ht">{{ $farmername }}</span></p>
+                            {{-- <p><b>Farmer</b><span class="ht">{{ $farmername }}</span></p> --}}
                             <h6>Contact:</h6>
                             <p style="font-size:15px">Call & Whatsapp- 7891029090</p>
                             <h6>Email:</h6>
