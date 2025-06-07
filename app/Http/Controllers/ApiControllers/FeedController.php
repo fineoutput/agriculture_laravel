@@ -599,14 +599,23 @@ class FeedController extends Controller
 // Animal Req
 
 
-public function animalRequirements(Request $request)
+ public function animalRequirements(Request $request)
     {
-        // Check if request has data
-        if ($request->isMethod('post') && $request->hasAny(['group', 'feeding_system', 'weight'])) {
-            // Get authentication header
-            $authentication = $request->header('Authentication');
+        try {
+            set_time_limit(300);
 
-            // Validation rules
+            $token = $request->header('Authentication');
+            if (!$token) {
+                Log::warning('No bearer token provided');
+                return response()->json(['message' => 'Token required!', 'status' => 201], 401);
+            }
+
+            $user = Farmer::where('auth', $token)->where('is_active', 1)->first();
+            if (!$user) {
+                Log::warning('Invalid or inactive user for token', ['token' => $token]);
+                return response()->json(['message' => 'Invalid token or inactive user!', 'status' => 201], 403);
+            }
+
             $validator = Validator::make($request->all(), [
                 'group' => 'required|string',
                 'feeding_system' => 'required|string',
@@ -626,38 +635,17 @@ public function animalRequirements(Request $request)
             ]);
 
             if ($validator->fails()) {
-                return response()->json([
-                    'message' => $validator->errors()->first(),
-                    'status' => 201,
-                    'data' => null
-                ], 201);
+                return response()->json(['message' => $validator->errors()->first(), 'status' => 201], 422);
             }
 
-            // Check farmer authentication
-            $farmer = DB::table('tbl_farmers')
-                ->where('is_active', 1)
-                ->where('auth', $authentication)
-                ->first();
-
-            if (!$farmer) {
-                return response()->json([
-                    'message' => 'Permission Denied!',
-                    'status' => 201,
-                    'data' => null
-                ], 201);
-            }
-
-            // Prepare input data
             $input = $request->only([
                 'group', 'feeding_system', 'weight', 'milk_production', 'days_milk',
-                'milk_fat', 'milk_protein', 'milk_lactose', 'weight_variation', 'bcs',
-                'gestation_days', 'temp', 'humidity', 'thi', 'fat_4'
+                'milk_fat', 'milk_protein', 'milk_lactose', 'weight_variation',
+                'bcs', 'gestation_days', 'temp', 'humidity', 'thi', 'fat_4'
             ]);
 
-            // Log input data
-            Log::error('FAT: ' . json_encode($input));
+            Log::info('AnimalRequirements inputs', ['input' => $input]);
 
-            // Process Excel file
             $inputFileName = public_path('assets/excel/animal_requirement.xlsx');
             $outputFileName = public_path('assets/excel/animal_requirement.xls');
 
@@ -665,7 +653,7 @@ public function animalRequirements(Request $request)
                 $spreadsheet = IOFactory::load($inputFileName);
                 $worksheet = $spreadsheet->getActiveSheet();
 
-                // Set values in the Excel sheet
+                // Input values into spreadsheet
                 $worksheet->setCellValue('F21', $input['group']);
                 $worksheet->setCellValue('F22', $input['feeding_system']);
                 $worksheet->setCellValue('F23', $input['weight']);
@@ -682,76 +670,59 @@ public function animalRequirements(Request $request)
                 $worksheet->setCellValue('I26', $input['thi']);
                 $worksheet->setCellValue('I27', $input['fat_4']);
 
-                // Save the updated Excel file
                 $writer = IOFactory::createWriter($spreadsheet, 'Xls');
                 $writer->setPreCalculateFormulas(true);
                 $writer->save($outputFileName);
 
-                // Reload the saved file
                 $spreadsheet = IOFactory::load($outputFileName);
+                $worksheet = $spreadsheet->getActiveSheet();
 
-                // Prepare data for view
-                $data = [
-                    'input' => $input,
-                    'objPHPExcel' => $spreadsheet
-                ];
-
-                // Render view for PDF/message
-                $message = view('pdf.animal_requirements', $data)->render();
-
-                // Update service record
-                $serviceRecord = DB::table('tbl_service_records')->first();
-                if ($serviceRecord) {
-                    DB::table('tbl_service_records')
-                        ->where('id', $serviceRecord->id)
-                        ->update(['animal_req' => $serviceRecord->animal_req + 1]);
-                } else {
-                    Log::error('Service record not found');
-                    return response()->json([
-                        'message' => 'Service record not found!',
-                        'status' => 201,
-                        'data' => null
-                    ], 201);
+                // Replace cell references below with actual cell locations from your Excel
+                $result = [];
+                $columns = range('A', 'BC');
+                $row = 1;
+                foreach ($columns as $col) {
+                    $cell = $col . $row;
+                    $result[$cell] = $worksheet->getCell($cell)->getCalculatedValue() ?? null;
                 }
 
-                // Insert transaction record
-                $ip = $request->ip();
-                $currentDateTime = Carbon::now('Asia/Kolkata');
-                $onlyDate = $currentDateTime->toDateString();
-
-                DB::table('tbl_service_records_txn')->insert([
-                    'farmer_id' => $farmer->id,
-                    'service' => 'animal_req',
-                    'ip' => $ip,
-                    'date' => $currentDateTime,
-                    'only_date' => $onlyDate,
-                    'created_at' => $currentDateTime,
-                    'updated_at' => $currentDateTime
-                ]);
-
-                return response()->json([
-                    'message' => 'Success!',
-                    'status' => 200,
-                    'data' => $message
-                ], 200);
-
+                Log::info('Calculated animal requirements', ['result' => $result]);
             } catch (\Exception $e) {
-                Log::error('Excel Error: ' . $e->getMessage());
-                return response()->json([
-                    'message' => 'Error processing Excel file: ' . $e-> getMessage(),
-// 0                    'status' => 201,
-                    'data' => null
-                ], 201);
+                Log::error('Error processing Excel file', ['error' => $e->getMessage()]);
+                return response()->json(['message' => 'Error processing Excel file: ' . $e->getMessage(), 'status' => 201], 500);
             }
+
+            $farmername = $user->name;
+            $htmlContent = view('pdf.animal_requirements', compact('input', 'result', 'farmername'))->render();
+            Log::info('Rendered HTML content');
+
+            $serviceRecord = ServiceRecord::first();
+            if ($serviceRecord) {
+                $serviceRecord->update(['animal_req' => $serviceRecord->animal_req + 1]);
+                Log::info('Service record updated');
+            }
+
+            $txn = ServiceRecordTxn::create([
+                'farmer_id' => $user->id,
+                'service' => 'animal_req',
+                'ip' => $request->ip(),
+                'date' => now(),
+                'only_date' => now()->format('Y-m-d'),
+            ]);
+            Log::info('Transaction logged');
+
+            return response()->json([
+                'message' => 'Success!',
+                'status' => 200,
+                'data' => array_merge($input, $result, ['html' => $htmlContent]),
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Unhandled error in animalRequirements', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error calculating animal requirements: ' . $e->getMessage(), 'status' => 201], 500);
         }
-
-        return response()->json([
-            'message' => 'Please Insert Data',
-            'status' => 201,
-            'data' => null
-        ], 201);
     }
-
+}
 
 // Animal Req end
 
