@@ -676,17 +676,18 @@ public function animalRequirements(Request $request)
         $sheet->setCellValue('I27', $input['fat_4']);
 
         // 6. Calculate formulas manually using PHPSpreadsheet
-        $calculation = Calculation::getInstance($spreadsheet);
-        $calculation->calculateWorksheetFormulas($sheet);
+        $formulaResult1 = $sheet->getCell('J30')->getCalculatedValue();
+        $formulaResult2 = $sheet->getCell('K31')->getCalculatedValue();
+        // You can add as many as needed, depending on your Excel
 
-        // 7. (Optional) Save updated file
-        // $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
-        // $writer->save(public_path('assets/excel/animal_requirement_updated.xlsx'));
-
-        // 8. Prepare view data
+        // Pass these results to the view if needed
         $viewData = [
             'input' => $input,
             'objPHPExcel' => $spreadsheet,
+            'results' => [
+                'energy' => $formulaResult1,
+                'protein' => $formulaResult2,
+            ],
         ];
         $html = view('pdf.animal_requirements', $viewData)->render();
 
