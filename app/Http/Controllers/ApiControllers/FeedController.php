@@ -708,7 +708,9 @@ public function animalRequirements(Request $request)
         return response()->json([
             'message' => 'Success!',
             'status' => 200,
-            'data' => $html,
+            'data' => [
+                'html' => $html
+            ],
         ]);
 
     } catch (\Exception $e) {
