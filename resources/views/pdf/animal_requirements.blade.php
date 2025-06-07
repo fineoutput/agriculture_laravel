@@ -151,13 +151,13 @@
                 <tbody>
                     <tr>
                         <td colspan="2">1. Dry Matter Intake (DMI):</td>
-                        <td class="text-info" colspan="1">{{ $result['dmi_kg_per_day'] ?? '-' }} kg/cow/day</td>
-                        <td class="text-info" colspan="1">{{ $result['dmi_percent_bw'] ?? '-' }} % BW/day</td>
+                        <td class="text-info" colspan="1">{{ $results['energy']['dmi_kg_per_day'] ?? '-' }} kg/cow/day</td>
+                        <td class="text-info" colspan="1">{{ $result['energy']['dmi_percent_bw'] ?? '-' }} % BW/day</td>
                     </tr>
                     <tr>
                         <td colspan="2">2. Drinking Water Intake:</td>
-                        <td class="text-info" colspan="1">{{ $result['drinking_water_liters'] ?? '-' }} L/cow/day</td>
-                        <td class="text-info" colspan="1">{{ $result['drinking_water_percent_bw'] ?? '-' }} % BW/day</td>
+                        <td class="text-info" colspan="1">{{ $result['energy']['drinking_water_liters'] ?? '-' }} L/cow/day</td>
+                        <td class="text-info" colspan="1">{{ $result['energy']['drinking_water_percent_bw'] ?? '-' }} % BW/day</td>
                     </tr>
                 </tbody>
                 <tbody class="labels">
@@ -178,15 +178,15 @@
                 <tbody>
                     <tr>
                         <td>Total Net Energy (NE) Intake:</td>
-                        <td class="info2">{{ $result['net_energy_intake'] ?? '-' }} Mcal/cow/day</td>
+                        <td class="info2">{{ $result['energy']['net_energy_intake'] ?? '-' }} Mcal/cow/day</td>
                         <td>Crude Protein (CP) Intake:</td>
-                        <td class="info2">{{ $result['crude_protein_intake'] ?? '-' }} kg/cow/day</td>
+                        <td class="info2">{{ $result['energy']['crude_protein_intake'] ?? '-' }} kg/cow/day</td>
                     </tr>
                     <tr>
                         <td>NE Diet:</td>
-                        <td class="info2">{{ $result['net_energy_diet'] ?? '-' }} Mcal/kg DM Diet</td>
+                        <td class="info2">{{ $result['energy']['net_energy_diet'] ?? '-' }} Mcal/kg DM Diet</td>
                         <td>CP Diet:</td>
-                        <td class="info2">{{ $result['crude_protein_diet'] ?? '-' }} % DM</td>
+                        <td class="info2">{{ $result['energy']['crude_protein_diet'] ?? '-' }} % DM</td>
                     </tr>
                     <tr>
                         <td>Total Metabolizable Energy (ME) Intake:</td>
