@@ -633,21 +633,21 @@ class FeedController extends Controller
 
             // 3. Validate Request
             $validator = Validator::make($request->all(), [
-                'group' => 'required|string',
-                'feeding_system' => 'required|string',
-                'weight' => 'required|numeric|min:100', // Weight in kg
-                'milk_production' => 'required|numeric|min:0|max:50', // Milk production in kg/day
-                'days_milk' => 'required|numeric|min:0|max:400', // Days in lactation
-                'milk_fat' => 'required|numeric|min:2|max:8', // Milk fat percentage
-                'milk_protein' => 'required|numeric|min:2|max:6', // Milk protein percentage
-                'milk_lactose' => 'required|numeric|min:3|max:6', // Milk lactose percentage
-                'weight_variation' => 'required|numeric|min:0|max:200', // Weight variation in kg
-                'bcs' => 'required|numeric|min:1|max:5', // Body condition score
-                'gestation_days' => 'required|numeric|min:0|max:283', // Gestation period
-                'temp' => 'required|numeric|min:-10|max:50', // Temperature in °C)
-                'humidity' => 'required|numeric|min:0|max:100', // Humidity percentage
-                'thi' => 'required|numeric|min:0|max:100', // Temperature-Humidity Index
-                'fat_4' => 'required|numeric|min:0|max:50', // 4% fat-corrected milk in kg/day
+                'group' => 'required',
+                'feeding_system' => 'required',
+                'weight' => 'required', // Weight in kg
+                'milk_production' => 'required', // Milk production in kg/day
+                'days_milk' => 'required', // Days in lactation
+                'milk_fat' => 'required', // Milk fat percentage
+                'milk_protein' => 'required', // Milk protein percentage
+                'milk_lactose' => 'required', // Milk lactose percentage
+                'weight_variation' => 'required', // Weight variation in kg
+                'bcs' => 'required', // Body condition score
+                'gestation_days' => 'required', // Gestation period
+                'temp' => 'required', // Temperature in °C)
+                'humidity' => 'required', // Humidity percentage
+                'thi' => 'required', // Temperature-Humidity Index
+                'fat_4' => 'required', // 4% fat-corrected milk in kg/day
             ]);
 
             if ($validator->fails()) {
