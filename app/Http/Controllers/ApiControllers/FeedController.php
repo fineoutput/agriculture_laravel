@@ -599,134 +599,213 @@ class FeedController extends Controller
 
 
 // Animal Req
+ public function animalRequirements(Request $request)
+    {
+        try {
+            set_time_limit(300);
+
+            // 1. Check if request contains data
+            if (!$request->isMethod('post')) {
+                return response()->json([
+                    'message' => 'Please Insert Data',
+                    'status' => 201,
+                ], 201);
+            }
+
+            // 2. Authenticate Farmer
+            $token = $request->header('Authentication');
+            if (!$token) {
+                Log::warning('No bearer token provided');
+                return response()->json([
+                    'message' => 'Token required!',
+                    'status' => 201,
+                ], 401);
+            }
+
+            $farmer = Farmer::where('auth', $token)->where('is_active', 1)->first();
+            if (!$farmer) {
+                Log::warning('Invalid or inactive farmer for token', ['token' => substr($token, 0, 10) . '...']);
+                return response()->json([
+                    'message' => 'Permission Denied!',
+                    'status' => 201,
+                ], 403);
+            }
+
+            // 3. Validate Request
+            $validator = Validator::make($request->all(), [
+                'group' => 'required|string',
+                'feeding_system' => 'required|string',
+                'weight' => 'required|numeric|min:100', // Weight in kg
+                'milk_production' => 'required|numeric|min:0|max:50', // Milk production in kg/day
+                'days_milk' => 'required|numeric|min:0|max:400', // Days in lactation
+                'milk_fat' => 'required|numeric|min:2|max:8', // Milk fat percentage
+                'milk_protein' => 'required|numeric|min:2|max:6', // Milk protein percentage
+                'milk_lactose' => 'required|numeric|min:3|max:6', // Milk lactose percentage
+                'weight_variation' => 'required|numeric|min:0|max:200', // Weight variation in kg
+                'bcs' => 'required|numeric|min:1|max:5', // Body condition score
+                'gestation_days' => 'required|numeric|min:0|max:283', // Gestation period
+                'temp' => 'required|numeric|min:-10|max:50', // Temperature in °C)
+                'humidity' => 'required|numeric|min:0|max:100', // Humidity percentage
+                'thi' => 'required|numeric|min:0|max:100', // Temperature-Humidity Index
+                'fat_4' => 'required|numeric|min:0|max:50', // 4% fat-corrected milk in kg/day
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                  'message' => $validator->errors()->all(),
+                    'status' => 201,
+                ], 422);
+            }
+
+            // 4. Extract Inputs
+            $input = $request->only([
+                'group', 'feeding_system' => $request->feeding,
+                'weight', 'milk_production',
+                'days_milk' => $request->milk,
+                'milk_fat' => $request->fat,
+                'milk_protein' => $request->milk,
+                'milk_lactose' => $request->milk,
+                'weight_variation' => $request->variation,
+                'bcs' => $request->bcs,
+                'gestation_days' => $request->days,
+                'temp' => $request->temperature,
+                'humidity' => $request->humidity,
+                'thi' => $request->thi,
+                'fat_4' => $request->fat_4,
+            ]);
 
 
-public function animalRequirements(Request $request)
-{
-    try {
-        set_time_limit(300);
+            // 5. Load Excel
+            $inputFileName = public_path('assets/excel/animal_requirement.xlsx');
+            if (!file_exists($inputFileName)) {
+                Log::error('Excel file not found', ['path' => $inputFileName]);
+                return response()->json([
+                    'message' => 'Excel template not found!',
+                    'status' => 500,
+                ], 500);
+            }
 
-        // 1. Authenticate Farmer
-        $token = $request->header('Authentication');
-        if (!$token) {
-            return response()->json(['message' => 'Token required!', 'status' => 201], 401);
-        }
+            $spreadsheet = IOFactory::load($inputFileName);
+            $sheet = $spreadsheet->getActiveSheet();
 
-        $farmer = Farmer::where('auth', $token)->where('is_active', 1)->first();
-        if (!$farmer) {
-            return response()->json(['message' => 'Permission Denied!', 'status' => 201], 403);
-        }
+            // 6. Fill input cells
+            Log::info('Setting cell values', [$input]);
+            $sheet->setCellValue('F21', $input['group']);
+            $sheet->setCellValue('F22', $input['feeding_system']);
+            $sheet->setCellValue('F23', $input['weight']);
+            $sheet->setCellValue('F24', $input['milk_production']);
+            $sheet->setCellValue('F25', $input['days_milk']);
+            $sheet->setCellValue('F26', $input['milk_fat']);
+            $sheet->setCellValue('F27', $input['milk_protein']);
+            $sheet->setCellValue('F28', $input['milk_lactose']);
+            $sheet->setCellValue('I21', $input['weight_variation']);
+            $sheet->setCellValue('I22', $input['bcs']);
+            $sheet->setCellValue('I23', $input['gestation_days']);
+            $sheet->setCellValue('I24', $input['temp']);
+            $sheet->setCellValue('I25', $input['humidity']);
+            $sheet->setCellValue('I26', $input['thi']);
+            $sheet->setCellValue('I27', $input['fat_4']);
 
-        // 2. Validate Request
-        $validator = Validator::make($request->all(), [
-            'group' => 'required|string',
-            'feeding_system' => 'required|string',
-            'weight' => 'required|numeric',
-            'milk_production' => 'required|numeric',
-            'days_milk' => 'required|numeric',
-            'milk_fat' => 'required|numeric',
-            'milk_protein' => 'required|numeric',
-            'milk_lactose' => 'required|numeric',
-            'weight_variation' => 'required|numeric',
-            'bcs' => 'required|numeric',
-            'gestation_days' => 'required|numeric',
-            'temp' => 'required|numeric',
-            'humidity' => 'required|numeric',
-            'thi' => 'required|numeric',
-            'fat_4' => 'required|numeric',
-        ]);
+            // 7. Log input cell values for debugging
+            $inputCells = ['F21', 'F22', 'F23', 'F24', 'F25', 'F26', 'F27', 'F28', 'I21', 'I22', 'I23', 'I24', 'I25', 'I26', 'I27'];
+            $cellValues = [];
+            foreach ($inputCells as $cell) {
+                $cellValues[$cell] = $sheet->getCell($cell)->getValue();
+            }
+            Log::info('Input cell values', $cellValues);
 
-        if ($validator->fails()) {
+            // 8. Save and recalculate spreadsheet
+            Log::info('Saving and recalculating spreadsheet');
+            $outputFileName = public_path('assets/excel/animal_requirement_output.xlsx');
+            $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+            $writer->setPreCalculateFormulas(true);
+            $spreadsheet->getCalculationEngine()->disableCalculationCache();
+            $spreadsheet->getCalculationEngine()->calculate();
+            $writer->save($outputFileName);
+
+            // 9. Reload saved file to get calculated values
+            $spreadsheet = IOFactory::load($outputFileName);
+            $sheet = $spreadsheet->getActiveSheet();
+
+            // 10. Get formula cells (verify J30 and K31 in animal_requirement.xlsx)
+            $energyCell = 'J30'; // Energy calculation cell
+            $proteinCell = 'K31'; // Protein calculation cell
+            $rawValue1 = $sheet->getCell($energyCell)->getValue();
+            $rawValue2 = $sheet->getCell($proteinCell)->getValue();
+            Log::info('Raw formula values', [
+                $energyCell => $rawValue1,
+                $proteinCell => $rawValue2
+            ]);
+
+            // 11. Get calculated values
+            $formulaResult1 = $sheet->getCell($energyCell)->getCalculatedValue();
+            $formulaResult2 = $sheet->getCell($proteinCell)->getCalculatedValue();
+            Log::info('Calculated values', [
+                $energyCell => $formulaResult1,
+                $proteinCell => $formulaResult2
+            ]);
+
+            // 12. Handle null results
+            $results = [
+                'energy' => $formulaResult1 ?? 0,
+                'protein' => $formulaResult2 ?? 0,
+            ];
+            if ($formulaResult1 === null || $formulaResult2 === null) {
+                Log::warning('Formula results are null', [
+                    $energyCell => $rawValue1,
+                    $proteinCell => $rawValue2,
+                    'input' => $input
+                ]);
+            }
+
+            // 13. Prepare data for view
+            $viewData = [
+                'input' => $input,
+                'objPHPExcel' => $spreadsheet,
+                'results' => $results,
+                'farmername' => $farmer->name,
+            ];
+            $html = view('pdf.animal_requirements', $viewData)->render();
+
+            // 14. Update service record
+            $serviceRecord = ServiceRecord::first();
+            if ($serviceRecord) {
+                $serviceRecord->increment('animal_req');
+                Log::info('Service record updated', ['animal_req' => $serviceRecord->animal_req]);
+            } else {
+                Log::warning('No service record found');
+            }
+
+            // 15. Log service usage
+            $ip = $request->ip();
+            $now = now();
+            ServiceRecordTxn::create([
+                'farmer_id' => $farmer->id,
+                'service' => 'animal_req',
+                'ip' => $ip,
+                'date' => $now,
+                'only_date' => $now->toDateString(),
+            ]);
+            Log::info('Service usage logged', ['farmer_id' => $farmer->id]);
+
+            // 16. Return response
             return response()->json([
-                'message' => $validator->errors()->first(),
-                'status' => 201
-            ], 422);
+                'message' => 'Success!',
+                'status' => 200,
+                'data' => $html,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('animalRequirements error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'input' => $input ?? null,
+            ]);
+            return response()->json([
+                'message' => 'Something went wrong: ' . $e->getMessage(),
+                'status' => 500,
+            ], 500);
         }
-
-        // 3. Extract Inputs
-        $input = $request->only([
-            'group', 'feeding_system', 'weight', 'milk_production',
-            'days_milk', 'milk_fat', 'milk_protein', 'milk_lactose',
-            'weight_variation', 'bcs', 'gestation_days', 'temp',
-            'humidity', 'thi', 'fat_4'
-        ]);
-
-        Log::info('AnimalRequirements Input: ', $input);
-
-        // 4. Load Excel
-        $inputFileName = public_path('assets/excel/animal_requirement.xlsx');
-        $spreadsheet = IOFactory::load($inputFileName);
-        $sheet = $spreadsheet->getActiveSheet();
-
-        // 5. Fill input cells
-        $sheet->setCellValue('F21', $input['group']);
-        $sheet->setCellValue('F22', $input['feeding_system']);
-        $sheet->setCellValue('F23', $input['weight']);
-        $sheet->setCellValue('F24', $input['milk_production']);
-        $sheet->setCellValue('F25', $input['days_milk']);
-        $sheet->setCellValue('F26', $input['milk_fat']);
-        $sheet->setCellValue('F27', $input['milk_protein']);
-        $sheet->setCellValue('F28', $input['milk_lactose']);
-        $sheet->setCellValue('I21', $input['weight_variation']);
-        $sheet->setCellValue('I22', $input['bcs']);
-        $sheet->setCellValue('I23', $input['gestation_days']);
-        $sheet->setCellValue('I24', $input['temp']);
-        $sheet->setCellValue('I25', $input['humidity']);
-        $sheet->setCellValue('I26', $input['thi']);
-        $sheet->setCellValue('I27', $input['fat_4']);
-
-        // 6. Calculate formulas manually using PHPSpreadsheet
-        $formulaResult1 = $sheet->getCell('J30')->getCalculatedValue();
-        $formulaResult2 = $sheet->getCell('K31')->getCalculatedValue();
-        // You can add as many as needed, depending on your Excel
-
-        // Pass these results to the view if needed
-        $viewData = [
-            'input' => $input,
-            'objPHPExcel' => $spreadsheet,
-            'results' => [
-                'energy' => $formulaResult1,
-                'protein' => $formulaResult2,
-            ],
-        ];
-        $html = view('pdf.animal_requirements', $viewData)->render();
-
-        // 9. Update service record
-        $record = ServiceRecord::first();
-        if ($record) {
-            $record->increment('animal_req');
-        }
-
-        // 10. Log service usage
-        $ip = $request->ip();
-        $now = now();
-        ServiceRecordTxn::create([
-            'farmer_id' => $farmer->id,
-            'service' => 'animal_req',
-            'ip' => $ip,
-            'date' => $now,
-            'only_date' => $now->toDateString(),
-        ]);
-
-        // 11. Return response
-        return response()->json([
-            'message' => 'Success!',
-            'status' => 200,
-            'data' => [
-                'html' => $html
-            ],
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('animalRequirements error: ' . $e->getMessage(), [
-            'trace' => $e->getTraceAsString()
-        ]);
-        return response()->json([
-            'message' => 'Something went wrong: ' . $e->getMessage(),
-            'status' => 500,
-        ]);
     }
-}
 
 
 // Animal Req end
