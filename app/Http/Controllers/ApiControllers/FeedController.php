@@ -722,7 +722,7 @@ class FeedController extends Controller
             return response()->json(['message' => 'Error calculating animal requirements: ' . $e->getMessage(), 'status' => 201], 500);
         }
     }
-}
+
 
 // Animal Req end
 
