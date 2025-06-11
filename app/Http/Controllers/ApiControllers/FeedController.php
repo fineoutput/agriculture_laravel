@@ -598,6 +598,12 @@ class FeedController extends Controller
 
 
 
+
+
+
+
+
+
 // test feed cotroller
 public function feed_calculator(Request $request)
 {
@@ -847,8 +853,9 @@ public function feed_calculator(Request $request)
         return response()->json([
             'message' => 'Success!',
             'status' => 200,
-            'data' => $send,
-             'html' => $htmlContent,
+            'data' => [$send,
+        'html' => $htmlContent],
+             
         ], 200);
  
     } catch (\Exception $e) {
