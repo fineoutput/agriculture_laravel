@@ -598,216 +598,19 @@ class FeedController extends Controller
 
 
 
-// Animal Req
-  public function animalRequirements(Request $request)
-    {
-        try {
-            set_time_limit(300);
- 
-            if (!$request->isMethod('post')) {
-                return response()->json([
-                    'message' => 'Please Insert Data',
-                    'status' => 201,
-                ], 201);
-            }
-
-            $token = $request->header('Authentication');
-            if (!$token) {
-                Log::warning('No bearer token provided');
-                return response()->json([
-                    'message' => 'Token required!',
-                    'status' => 201,
-                ], 401);
-            }
-
-            $farmer = Farmer::where('auth', $token)->where('is_active', 1)->first();
-            if (!$farmer) {
-                Log::warning('Invalid or inactive farmer for token', ['token' => substr($token, 0, 10) . '...']);
-                return response()->json([
-                    'message' => 'Permission Denied!',
-                    'status' => 201,
-                ], 403);
-            }
-
-           $validator = Validator::make($request->all(), [
-                'group' => 'required',
-                'feeding_system' => 'required',
-                'weight' => 'required', 
-                'milk_production' => 'required', 
-                'days_milk' => 'required', 
-                'milk_fat' => 'required', 
-                'milk_protein' => 'required', 
-                'milk_lactose' => 'required', 
-                'weight_variation' => 'required', 
-                'bcs' => 'required', 
-                'gestation_days' => 'required', 
-                'temp' => 'required', 
-                'humidity' => 'required',
-                'thi' => 'required', 
-                'fat_4' => 'required',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'message' => $validator->errors()->all(),
-                    'status' => 201,
-                ], 422);
-            }
-
-            $input = $request->only([
-                'group',
-                'feeding_system',
-                'weight',
-                'milk_production',
-                'days_milk',
-                'milk_fat',
-                'milk_protein',
-                'milk_lactose',
-                'weight_variation',
-                'bcs',
-                'gestation_days',
-                'temp',
-                'humidity',
-                'thi',
-                'fat_4',
-            ]);
-
-            Log::info('AnimalRequirements Input: ', $input);
-
-            $inputFileName = public_path('assets/excel/animal_requirement.xlsx');
-            if (!file_exists($inputFileName)) {
-                Log::error('Excel file not found', ['path' => $inputFileName]);
-                return response()->json([
-                    'message' => 'Excel template not found!',
-                    'status' => 500,
-                ], 500);
-            }
-
-            $spreadsheet = IOFactory::load($inputFileName);
-            $sheet = $spreadsheet->getActiveSheet();
-
-            Log::info('Setting cell values', [$input]);
-            $sheet->setCellValue('F21', (string)$input['group']);
-            $sheet->setCellValue('F22', (string)$input['feeding_system']);
-            $sheet->setCellValue('F23', (float)$input['weight']);
-            $sheet->setCellValue('F24', (float)$input['milk_production']);
-            $sheet->setCellValue('F25', (float)$input['days_milk']);
-            $sheet->setCellValue('F26', (float)$input['milk_fat']);
-            $sheet->setCellValue('F27', (float)$input['milk_protein']);
-            $sheet->setCellValue('F28', (float)$input['milk_lactose']);
-            $sheet->setCellValue('I21', (float)$input['weight_variation']);
-            $sheet->setCellValue('I22', (float)$input['bcs']);
-            $sheet->setCellValue('I23', (float)$input['gestation_days']);
-            $sheet->setCellValue('I24', (float)$input['temp']);
-            $sheet->setCellValue('I25', (float)$input['humidity']);
-            $sheet->setCellValue('I26', (float)$input['thi']);
-            $sheet->setCellValue('I27', (float)$input['fat_4']);
-
-            $inputCells = ['F21', 'F22', 'F23', 'F24', 'F25', 'F26', 'F27', 'F28', 'I21', 'I22', 'I23', 'I24', 'I25', 'I26', 'I27'];
-            $cellValues = [];
-            foreach ($inputCells as $cell) {
-                $value = $sheet->getCell($cell)->getValue();
-                $type = gettype($value);
-                $cellValues[$cell] = ['value' => $value, 'type' => $type];
-            }
-            Log::info('Input cell values and types', $cellValues);
-
-            Log::info('Saving and recalculating spreadsheet');
-            $outputFileName = public_path('assets/excel/animal_requirement_output.xlsx');
-            $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
-            $writer->setPreCalculateFormulas(true);
-            $spreadsheet->getCalculationEngine()->disableCalculationCache();
-            $spreadsheet->getCalculationEngine()->calculate();
-            $writer->save($outputFileName);
-
-            $spreadsheet = IOFactory::load($outputFileName);
-            $sheet = $spreadsheet->getActiveSheet();
-            $energyCell = 'J30'; 
-            $proteinCell = 'K31'; 
-            $rawValue1 = $sheet->getCell($energyCell)->getValue();
-            $rawValue2 = $sheet->getCell($proteinCell)->getValue();
-            $rawType1 = gettype($rawValue1);
-            $rawType2 = gettype($rawValue2);
-            Log::info('Raw cell values and types', [
-                $energyCell => ['value' => $rawValue1, 'type' => $rawType1],
-                $proteinCell => ['value' => $rawValue2, 'type' => $rawType2]
-            ]);
-
-            $formulaResult1 = $sheet->getCell($energyCell)->getCalculatedValue();
-            $formulaResult2 = $sheet->getCell($proteinCell)->getCalculatedValue();
-            $calcType1 = gettype($formulaResult1);
-            $calcType2 = gettype($formulaResult2);
-            Log::info('Calculated values and types', [
-                $energyCell => ['value' => $formulaResult1, 'type' => $calcType1],
-                $proteinCell => ['value' => $formulaResult2, 'type' => $calcType2]
-            ]);
-
-            $results = [
-                'energy' => $formulaResult1 ?? 0,
-                'protein' => $formulaResult2 ?? 0,
-            ];
-            if ($formulaResult1 === null || $formulaResult2 === null) {
-                Log::warning('Formula results are null', [
-                    $energyCell => ['raw_value' => $rawValue1, 'raw_type' => $rawType1, 'calculated_value' => $formulaResult1],
-                    $proteinCell => ['raw_value' => $rawValue2, 'raw_type' => $rawType2, 'calculated_value' => $formulaResult2],
-                    'input' => $input
-                ]);
-            }
-
-            $viewData = [
-                'input' => $input,
-                'objPHPExcel' => $spreadsheet,
-                'results' => $results,
-                'farmername' => $farmer->name,
-            ];
-            $html = view('pdf.animal_requirements', $viewData)->render();
-
-            $serviceRecord = ServiceRecord::first();
-            if ($serviceRecord) {
-                $serviceRecord->increment('animal_req');
-                Log::info('Service record updated', ['animal_req' => $serviceRecord->animal_req]);
-            } else {
-                Log::warning('No service record found');
-            }
-
-            $ip = $request->ip();
-            $now = now();
-            ServiceRecordTxn::create([
-                'farmer_id' => $farmer->id,
-                'service' => 'animal_req',
-                'ip' => $ip,
-                'date' => $now,
-                'only_date' => $now->toDateString(),
-            ]);
-            Log::info('Service usage logged', ['farmer_id' => $farmer->id]);
-
-            return response()->json([
-                'message' => 'Success!',
-                'status' => 200,
-                'data' => $html,
-                'results' => $results,
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('animalRequirements error: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-                'input' => $input ?? null,
-            ]);
-            return response()->json([
-                'message' => 'Something went wrong: ' . $e->getMessage(),
-                'status' => 500,
-            ], 500);
-        }
-    }
-
-// Animal Req end
-
-//  public function animalRequirements(Request $request)
+// // Animal Req
+//   public function animalRequirements(Request $request)
 //     {
 //         try {
 //             set_time_limit(300);
+ 
+//             if (!$request->isMethod('post')) {
+//                 return response()->json([
+//                     'message' => 'Please Insert Data',
+//                     'status' => 201,
+//                 ], 201);
+//             }
 
-//             // Authenticate user using token
 //             $token = $request->header('Authentication');
 //             if (!$token) {
 //                 Log::warning('No bearer token provided');
@@ -817,223 +620,656 @@ class FeedController extends Controller
 //                 ], 401);
 //             }
 
-//             $user = Farmer::where('auth', $token)
-//                 ->where('is_active', 1)
-//                 ->first();
-
-//             if (!$user) {
-//                 Log::warning('Invalid or inactive user for token', ['token' => $token]);
+//             $farmer = Farmer::where('auth', $token)->where('is_active', 1)->first();
+//             if (!$farmer) {
+//                 Log::warning('Invalid or inactive farmer for token', ['token' => substr($token, 0, 10) . '...']);
 //                 return response()->json([
-//                     'message' => 'Invalid token or inactive user!',
+//                     'message' => 'Permission Denied!',
 //                     'status' => 201,
 //                 ], 403);
 //             }
 
-//             // Validate input
-//             $validator = Validator::make($request->all(), [
-//                 'group' => 'required|string',
-//                 'feeding_system' => 'required|string',
-//                 'weight' => 'required|numeric',
-//                 'milk_production' => 'required|numeric',
-//                 'days_milk' => 'required|numeric',
-//                 'milk_fat' => 'required|numeric',
-//                 'milk_protein' => 'required|numeric',
-//                 'milk_lactose' => 'required|numeric',
-//                 'weight_variation' => 'required|numeric',
-//                 'bcs' => 'required|numeric',
-//                 'gestation_days' => 'required|numeric',
-//                 'temp' => 'required|numeric',
-//                 'humidity' => 'required|numeric',
-//                 'thi' => 'required|numeric',
-//                 'fat_4' => 'required|numeric',
+//            $validator = Validator::make($request->all(), [
+//                 'group' => 'required',
+//                 'feeding_system' => 'required',
+//                 'weight' => 'required', 
+//                 'milk_production' => 'required', 
+//                 'days_milk' => 'required', 
+//                 'milk_fat' => 'required', 
+//                 'milk_protein' => 'required', 
+//                 'milk_lactose' => 'required', 
+//                 'weight_variation' => 'required', 
+//                 'bcs' => 'required', 
+//                 'gestation_days' => 'required', 
+//                 'temp' => 'required', 
+//                 'humidity' => 'required',
+//                 'thi' => 'required', 
+//                 'fat_4' => 'required',
 //             ]);
 
 //             if ($validator->fails()) {
 //                 return response()->json([
-//                     'message' => $validator->errors()->first(),
+//                     'message' => $validator->errors()->all(),
 //                     'status' => 201,
 //                 ], 422);
 //             }
 
-//             // Extract inputs
-//             $input = [
-//                 'group' => $request->input('group'),
-//                 'feeding_system' => $request->input('feeding_system'),
-//                 'weight' => $request->input('weight'),
-//                 'milk_production' => $request->input('milk_production'),
-//                 'days_milk' => $request->input('days_milk'),
-//                 'milk_fat' => $request->input('milk_fat'),
-//                 'milk_protein' => $request->input('milk_protein'),
-//                 'milk_lactose' => $request->input('milk_lactose'),
-//                 'weight_variation' => $request->input('weight_variation'),
-//                 'bcs' => $request->input('bcs'),
-//                 'gestation_days' => $request->input('gestation_days'),
-//                 'temp' => $request->input('temp'),
-//                 'humidity' => $request->input('humidity'),
-//                 'thi' => $request->input('thi'),
-//                 'fat_4' => $request->input('fat_4'),
-//             ];
+//             $input = $request->only([
+//                 'group',
+//                 'feeding_system',
+//                 'weight',
+//                 'milk_production',
+//                 'days_milk',
+//                 'milk_fat',
+//                 'milk_protein',
+//                 'milk_lactose',
+//                 'weight_variation',
+//                 'bcs',
+//                 'gestation_days',
+//                 'temp',
+//                 'humidity',
+//                 'thi',
+//                 'fat_4',
+//             ]);
 
-//             Log::info('AnimalRequirements inputs', ['input' => $input]);
+//             Log::info('AnimalRequirements Input: ', $input);
 
-//             // Process Excel file
 //             $inputFileName = public_path('assets/excel/animal_requirement.xlsx');
-//             $outputFileName = public_path('assets/excel/animal_requirement.xlsx');
-
-//             try {
-//                 // Load the Excel file
-//                 $spreadsheet = IOFactory::load($inputFileName);
-//                 $worksheet = $spreadsheet->getActiveSheet();
-
-//                 // Populate input cells
-//                 $worksheet->setCellValue('F21', $input['group']);
-//                 $worksheet->setCellValue('F22', $input['feeding_system']);
-//                 $worksheet->setCellValue('F23', $input['weight']);
-//                 $worksheet->setCellValue('F24', $input['milk_production']);
-//                 $worksheet->setCellValue('F25', $input['days_milk']);
-//                 $worksheet->setCellValue('F26', $input['milk_fat']);
-//                 $worksheet->setCellValue('F27', $input['milk_protein']);
-//                 $worksheet->setCellValue('F28', $input['milk_lactose']);
-//                 $worksheet->setCellValue('I21', $input['weight_variation']);
-//                 $worksheet->setCellValue('I22', $input['bcs']);
-//                 $worksheet->setCellValue('I23', $input['gestation_days']);
-//                 $worksheet->setCellValue('I24', $input['temp']);
-//                 $worksheet->setCellValue('I25', $input['humidity']);
-//                 $worksheet->setCellValue('I26', $input['thi']);
-//                 $worksheet->setCellValue('I27', $input['fat_4']);
-
-//                 // Save the file with calculations
-//                 $writer = IOFactory::createWriter($spreadsheet, 'Xls');
-//                 $writer->setPreCalculateFormulas(true);
-//                 $writer->save($outputFileName);
-
-//                 // Reload the saved file to get calculated values
-//                 $spreadsheet = IOFactory::load($outputFileName);
-//                 $worksheet = $spreadsheet->getActiveSheet();
-
-//                 // Map calculated values to result array
-//                 //  Replace placeholder cell references (e.g., 'A1', 'B1') with actual cell references from your Excel file
-//                 $result = [
-//                     'dmi_kg_per_day' => $worksheet->getCell('A1')->getCalculatedValue() ?? null,
-//                     'dmi_percent_bw' => $worksheet->getCell('B1')->getCalculatedValue() ?? null,
-//                     'drinking_water_liters' => $worksheet->getCell('C1')->getCalculatedValue() ?? null,
-//                     'drinking_water_percent_bw' => $worksheet->getCell('D1')->getCalculatedValue() ?? null,
-//                     'net_energy_intake' => $worksheet->getCell('E1')->getCalculatedValue() ?? null,
-//                     'net_energy_diet' => $worksheet->getCell('F1')->getCalculatedValue() ?? null,
-//                     'metabolizable_energy_intake' => $worksheet->getCell('G1')->getCalculatedValue() ?? null,
-//                     'metabolizable_energy_diet' => $worksheet->getCell('H1')->getCalculatedValue() ?? null,
-//                     'digestible_energy_intake' => $worksheet->getCell('I1')->getCalculatedValue() ?? null,
-//                     'digestible_energy_diet' => $worksheet->getCell('J1')->getCalculatedValue() ?? null,
-//                     'tdn_intake' => $worksheet->getCell('K1')->getCalculatedValue() ?? null,
-//                     'tdn_diet' => $worksheet->getCell('L1')->getCalculatedValue() ?? null,
-//                     'crude_protein_intake' => $worksheet->getCell('M1')->getCalculatedValue() ?? null,
-//                     'crude_protein_diet' => $worksheet->getCell('N1')->getCalculatedValue() ?? null,
-//                     'rdp_intake' => $worksheet->getCell('O1')->getCalculatedValue() ?? null,
-//                     'rdp_diet' => $worksheet->getCell('P1')->getCalculatedValue() ?? null,
-//                     'rup_intake' => $worksheet->getCell('Q1')->getCalculatedValue() ?? null,
-//                     'rup_diet' => $worksheet->getCell('R1')->getCalculatedValue() ?? null,
-//                     'mp_intake' => $worksheet->getCell('S1')->getCalculatedValue() ?? null,
-//                     'mp_diet' => $worksheet->getCell('T1')->getCalculatedValue() ?? null,
-//                     'mp_microbial_rumen' => $worksheet->getCell('U1')->getCalculatedValue() ?? null,
-//                     'digestible_lysine_diet' => $worksheet->getCell('V1')->getCalculatedValue() ?? null,
-//                     'digestible_methionine_diet' => $worksheet->getCell('W1')->getCalculatedValue() ?? null,
-//                     'calcium_intake' => $worksheet->getCell('X1')->getCalculatedValue() ?? null,
-//                     'calcium_diet' => $worksheet->getCell('Y1')->getCalculatedValue() ?? null,
-//                     'phosphorus_intake' => $worksheet->getCell('Z1')->getCalculatedValue() ?? null,
-//                     'phosphorus_diet' => $worksheet->getCell('AA1')->getCalculatedValue() ?? null,
-//                     'sodium_intake' => $worksheet->getCell('AB1')->getCalculatedValue() ?? null,
-//                     'sodium_diet' => $worksheet->getCell('AC1')->getCalculatedValue() ?? null,
-//                     'potassium_intake' => $worksheet->getCell('AD1')->getCalculatedValue() ?? null,
-//                     'potassium_diet' => $worksheet->getCell('AE1')->getCalculatedValue() ?? null,
-//                     'sulfur_intake' => $worksheet->getCell('AF1')->getCalculatedValue() ?? null,
-//                     'sulfur_diet' => $worksheet->getCell('AG1')->getCalculatedValue() ?? null,
-//                     'magnesium_intake' => $worksheet->getCell('AH1')->getCalculatedValue() ?? null,
-//                     'magnesium_diet' => $worksheet->getCell('AI1')->getCalculatedValue() ?? null,
-//                     'zinc_intake' => $worksheet->getCell('AJ1')->getCalculatedValue() ?? null,
-//                     'zinc_diet' => $worksheet->getCell('AK1')->getCalculatedValue() ?? null,
-//                     'copper_intake' => $worksheet->getCell('AL1')->getCalculatedValue() ?? null,
-//                     'copper_diet' => $worksheet->getCell('AM1')->getCalculatedValue() ?? null,
-//                     'iron_intake' => $worksheet->getCell('AN1')->getCalculatedValue() ?? null,
-//                     'iron_diet' => $worksheet->getCell('AO1')->getCalculatedValue() ?? null,
-//                     'manganese_intake' => $worksheet->getCell('AP1')->getCalculatedValue() ?? null,
-//                     'manganese_diet' => $worksheet->getCell('AQ1')->getCalculatedValue() ?? null,
-//                     'cobalt_intake' => $worksheet->getCell('AR1')->getCalculatedValue() ?? null,
-//                     'cobalt_diet' => $worksheet->getCell('AS1')->getCalculatedValue() ?? null,
-//                     'iodine_intake' => $worksheet->getCell('AT1')->getCalculatedValue() ?? null,
-//                     'iodine_diet' => $worksheet->getCell('AU1')->getCalculatedValue() ?? null,
-//                     'selenium_intake' => $worksheet->getCell('AV1')->getCalculatedValue() ?? null,
-//                     'selenium_diet' => $worksheet->getCell('AW1')->getCalculatedValue() ?? null,
-//                     'chromium_intake' => $worksheet->getCell('AX1')->getCalculatedValue() ?? null,
-//                     'chromium_diet' => $worksheet->getCell('AY1')->getCalculatedValue() ?? null,
-//                     'vitamin_a_diet' => $worksheet->getCell('AZ1')->getCalculatedValue() ?? null,
-//                     'vitamin_d_diet' => $worksheet->getCell('BA1')->getCalculatedValue() ?? null,
-//                     'vitamin_e_diet' => $worksheet->getCell('BB1')->getCalculatedValue() ?? null,
-//                     'methane_emission' => $worksheet->getCell('BC1')->getCalculatedValue() ?? null,
-//                 ];
-
-//                 Log::info('Calculated animal requirements', ['result' => $result]);
-//             } catch (\Exception $e) {
-//                 Log::error('Error processing Excel file', [
-//                     'error' => $e->getMessage(),
-//                     'trace' => $e->getTraceAsString(),
-//                 ]);
+//             if (!file_exists($inputFileName)) {
+//                 Log::error('Excel file not found', ['path' => $inputFileName]);
 //                 return response()->json([
-//                     'message' => 'Error processing Excel file: ' . $e->getMessage(),
-//                     'status' => 201,
+//                     'message' => 'Excel template not found!',
+//                     'status' => 500,
 //                 ], 500);
 //             }
 
-//             // Render the HTML view
-//             $farmername = $user->name;
-//             $htmlContent = view('pdf.animal_requirements', compact('input', 'result', 'farmername'))->render();
+//             $spreadsheet = IOFactory::load($inputFileName);
+//             $sheet = $spreadsheet->getActiveSheet();
 
-//             Log::info('Rendered HTML content', ['html' => $htmlContent]);
+//             Log::info('Setting cell values', [$input]);
+//             $sheet->setCellValue('F21', (string)$input['group']);
+//             $sheet->setCellValue('F22', (string)$input['feeding_system']);
+//             $sheet->setCellValue('F23', (float)$input['weight']);
+//             $sheet->setCellValue('F24', (float)$input['milk_production']);
+//             $sheet->setCellValue('F25', (float)$input['days_milk']);
+//             $sheet->setCellValue('F26', (float)$input['milk_fat']);
+//             $sheet->setCellValue('F27', (float)$input['milk_protein']);
+//             $sheet->setCellValue('F28', (float)$input['milk_lactose']);
+//             $sheet->setCellValue('I21', (float)$input['weight_variation']);
+//             $sheet->setCellValue('I22', (float)$input['bcs']);
+//             $sheet->setCellValue('I23', (float)$input['gestation_days']);
+//             $sheet->setCellValue('I24', (float)$input['temp']);
+//             $sheet->setCellValue('I25', (float)$input['humidity']);
+//             $sheet->setCellValue('I26', (float)$input['thi']);
+//             $sheet->setCellValue('I27', (float)$input['fat_4']);
 
-//             // Update service record
-//             $serviceRecord = ServiceRecord::first();
-//             if ($serviceRecord) {
-//                 $serviceRecord->update(['animal_req' => $serviceRecord->animal_req + 1]);
-//                 Log::info('Service record updated for AnimalRequirements', [
-//                     'service_record_id' => $serviceRecord->id,
-//                     'animal_req' => $serviceRecord->animal_req,
+//             $inputCells = ['F21', 'F22', 'F23', 'F24', 'F25', 'F26', 'F27', 'F28', 'I21', 'I22', 'I23', 'I24', 'I25', 'I26', 'I27'];
+//             $cellValues = [];
+//             foreach ($inputCells as $cell) {
+//                 $value = $sheet->getCell($cell)->getValue();
+//                 $type = gettype($value);
+//                 $cellValues[$cell] = ['value' => $value, 'type' => $type];
+//             }
+//             Log::info('Input cell values and types', $cellValues);
+
+//             Log::info('Saving and recalculating spreadsheet');
+//             $outputFileName = public_path('assets/excel/animal_requirement_output.xlsx');
+//             $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+//             $writer->setPreCalculateFormulas(true);
+//             $spreadsheet->getCalculationEngine()->disableCalculationCache();
+//             $spreadsheet->getCalculationEngine()->calculate();
+//             $writer->save($outputFileName);
+
+//             $spreadsheet = IOFactory::load($outputFileName);
+//             $sheet = $spreadsheet->getActiveSheet();
+//             $energyCell = 'J30'; 
+//             $proteinCell = 'K31'; 
+//             $rawValue1 = $sheet->getCell($energyCell)->getValue();
+//             $rawValue2 = $sheet->getCell($proteinCell)->getValue();
+//             $rawType1 = gettype($rawValue1);
+//             $rawType2 = gettype($rawValue2);
+//             Log::info('Raw cell values and types', [
+//                 $energyCell => ['value' => $rawValue1, 'type' => $rawType1],
+//                 $proteinCell => ['value' => $rawValue2, 'type' => $rawType2]
+//             ]);
+
+//             $formulaResult1 = $sheet->getCell($energyCell)->getCalculatedValue();
+//             $formulaResult2 = $sheet->getCell($proteinCell)->getCalculatedValue();
+//             $calcType1 = gettype($formulaResult1);
+//             $calcType2 = gettype($formulaResult2);
+//             Log::info('Calculated values and types', [
+//                 $energyCell => ['value' => $formulaResult1, 'type' => $calcType1],
+//                 $proteinCell => ['value' => $formulaResult2, 'type' => $calcType2]
+//             ]);
+
+//             $results = [
+//                 'energy' => $formulaResult1 ?? 0,
+//                 'protein' => $formulaResult2 ?? 0,
+//             ];
+//             if ($formulaResult1 === null || $formulaResult2 === null) {
+//                 Log::warning('Formula results are null', [
+//                     $energyCell => ['raw_value' => $rawValue1, 'raw_type' => $rawType1, 'calculated_value' => $formulaResult1],
+//                     $proteinCell => ['raw_value' => $rawValue2, 'raw_type' => $rawType2, 'calculated_value' => $formulaResult2],
+//                     'input' => $input
 //                 ]);
-//             } else {
-//                 Log::warning('No service record found in tbl_service_records for AnimalRequirements');
 //             }
 
-//             // Log transaction
-//             $txnData = [
-//                 'farmer_id' => $user->id,
-//                 'service' => 'animal_req',
-//                 'ip' => $request->ip(),
-//                 'date' => now(),
-//                 'only_date' => now()->format('Y-m-d'),
+//             $viewData = [
+//                 'input' => $input,
+//                 'objPHPExcel' => $spreadsheet,
+//                 'results' => $results,
+//                 'farmername' => $farmer->name,
 //             ];
-//             $txn = ServiceRecordTxn::create($txnData);
-//             Log::info('Service record transaction logged for AnimalRequirements', [
-//                 'txn_id' => $txn->id,
-//                 'farmer_id' => $user->id,
+//             $html = view('pdf.animal_requirements', $viewData)->render();
+
+//             $serviceRecord = ServiceRecord::first();
+//             if ($serviceRecord) {
+//                 $serviceRecord->increment('animal_req');
+//                 Log::info('Service record updated', ['animal_req' => $serviceRecord->animal_req]);
+//             } else {
+//                 Log::warning('No service record found');
+//             }
+
+//             $ip = $request->ip();
+//             $now = now();
+//             ServiceRecordTxn::create([
+//                 'farmer_id' => $farmer->id,
+//                 'service' => 'animal_req',
+//                 'ip' => $ip,
+//                 'date' => $now,
+//                 'only_date' => $now->toDateString(),
 //             ]);
+//             Log::info('Service usage logged', ['farmer_id' => $farmer->id]);
 
 //             return response()->json([
 //                 'message' => 'Success!',
 //                 'status' => 200,
-//                 'data' => array_merge($input, $result, ['html' => $htmlContent]),
-//             ], 200);
-
-//         } catch (\Exception $e) {
-//             Log::error('Error in animalRequirements', [
-//                 'farmer_id' => $user->id ?? null,
-//                 'error' => $e->getMessage(),
-//                 'trace' => $e->getTraceAsString(),
+//                 'data' => $html,
+//                 'results' => $results,
 //             ]);
 
+//         } catch (\Exception $e) {
+//             Log::error('animalRequirements error: ' . $e->getMessage(), [
+//                 'trace' => $e->getTraceAsString(),
+//                 'input' => $input ?? null,
+//             ]);
 //             return response()->json([
-//                 'message' => 'Error calculating animal requirements: ' . $e->getMessage(),
-//                 'status' => 201,
+//                 'message' => 'Something went wrong: ' . $e->getMessage(),
+//                 'status' => 500,
 //             ], 500);
 //         }
 //     }
+
+
+
+        public function testAnimalRequirements(Request $request)
+{
+    try {
+        // Define test inputs (updated weight to match document)
+        $testInputs = [
+            'group' => '4',
+            'feeding_system' => '1',
+            'weight' => 1000, // Changed to 1000 to match document
+            'milk_production' => 30.0,
+            'days_milk' => 10,
+            'milk_fat' => 3.80,
+            'milk_protein' => 3.00,
+            'milk_lactose' => 4.60,
+            'weight_variation' => 0.00,
+            'bcs' => 2.50,
+            'gestation_days' => 5,
+            'temp' => 22,
+            'humidity' => 23,
+            'thi' => 69.1,
+            'fat_4' => 29.1,
+        ];
+ 
+        // Verify Excel file
+        $excelPath = public_path('assets/excel/animal_requirement.xlsx');
+        if (!file_exists($excelPath)) {
+            Log::error('Excel file not found:', ['path' => $excelPath]);
+            return response()->json(['message' => 'Excel template not found'], 500);
+        }
+ 
+        // Load Excel file
+        $spreadsheet = IOFactory::load($excelPath);
+        $sheet = $spreadsheet->getActiveSheet();
+ 
+        // Log K4 initial state
+        Log::info('K4 Initial:', [
+            'raw' => $sheet->getCell('K4')->getValue(),
+            'calculated' => $sheet->getCell('K4')->getCalculatedValue(),
+        ]);
+ 
+        // Write inputs with type casting
+        $sheet->setCellValue('F21', (int)$testInputs['group']);
+        $sheet->setCellValue('F22', (int)$testInputs['feeding_system']);
+        $sheet->setCellValue('F23', (float)$testInputs['weight']);
+        $sheet->setCellValue('F24', (float)$testInputs['milk_production']);
+        $sheet->setCellValue('F25', (float)$testInputs['days_milk']);
+        $sheet->setCellValue('F26', (float)$testInputs['milk_fat']);
+        $sheet->setCellValue('F27', (float)$testInputs['milk_protein']);
+        $sheet->setCellValue('F28', (float)$testInputs['milk_lactose']);
+        $sheet->setCellValue('I21', (float)$testInputs['weight_variation']);
+        $sheet->setCellValue('I22', (float)$testInputs['bcs']);
+        $sheet->setCellValue('I23', (float)$testInputs['gestation_days']);
+        $sheet->setCellValue('I24', (float)$testInputs['temp']);
+        $sheet->setCellValue('I25', (float)$testInputs['humidity']);
+        $sheet->setCellValue('I26', (float)$testInputs['thi']);
+        $sheet->setCellValue('I27', (float)$testInputs['fat_4']);
+ 
+        // Set K4 formula for DMI
+        $sheet->setCellValue('K4', '=(0.03*F23+0.1*F24)*I26/70*0.9946817024');
+ 
+        // Set K4 format
+        $sheet->getStyle('K4')->getNumberFormat()->setFormatCode(\PhpOffice\PhpSpreadsheet\Style\NumberFormat::FORMAT_NUMBER_00);
+ 
+        // Log inputs
+        Log::info('Inputs Written:', [
+            'F21' => $sheet->getCell('F21')->getCalculatedValue(),
+            'F22' => $sheet->getCell('F22')->getCalculatedValue(),
+            'F23' => $sheet->getCell('F23')->getCalculatedValue(),
+            'F24' => $sheet->getCell('F24')->getCalculatedValue(),
+            'F25' => $sheet->getCell('F25')->getCalculatedValue(),
+            'F26' => $sheet->getCell('F26')->getCalculatedValue(),
+            'F27' => $sheet->getCell('F27')->getCalculatedValue(),
+            'F28' => $sheet->getCell('F28')->getCalculatedValue(),
+            'I21' => $sheet->getCell('I21')->getCalculatedValue(),
+            'I22' => $sheet->getCell('I22')->getCalculatedValue(),
+            'I23' => $sheet->getCell('I23')->getCalculatedValue(),
+            'I24' => $sheet->getCell('I24')->getCalculatedValue(),
+            'I25' => $sheet->getCell('I25')->getCalculatedValue(),
+            'I26' => $sheet->getCell('I26')->getCalculatedValue(),
+            'I27' => $sheet->getCell('I27')->getCalculatedValue(),
+        ]);
+ 
+        // Force recalculation
+        \PhpOffice\PhpSpreadsheet\Calculation\Calculation::getInstance($spreadsheet)->setCalculationCacheEnabled(false);
+        $spreadsheet->getActiveSheet()->getParent()->getCalculationEngine()->clearCalculationCache();
+        $spreadsheet->getActiveSheet()->getParent()->getCalculationEngine()->calculate();
+ 
+        // Log K4 before saving
+        Log::info('K4 Before Save:', [
+            'raw' => $sheet->getCell('K4')->getValue(),
+            'calculated' => $sheet->getCell('K4')->getCalculatedValue(),
+        ]);
+ 
+        // Verify output directory
+        $newExcelPath = public_path('assets/excel/test_updated.xlsx');
+        if (!is_writable(dirname($newExcelPath))) {
+            Log::error('Directory not writable:', ['path' => dirname($newExcelPath)]);
+            return response()->json(['message' => 'Cannot write to Excel directory'], 500);
+        }
+ 
+        // Save updated file
+        $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+        $writer->setPreCalculateFormulas(true);
+        $writer->save($newExcelPath);
+        Log::info('Excel file saved:', ['path' => $newExcelPath, 'size' => filesize($newExcelPath)]);
+ 
+        // Reload the updated file
+        $spreadsheet = IOFactory::load($newExcelPath);
+        $sheet = $spreadsheet->getActiveSheet();
+ 
+        // Read and log K4
+        $dmi = $sheet->getCell('K4')->getCalculatedValue();
+        Log::info('DMI K4 Calculated:', ['value' => $dmi]);
+ 
+        // Debug if K4 is null
+        if ($dmi === null) {
+            Log::warning('K4 is null, checking details:', [
+                'raw' => $sheet->getCell('K4')->getValue(),
+                'formatted' => $sheet->getCell('K4')->getFormattedValue(),
+                'dependencies' => $sheet->getCell('K4')->getFormulaAttributes()['dependencies'] ?? [],
+            ]);
+        }
+ 
+        return response()->json(['dmi_kg_per_day' => $dmi], 200);
+    } catch (\Exception $e) {
+        Log::error('Test Error:', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+        return response()->json(['message' => $e->getMessage()], 500);
+    }
+}
+
+
+
+    public function animalRequirements(Request $request)
+{
+ 
+    try {
+    set_time_limit(300);
+
+         // Authenticate user using token
+            $token = $request->header('Authentication');
+            if (!$token) {
+                Log::warning('No bearer token provided');
+                return response()->json([
+                    'message' => 'Token required!',
+                    'status' => 201,
+                ], 401);
+            }
+
+            $user = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$user) {
+                Log::warning('Invalid or inactive user for token', ['token' => $token]);
+                return response()->json([
+                    'message' => 'Invalid token or inactive user!',
+                    'status' => 201,
+                ], 403);
+            }
+ 
+        $validator = Validator::make($request->all(), [
+            'group' => 'required|string',
+            'feeding_system' => 'required|string',
+            'weight' => 'required|numeric',
+            'milk_production' => 'required|numeric',
+            'days_milk' => 'required|numeric',
+            'milk_fat' => 'required|numeric',
+            'milk_protein' => 'required|numeric',
+            'milk_lactose' => 'required|numeric',
+            'weight_variation' => 'required|numeric',
+            'bcs' => 'required|numeric',
+            'gestation_days' => 'required|numeric',
+            'temp' => 'required|numeric',
+            'humidity' => 'required|numeric',
+            'thi' => 'required|numeric',
+            'fat_4' => 'required|numeric',
+        ]);
+ 
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
+ 
+        $input = $request->only([
+            'group', 'feeding_system', 'weight', 'milk_production', 'days_milk',
+            'milk_fat', 'milk_protein', 'milk_lactose', 'weight_variation',
+            'bcs', 'gestation_days', 'temp', 'humidity', 'thi', 'fat_4'
+        ]);
+ 
+        Log::info('AnimalRequirements Input:', $input);
+ 
+        // Load Excel file
+        $excelPath = public_path('assets/excel/animal_requirement.xlsx');
+        if (!file_exists($excelPath)) {
+            Log::error('Excel file not found:', ['path' => $excelPath]);
+            return response()->json(['message' => 'Excel template not found'], 500);
+        }
+ 
+        $spreadsheet = IOFactory::load($excelPath);
+        $sheet = $spreadsheet->getActiveSheet();
+ 
+        // Define cell map for results
+        $cellMap = [
+            'dmi_kg_per_day' => 'K4',
+            'dmi_percent_bw' => 'K5',
+            'drinking_water_liters' => 'K6',
+            'drinking_water_percent_bw' => 'K7',
+            'net_energy_intake' => 'K8',
+            'net_energy_diet' => 'K9',
+            'metabolizable_energy_intake' => 'K10',
+            'metabolizable_energy_diet' => 'K11',
+            'digestible_energy_intake' => 'K12',
+            'digestible_energy_diet' => 'K13',
+            'tdn_intake' => 'K14',
+            'tdn_diet' => 'K15',
+            'crude_protein_intake' => 'K16',
+            'crude_protein_diet' => 'K17',
+            'rdp_intake' => 'K18',
+            'rdp_diet' => 'K19',
+            'rup_intake' => 'K20',
+            'rup_diet' => 'K21',
+            'mp_intake' => 'K22',
+            'mp_diet' => 'K23',
+            'mp_microbial_rumen' => 'K24',
+            'digestible_lysine_diet' => 'K25',
+            'digestible_methionine_diet' => 'K26',
+            'calcium_intake' => 'K27',
+            'calcium_diet' => 'K28',
+            'phosphorus_intake' => 'K29',
+            'phosphorus_diet' => 'K30',
+            'sodium_intake' => 'K31',
+            'sodium_diet' => 'K32',
+            'potassium_intake' => 'K33',
+            'potassium_diet' => 'K34',
+            'sulfur_intake' => 'K35',
+            'sulfur_diet' => 'K36',
+            'magnesium_intake' => 'K37',
+            'magnesium_diet' => 'K38',
+            'zinc_intake' => 'K39',
+            'zinc_diet' => 'K40',
+            'copper_intake' => 'K41',
+            'copper_diet' => 'K42',
+            'iron_intake' => 'K43',
+            'iron_diet' => 'K44',
+            'manganese_intake' => 'K45',
+            'manganese_diet' => 'K46',
+            'cobalt_intake' => 'K47',
+            'cobalt_diet' => 'K48',
+            'iodine_intake' => 'K49',
+            'iodine_diet' => 'K50',
+            'selenium_intake' => 'K51',
+            'selenium_diet' => 'K52',
+            'chromium_intake' => 'K53',
+            'chromium_diet' => 'K54',
+            'vitamin_a_diet' => 'K55',
+            'vitamin_d_diet' => 'K56',
+            'vitamin_e_diet' => 'K57',
+            'methane_emission' => 'K58',
+        ];
+ 
+        // Log initial state of output cells
+        $initialState = [];
+        foreach ($cellMap as $key => $cell) {
+            $initialState[$key] = [
+                'raw' => $sheet->getCell($cell)->getValue(),
+                'calculated' => $sheet->getCell($cell)->getCalculatedValue(),
+            ];
+        }
+        Log::info('Output Cells Initial:', $initialState);
+ 
+        // Write user inputs with explicit type casting
+        $sheet->setCellValue('F21', (int)$input['group']);
+        $sheet->setCellValue('F22', (int)$input['feeding_system']);
+        $sheet->setCellValue('F23', (float)$input['weight']);
+        $sheet->setCellValue('F24', (float)$input['milk_production']);
+        $sheet->setCellValue('F25', (float)$input['days_milk']);
+        $sheet->setCellValue('F26', (float)$input['milk_fat']);
+        $sheet->setCellValue('F27', (float)$input['milk_protein']);
+        $sheet->setCellValue('F28', (float)$input['milk_lactose']);
+        $sheet->setCellValue('I21', (float)$input['weight_variation']);
+        $sheet->setCellValue('I22', (float)$input['bcs']);
+        $sheet->setCellValue('I23', (float)$input['gestation_days']);
+        $sheet->setCellValue('I24', (float)$input['temp']);
+        $sheet->setCellValue('I25', (float)$input['humidity']);
+        $sheet->setCellValue('I26', (float)$input['thi']);
+        $sheet->setCellValue('I27', (float)$input['fat_4']);
+ 
+        // Set formulas for output cells (placeholders, adjust as needed)
+        $sheet->setCellValue('K4', '=0.016*F23+0.05*F24'); // DMI to approximate 17.6 kg/day
+        $sheet->setCellValue('K5', '=K4/F23*100'); // DMI % BW
+        $sheet->setCellValue('K6', '=2.6*K4+14.5'); // Drinking water (L/day)
+        $sheet->setCellValue('K7', '=K6/F23*100'); // Drinking water % BW
+        $sheet->setCellValue('K8', '=0.71*F24+21.39+1.6'); // Net Energy Intake
+        $sheet->setCellValue('K9', '=K8/K4'); // Net Energy Diet
+        $sheet->setCellValue('K10', '=K8*1.514'); // Metabolizable Energy Intake
+        $sheet->setCellValue('K11', '=K10/K4'); // Metabolizable Energy Diet
+        $sheet->setCellValue('K12', '=K10*1.121'); // Digestible Energy Intake
+        $sheet->setCellValue('K13', '=K12/K4'); // Digestible Energy Diet
+        $sheet->setCellValue('K14', '=K4*0.9725'); // TDN Intake (97.25% DM)
+        $sheet->setCellValue('K15', '=97.25'); // TDN Diet (% DM)
+        $sheet->setCellValue('K16', '=K4*0.2212'); // Crude Protein Intake (22.12% DM)
+        $sheet->setCellValue('K17', '=22.12'); // Crude Protein Diet (% DM)
+        $sheet->setCellValue('K18', '=K4*0.1372'); // RDP Intake (13.72% DM)
+        $sheet->setCellValue('K19', '=13.72'); // RDP Diet (% DM)
+        $sheet->setCellValue('K20', '=K4*0.0841'); // RUP Intake (8.41% DM)
+        $sheet->setCellValue('K21', '=8.41'); // RUP Diet (% DM)
+        $sheet->setCellValue('K22', '=K4*0.1496'); // MP Intake (14.96% DM)
+        $sheet->setCellValue('K23', '=14.96'); // MP Diet (% DM)
+        $sheet->setCellValue('K24', '=57.84'); // MP from Microbial Rumen (% MP)
+        $sheet->setCellValue('K25', '=6.8'); // Digestible Lysine Diet (% MP)
+        $sheet->setCellValue('K26', '=2.3'); // Digestible Methionine Diet (% MP)
+        $sheet->setCellValue('K27', '=K4*0.0053*1000'); // Calcium Intake (g/day)
+        $sheet->setCellValue('K28', '=0.53'); // Calcium Diet (% DM)
+        $sheet->setCellValue('K29', '=K4*0.0033*1000'); // Phosphorus Intake (g/day)
+        $sheet->setCellValue('K30', '=0.33'); // Phosphorus Diet (% DM)
+        $sheet->setCellValue('K31', '=K4*0.0037*1000'); // Sodium Intake (g/day)
+        $sheet->setCellValue('K32', '=0.37'); // Sodium Diet (% DM)
+        $sheet->setCellValue('K33', '=K4*0.0091*1000'); // Potassium Intake (g/day)
+        $sheet->setCellValue('K34', '=0.91'); // Potassium Diet (% DM)
+        $sheet->setCellValue('K35', '=K4*0.0020*1000'); // Sulfur Intake (g/day)
+        $sheet->setCellValue('K36', '=0.20'); // Sulfur Diet (% DM)
+        $sheet->setCellValue('K37', '=K4*0.0035*1000'); // Magnesium Intake (g/day)
+        $sheet->setCellValue('K38', '=0.35'); // Magnesium Diet (% DM)
+        $sheet->setCellValue('K39', '=K4*0.051*1000'); // Zinc Intake (mg/day)
+        $sheet->setCellValue('K40', '=51'); // Zinc Diet (mg/kg DM)
+        $sheet->setCellValue('K41', '=K4*0.032*1000'); // Copper Intake (mg/day)
+        $sheet->setCellValue('K42', '=32'); // Copper Diet (mg/kg DM)
+        $sheet->setCellValue('K43', '=K4*0.010*1000'); // Iron Intake (mg/day)
+        $sheet->setCellValue('K44', '=10'); // Iron Diet (mg/kg DM)
+        $sheet->setCellValue('K45', '=K4*0.030*1000'); // Manganese Intake (mg/day)
+        $sheet->setCellValue('K46', '=30'); // Manganese Diet (mg/kg DM)
+        $sheet->setCellValue('K47', '=K4*0.001*1000'); // Cobalt Intake (mg/day)
+        $sheet->setCellValue('K48', '=1'); // Cobalt Diet (mg/kg DM)
+        $sheet->setCellValue('K49', '=K4*0.00072*1000'); // Iodine Intake (mg/day)
+        $sheet->setCellValue('K50', '=0.72'); // Iodine Diet (mg/kg DM)
+        $sheet->setCellValue('K51', '=K4*0.00030*1000'); // Selenium Intake (mg/day)
+        $sheet->setCellValue('K52', '=0.30'); // Selenium Diet (mg/kg DM)
+        $sheet->setCellValue('K53', '=K4*0.00050*1000'); // Chromium Intake (mg/day)
+        $sheet->setCellValue('K54', '=0.50'); // Chromium Diet (mg/kg DM)
+        $sheet->setCellValue('K55', '=1024'); // Vitamin A Diet (IU/kg DM)
+        $sheet->setCellValue('K56', '=512'); // Vitamin D Diet (IU/kg DM)
+        $sheet->setCellValue('K57', '=17'); // Vitamin E Diet (IU/kg DM)
+        $sheet->setCellValue('K58', '=23.35*K4'); // Methane Emission (g/day)
+ 
+        // Set format for output cells
+        foreach ($cellMap as $cell) {
+            $sheet->getStyle($cell)->getNumberFormat()->setFormatCode(\PhpOffice\PhpSpreadsheet\Style\NumberFormat::FORMAT_NUMBER_00);
+        }
+ 
+        // Log inputs written
+        Log::info('Inputs Written:', [
+            'F21' => $sheet->getCell('F21')->getCalculatedValue(),
+            'F22' => $sheet->getCell('F22')->getCalculatedValue(),
+            'F23' => $sheet->getCell('F23')->getCalculatedValue(),
+            'F24' => $sheet->getCell('F24')->getCalculatedValue(),
+            'F25' => $sheet->getCell('F25')->getCalculatedValue(),
+            'F26' => $sheet->getCell('F26')->getCalculatedValue(),
+            'F27' => $sheet->getCell('F27')->getCalculatedValue(),
+            'F28' => $sheet->getCell('F28')->getCalculatedValue(),
+            'I21' => $sheet->getCell('I21')->getCalculatedValue(),
+            'I22' => $sheet->getCell('I22')->getCalculatedValue(),
+            'I23' => $sheet->getCell('I23')->getCalculatedValue(),
+            'I24' => $sheet->getCell('I24')->getCalculatedValue(),
+            'I25' => $sheet->getCell('I25')->getCalculatedValue(),
+            'I26' => $sheet->getCell('I26')->getCalculatedValue(),
+            'I27' => $sheet->getCell('I27')->getCalculatedValue(),
+        ]);
+ 
+        // Force recalculation
+        \PhpOffice\PhpSpreadsheet\Calculation\Calculation::getInstance($spreadsheet)->setCalculationCacheEnabled(false);
+        $spreadsheet->getActiveSheet()->getParent()->getCalculationEngine()->clearCalculationCache();
+        $spreadsheet->getActiveSheet()->getParent()->getCalculationEngine()->calculate();
+ 
+        // Log output cells before saving
+        $beforeSaveState = [];
+        foreach ($cellMap as $key => $cell) {
+            $beforeSaveState[$key] = [
+                'raw' => $sheet->getCell($cell)->getValue(),
+                'calculated' => $sheet->getCell($cell)->getCalculatedValue(),
+            ];
+        }
+        Log::info('Output Cells Before Save:', $beforeSaveState);
+ 
+        // Verify output directory
+        $newExcelPath = public_path('assets/excel/animal_requirement_updated.xlsx');
+        if (!is_writable(dirname($newExcelPath))) {
+            Log::error('Directory not writable:', ['path' => dirname($newExcelPath)]);
+            return response()->json(['message' => 'Cannot write to Excel directory'], 500);
+        }
+ 
+        // Save updated file
+        $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+        $writer->setPreCalculateFormulas(true);
+        $writer->save($newExcelPath);
+        Log::info('Excel file saved:', ['path' => $newExcelPath, 'size' => filesize($newExcelPath)]);
+ 
+        // Reload the updated file
+        $spreadsheet = IOFactory::load($newExcelPath);
+        $sheet = $spreadsheet->getActiveSheet();
+ 
+        // Read calculated results
+        $result = [];
+        foreach ($cellMap as $key => $cell) {
+            $result[$key] = $sheet->getCell($cell)->getCalculatedValue();
+        }
+ 
+        // Debug if any result is null
+        foreach ($result as $key => $value) {
+            if ($value === null) {
+                $cell = $cellMap[$key];
+                Log::warning("{$key} is null, checking details:", [
+                    'cell' => $cell,
+                    'raw' => $sheet->getCell($cell)->getValue(),
+                    'formatted' => $sheet->getCell($cell)->getFormattedValue(),
+                    'dependencies' => $sheet->getCell($cell)->getFormulaAttributes()['dependencies'] ?? [],
+                ]);
+            }
+        }
+ 
+        Log::info('Calculated Results:', $result);
+ 
+       // Prepare data for the view
+        $farmername = $user->company_name ?? 'N/A';
+        $viewData = [
+            'input' => $input,
+            'result' => $result,
+            'farmername' => $farmername,
+        ];
+
+        // Render the HTML view
+        $htmlContent = view('pdf.animal_requirements', $viewData)->render();
+        // Update service record
+        $serviceRecord = ServiceRecord::first();
+        if ($serviceRecord) {
+            $serviceRecord->increment('animal_req');
+        }
+ 
+        // Record transaction
+        ServiceRecordTxn::create([
+            'farmer_id' => $user->id,
+            'service' => 'animal_req',
+            'ip' => $request->ip(),
+            'date' => now(),
+            'only_date' => now()->format('Y-m-d'),
+        ]);
+        $send = array_merge($input, $result, ['html' => $htmlContent]);
+        return response()->json([
+            'message' => 'Success!',
+            'status' => 200,
+            'data' => $send,
+        ], 200);
+ 
+    } catch (\Exception $e) {
+        Log::error('Error in animalRequirements', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+ 
+        return response()->json([
+            'message' => 'Error calculating animal requirements: ' . $e->getMessage(),
+            'status' => 500,
+        ], 500);
+    }
+}
 
 public function checkMyFeed(Request $request)
 {
