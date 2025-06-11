@@ -20,6 +20,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\File;
 class ToolsController extends Controller
 {
     protected function createPagination($currentPage, $totalPages)
@@ -221,7 +222,8 @@ class ToolsController extends Controller
         }
     }
 
-     public function projectRequirements(Request $request)
+
+   public function projectRequirements(Request $request)
     {
         Log::info('projectRequirements request', [
             'number_of_cows' => $request->input('number_of_cows'),
@@ -302,41 +304,77 @@ class ToolsController extends Controller
             }
 
             $number_of_cows = $request->input('number_of_cows');
-            $excel_path = public_path('excel/25_cows.xlsx');
+            $excel_path = public_path('assets/excel/25_cows.xls'); // Ensure correct extension
 
-            if (!file_exists($excel_path)) {
-                Log::error('projectRequirements: Excel file not found', [
+            if (!file_exists($excel_path) || !is_readable($excel_path)) {
+                Log::error('projectRequirements: Excel file not found or not readable', [
                     'path' => $excel_path,
                     'farmer_id' => $farmer->id,
                     'ip' => $request->ip(),
                 ]);
                 return response()->json([
-                    'message' => 'Excel file not found!',
+                    'message' => 'Excel file not found or not accessible!',
                     'status' => 201,
                 ], 500);
             }
 
-            // Load and update Excel file
+            // Ensure temporary directory exists
+            $temp_dir = storage_path('app/temp');
+            if (!File::exists($temp_dir)) {
+                File::makeDirectory($temp_dir, 0755, true);
+            }
+            if (!is_writable($temp_dir)) {
+                Log::error('projectRequirements: Temporary directory not writable', [
+                    'path' => $temp_dir,
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'message' => 'Temporary directory not writable!',
+                    'status' => 201,
+                ], 500);
+            }
+
+            // Load Excel file
             $spreadsheet = IOFactory::load($excel_path);
             $worksheet = $spreadsheet->getActiveSheet();
+
+            // Update number of cows
             $worksheet->setCellValue('B9', $number_of_cows);
+
+            // Save to temporary file
+            $temp_path = $temp_dir . '/25_cows_' . $farmer->id . '_' . time() . '.xlsx';
             $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
-            $writer->save($excel_path);
+            $writer->save($temp_path);
 
-            // Reload to get calculated values
-            $spreadsheet = IOFactory::load($excel_path);
-            $worksheet = $spreadsheet->getActiveSheet();
-            $calculated_value = $worksheet->getCell('C12')->getCalculatedValue();
+            // Reload to ensure calculated values
+            if (!file_exists($temp_path)) {
+                Log::error('projectRequirements: Failed to save temporary Excel file', [
+                    'path' => $temp_path,
+                    'farmer_id' => $farmer->id,
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json([
+                    'message' => 'Failed to process Excel file!',
+                    'status' => 201,
+                ], 500);
+            }
+            $spreadsheet = IOFactory::load($temp_path);
+            $worksheet = $spreadsheet->getActiveSheet(); // Reassign after reload
 
-            // Generate PDF
+            // Prepare data for the view
             $data = [
+                'worksheet' => $worksheet, // Pass Worksheet object
                 'number_of_cows' => $number_of_cows,
-                'calculated_value' => $calculated_value,
             ];
 
-            $pdf = Pdf::loadView('pdf.25_cows', $data);
-            $pdf_content = $pdf->output();
-            $base64_pdf = base64_encode($pdf_content);
+            // Render the HTML view
+            $htmlContent = view('pdf.25_cows', $data)->render();
+
+            // Clean up temporary file
+            if (file_exists($temp_path)) {
+                File::delete($temp_path);
+            }
 
             // Update service record
             $service_record = ServiceRecord::first();
@@ -367,16 +405,25 @@ class ToolsController extends Controller
             Log::info('projectRequirements: Success', [
                 'farmer_id' => $farmer->id,
                 'number_of_cows' => $number_of_cows,
-                'calculated_value' => $calculated_value,
                 'ip' => $request->ip(),
             ]);
 
             return response()->json([
                 'message' => 'Success!',
                 'status' => 200,
-                'data' => $base64_pdf,
-                'filename' => 'project_requirements.pdf',
+                'data' => array_merge($data, ['html' => $htmlContent]),
             ], 200);
+        } catch (\PhpOffice\PhpSpreadsheet\Exception $e) {
+            Log::error('projectRequirements: Spreadsheet error', [
+                'farmer_id' => $farmer->id ?? null,
+                'number_of_cows' => $request->input('number_of_cows'),
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'Error processing spreadsheet: ' . $e->getMessage(),
+                'status' => 201,
+            ], 500);
         } catch (\Illuminate\Database\QueryException $e) {
             Log::error('projectRequirements: Database error', [
                 'farmer_id' => $farmer->id ?? null,
@@ -391,7 +438,7 @@ class ToolsController extends Controller
                 'status' => 201,
             ], 500);
         } catch (\Exception $e) {
-            Log::error('projectRequirements: Error', [
+            Log::error('projectRequirements: General error', [
                 'farmer_id' => $farmer->id ?? null,
                 'number_of_cows' => $request->input('number_of_cows'),
                 'error' => $e->getMessage(),
@@ -404,24 +451,210 @@ class ToolsController extends Controller
         }
     }
 
+
+
+//      public function projectRequirements(Request $request)
+// {
+//     Log::info('projectRequirements request', [
+//         'number_of_cows' => $request->input('number_of_cows'),
+//         'authentication_header' => $request->header('Authentication'),
+//         'ip' => $request->ip(),
+//     ]);
+
+//     try {
+//         // Check if number_of_cows is provided
+//         if (!$request->has('number_of_cows')) {
+//             Log::warning('projectRequirements: Missing number_of_cows parameter', [
+//                 'ip' => $request->ip(),
+//             ]);
+//             return response()->json([
+//                 'message' => 'Please Insert Data',
+//                 'status' => 201,
+//             ], 422);
+//         }
+
+//         // Validate authentication header
+//         $token = $request->header('Authentication');
+//         $validator = Validator::make(['Authentication' => $token], [
+//             'Authentication' => 'required|string',
+//         ], [
+//             'Authentication.required' => 'Authentication token is required',
+//         ]);
+
+//         if ($validator->fails()) {
+//             Log::warning('projectRequirements: Validation failed for authentication', [
+//                 'errors' => $validator->errors(),
+//                 'ip' => $request->ip(),
+//                 'url' => $request->fullUrl(),
+//             ]);
+//             return response()->json([
+//                 'message' => $validator->errors()->first(),
+//                 'status' => 201,
+//             ], 422);
+//         }
+
+//         // Authenticate farmer by token
+//         $farmer = Farmer::where('auth', $token)
+//             ->where('is_active', 1)
+//             ->first();
+
+//         Log::info('projectRequirements: Auth attempt', [
+//             'farmer_id' => $farmer ? $farmer->id : null,
+//             'is_active' => $farmer ? $farmer->is_active : null,
+//             'authentication_header' => $token,
+//             'ip' => $request->ip(),
+//         ]);
+
+//         if (!$farmer) {
+//             Log::warning('projectRequirements: Authentication failed', [
+//                 'token' => $token,
+//                 'ip' => $request->ip(),
+//             ]);
+//             return response()->json([
+//                 'message' => 'Permission Denied!',
+//                 'status' => 201,
+//             ], 403);
+//         }
+
+//         // Validate input
+//         $validator = Validator::make($request->all(), [
+//             'number_of_cows' => 'required|numeric|min:1',
+//         ]);
+
+//         if ($validator->fails()) {
+//             Log::warning('projectRequirements: Input validation failed', [
+//                 'errors' => $validator->errors(),
+//                 'farmer_id' => $farmer->id,
+//                 'ip' => $request->ip(),
+//             ]);
+//             return response()->json([
+//                 'message' => $validator->errors()->first(),
+//                 'status' => 201,
+//             ], 422);
+//         }
+
+//         $number_of_cows = $request->input('number_of_cows');
+//         $excel_path = public_path('assets/excel/25_cows.xls');
+
+//         if (!file_exists($excel_path)) {
+//             Log::error('projectRequirements: Excel file not found', [
+//                 'path' => $excel_path,
+//                 'farmer_id' => $farmer->id,
+//                 'ip' => $request->ip(),
+//             ]);
+//             return response()->json([
+//                 'message' => 'Excel file not found!',
+//                 'status' => 201,
+//             ], 500);
+//         }
+
+//         // Load and update Excel file
+//         $spreadsheet = IOFactory::load($excel_path);
+//         $worksheet = $spreadsheet->getActiveSheet();
+//         $worksheet->setCellValue('B9', $number_of_cows);
+//         $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+//         $writer->save($excel_path);
+
+//         // Reload to get calculated values
+//         $spreadsheet = IOFactory::load($excel_path);
+//         $worksheet = $spreadsheet->getActiveSheet();
+//         $calculated_value = $worksheet->getCell('C12')->getCalculatedValue();
+
+//         // Prepare data for the view
+//         $data = [
+//             'number_of_cows' => $number_of_cows,
+//             'calculated_value' => $calculated_value,
+//         ];
+
+//         // Render the HTML view
+//         $htmlContent = view('pdf.25_cows', $data)->render();
+
+//         // Update service record
+//         $service_record = ServiceRecord::first();
+//         if (!$service_record) {
+//             Log::warning('projectRequirements: No service record found in tbl_service_records', [
+//                 'farmer_id' => $farmer->id,
+//                 'ip' => $request->ip(),
+//             ]);
+//             return response()->json([
+//                 'message' => 'Service record not found!',
+//                 'status' => 201,
+//             ], 500);
+//         }
+
+//         $service_record->update([
+//             'pro_req' => ($service_record->pro_req ?? 0) + 1,
+//         ]);
+
+//         // Create transaction
+//         ServiceRecordTxn::create([
+//             'farmer_id' => $farmer->id,
+//             'service' => 'pro_req',
+//             'ip' => $request->ip(),
+//             'date' => now(),
+//             'only_date' => now()->format('Y-m-d'),
+//         ]);
+
+//         Log::info('projectRequirements: Success', [
+//             'farmer_id' => $farmer->id,
+//             'number_of_cows' => $number_of_cows,
+//             'calculated_value' => $calculated_value,
+//             'ip' => $request->ip(),
+//         ]);
+
+//         return response()->json([
+//             'message' => 'Success!',
+//             'status' => 200,
+//             'data' => array_merge($data, ['html' => $htmlContent]),
+//         ], 200);
+//     } catch (\Illuminate\Database\QueryException $e) {
+//         Log::error('projectRequirements: Database error', [
+//             'farmer_id' => $farmer->id ?? null,
+//             'number_of_cows' => $request->input('number_of_cows'),
+//             'error' => $e->getMessage(),
+//             'sql' => $e->getSql(),
+//             'bindings' => $e->getBindings(),
+//             'ip' => $request->ip(),
+//         ]);
+//         return response()->json([
+//             'message' => 'Database error: ' . $e->getMessage(),
+//             'status' => 201,
+//         ], 500);
+//     } catch (\Exception $e) {
+//         Log::error('projectRequirements: Error', [
+//             'farmer_id' => $farmer->id ?? null,
+//             'number_of_cows' => $request->input('number_of_cows'),
+//             'error' => $e->getMessage(),
+//             'ip' => $request->ip(),
+//         ]);
+//         return response()->json([
+//             'message' => 'Error processing project requirements: ' . $e->getMessage(),
+//             'status' => 201,
+//         ], 500);
+//     }
+// }
+
     public function projectTest(Request $request)
     {
         try {
             // /** @var \App\Models\Farmer $farmer */
-            $farmer = auth('farmer')->user();
-            Log::info('ProjectTest auth attempt', [
-                'farmer_id' => $farmer ? $farmer->id : null,
-                'is_active' => $farmer ? ($farmer->is_active ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
-                'ip_address' => $request->ip(),
+           $token = $request->header('Authentication');
+            $validator = Validator::make(['Authentication' => $token], [
+                'Authentication' => 'required|string',
+            ], [
+                'Authentication.required' => 'Authentication token is required',
             ]);
 
-            if (!$farmer || !$farmer->is_active) {
-                return response()->json([
-                    'message' => 'Permission Denied!',
-                    'status' => 201,
-                ], 403);
-            }
+              $farmer = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            Log::info('silageMaking: Auth attempt', [
+                'farmer_id' => $farmer ? $farmer->id : null,
+                'is_active' => $farmer ? $farmer->is_active : null,
+                'authentication_header' => $token,
+                'ip' => $request->ip(),
+            ]);
 
             $excel_path = public_path('excel/25_cows.xlsx');
 
