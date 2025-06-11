@@ -61,11 +61,9 @@ Route::middleware(['auth:farmer'])->group(function () {
     Route::get('DairyMart', [FeedController::class, 'dairyMart']);
     Route::get('ExpertAdvice', [FeedController::class, 'expertAdvice']);
     Route::get('RadiusVendor', [FeedController::class, 'radiusVendor']);
-    Route::post('BuyFeed', [FeedController::class, 'buyFeed']);
 
 
     /////////toolsController
-    Route::post('project-test', [ToolsController::class, 'projectTest']);
     Route::post('calculate-distance', [ToolsController::class, 'calculateDistance']);
     Route::post('ReqDoc', [ToolsController::class, 'requestDoctor']);
     // The above api wont work beacuse of false CC avenue key
@@ -180,8 +178,10 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
     
     Route::post('AnimalRequirement', [FeedController::class, 'animalRequirements']);
 
+    Route::post('test-animalRequirements', [FeedController::class, 'testAnimalRequirements']);
+
     
-    Route::post('FeedCalculator', [FeedController::class, 'feedCalculator']);
+    Route::post('FeedCalculator', [FeedController::class, 'feed_calculator']);
 
     
     Route::post('homeCreateGroup', [HomeController::class, 'createGroup']);
@@ -334,3 +334,8 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
 
     
     Route::post('CheckFeed-My', [FeedController::class, 'checkMyFeed']);
+    
+    Route::post('project-test', [ToolsController::class, 'projectTest']);
+
+    
+    Route::post('Buy-Feed', [FeedController::class, 'buyFeed']);

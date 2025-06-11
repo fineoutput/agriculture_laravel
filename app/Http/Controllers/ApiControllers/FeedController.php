@@ -329,11 +329,281 @@ class FeedController extends Controller
 
 
 
-   public function feedCalculator(Request $request)
+//    public function feedCalculator(Request $request)
+// {
+//     set_time_limit(300);
+//     try {
+//         // Validate authentication token
+//         $token = $request->header('Authentication');
+//         if (!$token) {
+//             Log::warning('No bearer token provided');
+//             return response()->json([
+//                 'message' => 'Token required!',
+//                 'status' => 201,
+//             ], 401);
+//         }
+
+//         $user = Farmer::where('auth', $token)
+//             ->where('is_active', 1)
+//             ->first();
+
+//         if (!$user) {
+//             Log::warning('Invalid or inactive user for token', ['token' => $token]);
+//             return response()->json([
+//                 'message' => 'Invalid token.',
+//                 'status' => 201,
+//             ], 403);
+//         }
+
+//         // Validate input data types
+//         $validator = Validator::make($request->all(), [
+//             'proteinData' => 'nullable|json',
+//             'energyData' => 'nullable|json',
+//             'productData' => 'nullable|json',
+//             'medicineData' => 'nullable|json',
+//         ]);
+
+//         if ($validator->fails()) {
+//             return response()->json([
+//                 'message' => $validator->errors()->first(),
+//                 'status' => 201,
+//             ], 422);
+//         }
+
+//         // Decode JSON inputs
+//         $proteinData = $request->proteinData ? json_decode($request->proteinData, true) : [];
+//         $energyData = $request->energyData ? json_decode($request->energyData, true) : [];
+//         $productData = $request->productData ? json_decode($request->productData, true) : [];
+//         $medicineData = $request->medicineData ? json_decode($request->medicineData, true) : [];
+
+//         // Log decoded inputs for debugging
+//         Log::debug('Decoded input data', [
+//             'ProteinData' => $proteinData,
+//             'EnergyData' => $energyData,
+//             'ProductData' => $productData,
+//             'MedicineData' => $medicineData,
+//         ]);
+
+//         // Validate numeric values in decoded data
+//         $dataTypes = [
+//             'ProteinData' => $proteinData,
+//             'EnergyData' => $energyData,
+//             'ProductData' => $productData,
+//             'MedicineData' => $medicineData,
+//         ];
+//         foreach ($dataTypes as $type => $data) {
+//             foreach ($data as $index => $item) {
+//                 if (!empty($item[3])) {
+//                     if (!is_numeric($item[3])) {
+//                         Log::error("Non-numeric value in $type at index $index, item[3]", ['value' => $item[3]]);
+//                         return response()->json([
+//                             'message' => "Non-numeric value found in $type at index 3",
+//                             'status' => 201,
+//                         ], 422);
+//                     }
+//                     for ($i = 2; $i <= 15; $i++) {
+//                         if (isset($item[$i]) && $item[$i] !== '' && $item[$i] !== null && !is_numeric($item[$i])) {
+//                             Log::error("Non-numeric value in $type at index $index, item[$i]", ['value' => $item[$i]]);
+//                             return response()->json([
+//                                 'message' => "Non-numeric value found in $type at index $i",
+//                                 'status' => 201,
+//                             ], 422);
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+
+//         // Initialize nutritional metrics
+//         $cp = $ee = $cf = $tdn = $me = $ca = $p = $adf = $ndf = $nel = $rudp = $endf = $value = 0;
+
+//         // Process ProteinData
+//         foreach ($proteinData as $item) {
+//             if (!empty($item[3]) && is_numeric($item[3])) {
+//                 $cp += isset($item[4]) && is_numeric($item[4]) ? (float)$item[4] * (float)$item[3] / 1000 : 0;
+//                 $ee += isset($item[5]) && is_numeric($item[5]) ? (float)$item[5] * (float)$item[3] / 1000 : 0;
+//                 $cf += isset($item[6]) && is_numeric($item[6]) ? (float)$item[6] * (float)$item[3] / 1000 : 0;
+//                 $tdn += isset($item[7]) && is_numeric($item[7]) ? (float)$item[7] * (float)$item[3] / 1000 : 0;
+//                 $me += isset($item[8]) && is_numeric($item[8]) ? (float)$item[8] * (float)$item[3] / 1000 : 0;
+//                 $ca += isset($item[9]) && is_numeric($item[9]) ? (float)$item[9] * (float)$item[3] / 1000 : 0;
+//                 $p += isset($item[10]) && is_numeric($item[10]) ? (float)$item[10] * (float)$item[3] / 1000 : 0;
+//                 $adf += isset($item[11]) && is_numeric($item[11]) ? (float)$item[11] * (float)$item[3] / 1000 : 0;
+//                 $ndf += isset($item[12]) && is_numeric($item[12]) ? (float)$item[12] * (float)$item[3] / 1000 : 0;
+//                 $nel += isset($item[13]) && is_numeric($item[13]) ? (float)$item[13] * (float)$item[3] / 1000 : 0;
+//                 $rudp += isset($item[14]) && is_numeric($item[14]) ? (float)$item[14] * (float)$item[3] / 1000 : 0;
+//                 $endf += isset($item[15]) && is_numeric($item[15]) ? (float)$item[15] * (float)$item[3] / 1000 : 0;
+//                 $value += isset($item[2]) && is_numeric($item[2]) && is_numeric($item[3]) ? (float)$item[2] * (float)$item[3] : 0;
+//             }
+//         }
+
+//         // Process EnergyData
+//         foreach ($energyData as $item) {
+//             if (!empty($item[3]) && is_numeric($item[3])) {
+//                 $cp += isset($item[4]) && is_numeric($item[4]) ? (float)$item[4] * (float)$item[3] / 1000 : 0;
+//                 $ee += isset($item[5]) && is_numeric($item[5]) ? (float)$item[5] * (float)$item[3] / 1000 : 0;
+//                 $cf += isset($item[6]) && is_numeric($item[6]) ? (float)$item[6] * (float)$item[3] / 1000 : 0;
+//                 $tdn += isset($item[7]) && is_numeric($item[7]) ? (float)$item[7] * (float)$item[3] / 1000 : 0;
+//                 $me += isset($item[8]) && is_numeric($item[8]) ? (float)$item[8] * (float)$item[3] / 1000 : 0;
+//                 $ca += isset($item[9]) && is_numeric($item[9]) ? (float)$item[9] * (float)$item[3] / 1000 : 0;
+//                 $p += isset($item[10]) && is_numeric($item[10]) ? (float)$item[10] * (float)$item[3] / 1000 : 0;
+//                 $adf += isset($item[11]) && is_numeric($item[11]) ? (float)$item[11] * (float)$item[3] / 1000 : 0;
+//                 $ndf += isset($item[12]) && is_numeric($item[12]) ? (float)$item[12] * (float)$item[3] / 1000 : 0;
+//                 $nel += isset($item[13]) && is_numeric($item[13]) ? (float)$item[13] * (float)$item[3] / 1000 : 0;
+//                 $rudp += isset($item[14]) && is_numeric($item[14]) ? (float)$item[14] * (float)$item[3] / 1000 : 0;
+//                 $endf += isset($item[15]) && is_numeric($item[15]) ? (float)$item[15] * (float)$item[3] / 1000 : 0;
+//                 $value += isset($item[2]) && is_numeric($item[2]) && is_numeric($item[3]) ? (float)$item[2] * (float)$item[3] : 0;
+//             }
+//         }
+
+//         // Process ProductData
+//         foreach ($productData as $item) {
+//             if (!empty($item[3]) && is_numeric($item[3])) {
+//                 $cp += isset($item[4]) && is_numeric($item[4]) ? (float)$item[4] * (float)$item[3] / 1000 : 0;
+//                 $ee += isset($item[5]) && is_numeric($item[5]) ? (float)$item[5] * (float)$item[3] / 1000 : 0;
+//                 $cf += isset($item[6]) && is_numeric($item[6]) ? (float)$item[6] * (float)$item[3] / 1000 : 0;
+//                 $tdn += isset($item[7]) && is_numeric($item[7]) ? (float)$item[7] * (float)$item[3] / 1000 : 0;
+//                 $me += isset($item[8]) && is_numeric($item[8]) ? (float)$item[8] * (float)$item[3] / 1000 : 0;
+//                 $ca += isset($item[9]) && is_numeric($item[9]) ? (float)$item[9] * (float)$item[3] / 1000 : 0;
+//                 $p += isset($item[10]) && is_numeric($item[10]) ? (float)$item[10] * (float)$item[3] / 1000 : 0;
+//                 $adf += isset($item[11]) && is_numeric($item[11]) ? (float)$item[11] * (float)$item[3] / 1000 : 0;
+//                 $ndf += isset($item[12]) && is_numeric($item[12]) ? (float)$item[12] * (float)$item[3] / 1000 : 0;
+//                 $nel += isset($item[13]) && is_numeric($item[13]) ? (float)$item[13] * (float)$item[3] / 1000 : 0;
+//                 $rudp += isset($item[14]) && is_numeric($item[14]) ? (float)$item[14] * (float)$item[3] / 1000 : 0;
+//                 $endf += isset($item[15]) && is_numeric($item[15]) ? (float)$item[15] * (float)$item[3] / 1000 : 0;
+//                 $value += isset($item[2]) && is_numeric($item[2]) && is_numeric($item[3]) ? (float)$item[2] * (float)$item[3] : 0;
+//             }
+//         }
+
+//         // Process MedicineData
+//         foreach ($medicineData as $item) {
+//             if (!empty($item[3]) && is_numeric($item[3])) {
+//                 $cp += isset($item[4]) && is_numeric($item[4]) ? (float)$item[4] * (float)$item[3] / 1000 : 0;
+//                 $ee += isset($item[5]) && is_numeric($item[5]) ? (float)$item[5] * (float)$item[3] / 1000 : 0;
+//                 $cf += isset($item[6]) && is_numeric($item[6]) ? (float)$item[6] * (float)$item[3] / 1000 : 0;
+//                 $tdn += isset($item[7]) && is_numeric($item[7]) ? (float)$item[7] * (float)$item[3] / 1000 : 0;
+//                 $me += isset($item[8]) && is_numeric($item[8]) ? (float)$item[8] * (float)$item[3] / 1000 : 0;
+//                 $ca += isset($item[9]) && is_numeric($item[9]) ? (float)$item[9] * (float)$item[3] / 1000 : 0;
+//                 $p += isset($item[10]) && is_numeric($item[10]) ? (float)$item[10] * (float)$item[3] / 1000 : 0;
+//                 $adf += isset($item[11]) && is_numeric($item[11]) ? (float)$item[11] * (float)$item[3] / 1000 : 0;
+//                 $ndf += isset($item[12]) && is_numeric($item[12]) ? (float)$item[12] * (float)$item[3] / 1000 : 0;
+//                 $nel += isset($item[13]) && is_numeric($item[13]) ? (float)$item[13] * (float)$item[3] / 1000 : 0;
+//                 $rudp += isset($item[14]) && is_numeric($item[14]) ? (float)$item[14] * (float)$item[3] / 1000 : 0;
+//                 $endf += isset($item[15]) && is_numeric($item[15]) ? (float)$item[15] * (float)$item[3] / 1000 : 0;
+//                 $value += isset($item[2]) && is_numeric($item[2]) && is_numeric($item[3]) ? (float)$item[2] * (float)$item[3] : 0;
+//             }
+//         }
+
+//         // Calculate fresh basis
+//         $fresh = [
+//             'CP' => round($cp, 2),
+//             'FAT' => round($ee, 2),
+//             'FIBER' => round($cf, 2),
+//             'TDN' => round($tdn, 2),
+//             'ENERGY' => round($me, 2),
+//             'CA' => round($ca, 2),
+//             'P' => round($p, 2),
+//             'RUDP' => round($rudp, 2),
+//             'ADF' => round($adf, 2),
+//             'NDF' => round($ndf, 2),
+//             'NEL' => round((0.0245 * $tdn - 0.12 * 0.454), 2),
+//             'ENDF' => round($endf, 2),
+//         ];
+
+//         // Calculate DMB
+//         $dmb_tdn = $tdn > 0 ? round(($tdn * 12 / 100 + $tdn), 2) : 0;
+//         $dmb = [
+//             'CP' => $cp > 0 ? round(($cp * 12 / 100 + $cp), 2) : 0,
+//             'FAT' => $ee > 0 ? round(($ee * 12 / 100 + $ee), 2) : 0,
+//             'FIBER' => $cf > 0 ? round(($cf * 12 / 100 + $cf), 2) : 0,
+//             'TDN' => $dmb_tdn,
+//             'ENERGY' => $me > 0 ? round(($me * 12 / 100 + $me), 2) : 0,
+//             'CA' => $ca > 0 ? round(($ca * 12 / 100 + $ca), 2) : 0,
+//             'P' => $p > 0 ? round(($p * 12 / 100 + $p), 2) : 0,
+//             'RUDP' => $rudp > 0 ? round(($rudp * 12 / 100 + $rudp), 2) : 0,
+//             'ADF' => $adf > 0 ? round(($adf * 12 / 100 + $adf), 2) : 0,
+//             'NDF' => $ndf > 0 ? round(($ndf * 12 / 100 + $ndf), 2) : 0,
+//             'NEL' => round((0.0245 * $dmb_tdn - 0.12 * 0.454), 2),
+//             'ENDF' => $endf > 0 ? round(($endf * 12 / 100 + $endf), 2) : 0,
+//         ];
+
+//         // Prepare data for the view
+//         $result = [
+//             'ProteinData' => json_encode($proteinData),
+//             'EnergyData' => json_encode($energyData),
+//             'ProductData' => json_encode($productData),
+//             'MedicineData' => json_encode($medicineData),
+//             'fresh' => $fresh,
+//             'dmb' => $dmb,
+//             'row_ton' => round($value, 2),
+//             'row_qtl' => round($value / 10, 2),
+//         ];
+
+//         // Render the HTML view
+//         $htmlContent = view('pdf.feed', ['result' => $result])->render();
+
+//         // Update service record
+//         $serviceRecord = ServiceRecord::first();
+//         if ($serviceRecord) {
+//             $serviceRecord->update(['feed_calculator' => $serviceRecord->feed_calculator + 1]);
+//             Log::info('Service record updated for FeedCalculator', [
+//                 'service_record_id' => $serviceRecord->id,
+//                 'feed_calculator' => $serviceRecord->feed_calculator,
+//             ]);
+//         } else {
+//             Log::warning('No service record found in tbl_service_records for FeedCalculator');
+//         }
+
+//         // Log transaction
+//         $txnData = [
+//             'farmer_id' => $user->id,
+//             'service' => 'feed_calculator',
+//             'ip' => $request->ip(),
+//             'date' => now(),
+//             'only_date' => now()->format('Y-m-d'),
+//         ];
+//         $txn = ServiceRecordTxn::create($txnData);
+//         Log::info('Service record transaction logged for FeedCalculator', [
+//             'txn_id' => $txn->id,
+//             'farmer_id' => $user->id,
+//         ]);
+
+//         // Prepare response
+//         $send = [
+//             'fresh' => $fresh,
+//             'dmb' => $dmb,
+//             'row_ton' => round($value, 2),
+//             'row_qtl' => round($value / 10, 2),
+//             'html' => $htmlContent,
+//         ];
+
+//         return response()->json([
+//             'message' => 'Success!',
+//             'status' => 200,
+//             'data' => $send,
+//         ], 200);
+
+//     } catch (\Exception $e) {
+//         Log::error('Error in feedCalculator', [
+//             'farmer_id' => auth('farmer')->id() ?? null,
+//             'error' => $e->getMessage(),
+//             'trace' => $e->getTraceAsString(),
+//         ]);
+
+//         return response()->json([
+//             'message' => 'Error calculating feed: ' . $e->getMessage(),
+//             'status' => 201,
+//         ], 500);
+//     }
+// }
+
+
+
+// test feed cotroller
+public function feed_calculator(Request $request)
 {
-    set_time_limit(300);
+     set_time_limit(300);
     try {
-        // Validate authentication token
+       
         $token = $request->header('Authentication');
         if (!$token) {
             Log::warning('No bearer token provided');
@@ -355,36 +625,26 @@ class FeedController extends Controller
             ], 403);
         }
 
-        // Validate input data types
+ 
         $validator = Validator::make($request->all(), [
-            'proteinData' => 'nullable|json',
-            'energyData' => 'nullable|json',
-            'productData' => 'nullable|json',
-            'medicineData' => 'nullable|json',
+            'ProteinData' => 'nullable|json',
+            'EnergyData' => 'nullable|json',
+            'ProductData' => 'nullable|json',
+            'MedicineData' => 'nullable|json',
         ]);
-
+ 
         if ($validator->fails()) {
             return response()->json([
                 'message' => $validator->errors()->first(),
                 'status' => 201,
             ], 422);
         }
-
-        // Decode JSON inputs
-        $proteinData = $request->proteinData ? json_decode($request->proteinData, true) : [];
-        $energyData = $request->energyData ? json_decode($request->energyData, true) : [];
-        $productData = $request->productData ? json_decode($request->productData, true) : [];
-        $medicineData = $request->medicineData ? json_decode($request->medicineData, true) : [];
-
-        // Log decoded inputs for debugging
-        Log::debug('Decoded input data', [
-            'ProteinData' => $proteinData,
-            'EnergyData' => $energyData,
-            'ProductData' => $productData,
-            'MedicineData' => $medicineData,
-        ]);
-
-        // Validate numeric values in decoded data
+ 
+        $proteinData = $request->ProteinData ? json_decode($request->ProteinData, true) : [];
+        $energyData = $request->EnergyData ? json_decode($request->EnergyData, true) : [];
+        $productData = $request->ProductData ? json_decode($request->ProductData, true) : [];
+        $medicineData = $request->MedicineData ? json_decode($request->MedicineData, true) : [];
+ 
         $dataTypes = [
             'ProteinData' => $proteinData,
             'EnergyData' => $energyData,
@@ -395,7 +655,7 @@ class FeedController extends Controller
             foreach ($data as $index => $item) {
                 if (!empty($item[3])) {
                     if (!is_numeric($item[3])) {
-                        Log::error("Non-numeric value in $type at index $index, item[3]", ['value' => $item[3]]);
+                     
                         return response()->json([
                             'message' => "Non-numeric value found in $type at index 3",
                             'status' => 201,
@@ -403,7 +663,7 @@ class FeedController extends Controller
                     }
                     for ($i = 2; $i <= 15; $i++) {
                         if (isset($item[$i]) && $item[$i] !== '' && $item[$i] !== null && !is_numeric($item[$i])) {
-                            Log::error("Non-numeric value in $type at index $index, item[$i]", ['value' => $item[$i]]);
+                         
                             return response()->json([
                                 'message' => "Non-numeric value found in $type at index $i",
                                 'status' => 201,
@@ -413,11 +673,9 @@ class FeedController extends Controller
                 }
             }
         }
-
-        // Initialize nutritional metrics
+ 
         $cp = $ee = $cf = $tdn = $me = $ca = $p = $adf = $ndf = $nel = $rudp = $endf = $value = 0;
-
-        // Process ProteinData
+ 
         foreach ($proteinData as $item) {
             if (!empty($item[3]) && is_numeric($item[3])) {
                 $cp += isset($item[4]) && is_numeric($item[4]) ? (float)$item[4] * (float)$item[3] / 1000 : 0;
@@ -435,8 +693,7 @@ class FeedController extends Controller
                 $value += isset($item[2]) && is_numeric($item[2]) && is_numeric($item[3]) ? (float)$item[2] * (float)$item[3] : 0;
             }
         }
-
-        // Process EnergyData
+ 
         foreach ($energyData as $item) {
             if (!empty($item[3]) && is_numeric($item[3])) {
                 $cp += isset($item[4]) && is_numeric($item[4]) ? (float)$item[4] * (float)$item[3] / 1000 : 0;
@@ -454,8 +711,7 @@ class FeedController extends Controller
                 $value += isset($item[2]) && is_numeric($item[2]) && is_numeric($item[3]) ? (float)$item[2] * (float)$item[3] : 0;
             }
         }
-
-        // Process ProductData
+ 
         foreach ($productData as $item) {
             if (!empty($item[3]) && is_numeric($item[3])) {
                 $cp += isset($item[4]) && is_numeric($item[4]) ? (float)$item[4] * (float)$item[3] / 1000 : 0;
@@ -473,8 +729,7 @@ class FeedController extends Controller
                 $value += isset($item[2]) && is_numeric($item[2]) && is_numeric($item[3]) ? (float)$item[2] * (float)$item[3] : 0;
             }
         }
-
-        // Process MedicineData
+ 
         foreach ($medicineData as $item) {
             if (!empty($item[3]) && is_numeric($item[3])) {
                 $cp += isset($item[4]) && is_numeric($item[4]) ? (float)$item[4] * (float)$item[3] / 1000 : 0;
@@ -492,8 +747,7 @@ class FeedController extends Controller
                 $value += isset($item[2]) && is_numeric($item[2]) && is_numeric($item[3]) ? (float)$item[2] * (float)$item[3] : 0;
             }
         }
-
-        // Calculate fresh basis
+ 
         $fresh = [
             'CP' => round($cp, 2),
             'FAT' => round($ee, 2),
@@ -508,8 +762,7 @@ class FeedController extends Controller
             'NEL' => round((0.0245 * $tdn - 0.12 * 0.454), 2),
             'ENDF' => round($endf, 2),
         ];
-
-        // Calculate DMB
+ 
         $dmb_tdn = $tdn > 0 ? round(($tdn * 12 / 100 + $tdn), 2) : 0;
         $dmb = [
             'CP' => $cp > 0 ? round(($cp * 12 / 100 + $cp), 2) : 0,
@@ -525,23 +778,47 @@ class FeedController extends Controller
             'NEL' => round((0.0245 * $dmb_tdn - 0.12 * 0.454), 2),
             'ENDF' => $endf > 0 ? round(($endf * 12 / 100 + $endf), 2) : 0,
         ];
-
-        // Prepare data for the view
+ 
         $result = [
-            'ProteinData' => json_encode($proteinData),
-            'EnergyData' => json_encode($energyData),
-            'ProductData' => json_encode($productData),
-            'MedicineData' => json_encode($medicineData),
+            'fresh' => $fresh,
+            'dmb' => $dmb,
+            'row_ton' => round($value, 2),
+            'row_qtl' => round($value / 10, 2),
+            'ProteinData' => $request->ProteinData,
+            'EnergyData' => $request->EnergyData,
+            'ProductData' => $request->ProductData,
+            'MedicineData' => $request->MedicineData,
+        ];
+ 
+ 
+ 
+        // if ($request->query('download') === 'pdf') {
+        //     $pdf = PDF::loadView('partner/pdf.feed', compact('result'))
+        //         ->setPaper('a4', 'portrait')
+        //         ->setOptions(['defaultFont' => 'sans-serif']);
+        //     return $pdf->download('feed_calculation_' . now()->format('YmdHis') . '.pdf');
+        // }
+               // Handle PDF file upload
+ 
+           $feedPdfName = 'feed_report_' . Str::uuid() . '.pdf';
+            $pdfPath = public_path('feeds/pdf/' . $feedPdfName);
+ 
+            // Ensure the directory exists
+            if (!file_exists(public_path('feeds/pdf'))) {
+                mkdir(public_path('feeds/pdf'), 0777, true);
+            }
+ 
+         $htmlContent = view('pdf.feed', ['result' => $result])->render();
+ 
+        // $pdf->save($pdfPath);
+ 
+        $send = [
             'fresh' => $fresh,
             'dmb' => $dmb,
             'row_ton' => round($value, 2),
             'row_qtl' => round($value / 10, 2),
         ];
-
-        // Render the HTML view
-        $htmlContent = view('pdf.feed', ['result' => $result])->render();
-
-        // Update service record
+ 
         $serviceRecord = ServiceRecord::first();
         if ($serviceRecord) {
             $serviceRecord->update(['feed_calculator' => $serviceRecord->feed_calculator + 1]);
@@ -552,8 +829,7 @@ class FeedController extends Controller
         } else {
             Log::warning('No service record found in tbl_service_records for FeedCalculator');
         }
-
-        // Log transaction
+ 
         $txnData = [
             'farmer_id' => $user->id,
             'service' => 'feed_calculator',
@@ -566,37 +842,28 @@ class FeedController extends Controller
             'txn_id' => $txn->id,
             'farmer_id' => $user->id,
         ]);
-
-        // Prepare response
-        $send = [
-            'fresh' => $fresh,
-            'dmb' => $dmb,
-            'row_ton' => round($value, 2),
-            'row_qtl' => round($value / 10, 2),
-            'html' => $htmlContent,
-        ];
-
+        $pdfUrl = url('feeds/pdf/' . $feedPdfName);
+ 
         return response()->json([
             'message' => 'Success!',
             'status' => 200,
             'data' => $send,
+             'html' => $htmlContent,
         ], 200);
-
+ 
     } catch (\Exception $e) {
         Log::error('Error in feedCalculator', [
             'farmer_id' => auth('farmer')->id() ?? null,
             'error' => $e->getMessage(),
             'trace' => $e->getTraceAsString(),
         ]);
-
+ 
         return response()->json([
             'message' => 'Error calculating feed: ' . $e->getMessage(),
             'status' => 201,
         ], 500);
     }
-}
-
-
+}  
 
 // // Animal Req
 //   public function animalRequirements(Request $request)
