@@ -411,7 +411,7 @@ class ToolsController extends Controller
             return response()->json([
                 'message' => 'Success!',
                 'status' => 200,
-                'data' => array_merge($data, ['html' => $htmlContent]),
+                'data' => $htmlContent,
             ], 200);
         } catch (\PhpOffice\PhpSpreadsheet\Exception $e) {
             Log::error('projectRequirements: Spreadsheet error', [
