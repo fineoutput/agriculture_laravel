@@ -69,7 +69,7 @@
                         </td>
                         <td colspan="2" style="border-left:none">
                             <p><b>Date</b><span class="ht">{{ now()->format('Y-m-d') }}</span></p>
-                            {{-- <p><b>Farmer</b><span class="ht">{{ $farmername }}</span></p> --}}
+                            <p><b>Farmer</b><span class="ht">{{ $farmername }}</span></p>
                             <h6>Contact:</h6>
                             <p style="font-size:15px">Call & Whatsapp- 7891029090</p>
                             <h6>Email:</h6>
@@ -151,13 +151,13 @@
                 <tbody>
                     <tr>
                         <td colspan="2">1. Dry Matter Intake (DMI):</td>
-                        <td class="text-info" colspan="1">{{ $results['energy']['dmi_kg_per_day'] ?? '-' }} kg/cow/day</td>
-                        <td class="text-info" colspan="1">{{ $result['energy']['dmi_percent_bw'] ?? '-' }} % BW/day</td>
+                        <td class="text-info" colspan="1">{{ $spreadsheet->getActiveSheet()->getCell('F32')->getFormattedValue() ?? '-' }} kg/cow/day</td>
+                        <td class="text-info" colspan="1">{{ $spreadsheet->getActiveSheet()->getCell('F33')->getFormattedValue() ?? '-' }} % BW/day</td>
                     </tr>
                     <tr>
                         <td colspan="2">2. Drinking Water Intake:</td>
-                        <td class="text-info" colspan="1">{{ $result['energy']['drinking_water_liters'] ?? '-' }} L/cow/day</td>
-                        <td class="text-info" colspan="1">{{ $result['energy']['drinking_water_percent_bw'] ?? '-' }} % BW/day</td>
+                        <td class="text-info" colspan="1">{{ $spreadsheet->getActiveSheet()->getCell('I32')->getFormattedValue() ?? '-' }} L/cow/day</td>
+                        <td class="text-info" colspan="1">{{ $spreadsheet->getActiveSheet()->getCell('I33')->getFormattedValue() ?? '-' }} % BW/day</td>
                     </tr>
                 </tbody>
                 <tbody class="labels">
@@ -178,69 +178,69 @@
                 <tbody>
                     <tr>
                         <td>Total Net Energy (NE) Intake:</td>
-                        <td class="info2">{{ $result['energy']['net_energy_intake'] ?? '-' }} Mcal/cow/day</td>
+                        <td class="info2">{{ $spreadsheet->getActiveSheet()->getCell('F38')->getFormattedValue() ?? '-' }} Mcal/cow/day</td>
                         <td>Crude Protein (CP) Intake:</td>
-                        <td class="info2">{{ $result['energy']['crude_protein_intake'] ?? '-' }} kg/cow/day</td>
+                        <td class="info2">{{ $spreadsheet->getActiveSheet()->getCell('I38')->getFormattedValue() ?? '-' }} kg/cow/day</td>
                     </tr>
                     <tr>
                         <td>NE Diet:</td>
-                        <td class="info2">{{ $result['energy']['net_energy_diet'] ?? '-' }} Mcal/kg DM Diet</td>
+                        <td class="info2">{{ $spreadsheet->getActiveSheet()->getCell('F39')->getFormattedValue() ?? '-' }} Mcal/kg DM Diet</td>
                         <td>CP Diet:</td>
-                        <td class="info2">{{ $result['energy']['crude_protein_diet'] ?? '-' }} % DM</td>
+                        <td class="info2">{{ $spreadsheet->getActiveSheet()->getCell('I39')->getFormattedValue() ?? '-' }} % DM</td>
                     </tr>
                     <tr>
                         <td>Total Metabolizable Energy (ME) Intake:</td>
-                        <td class="info2">{{ $result['metabolizable_energy_intake'] ?? '-' }} Mcal/cow/day</td>
+                        <td class="info2">{{ $spreadsheet->getActiveSheet()->getCell('F40')->getFormattedValue() ?? '-' }} Mcal/cow/day</td>
                         <td>Rumen Degradable Protein (RDP) Intake:</td>
-                        <td class="info2">{{ $result['rdp_intake'] ?? '-' }} kg/cow/day</td>
+                        <td class="info2">{{ $spreadsheet->getActiveSheet()->getCell('I40')->getFormattedValue() ?? '-' }} kg/cow/day</td>
                     </tr>
                     <tr>
                         <td>ME Diet:</td>
-                        <td class="info2">{{ $result['metabolizable_energy_diet'] ?? '-' }} Mcal/kg DM Diet</td>
+                        <td class="info2">{{ $spreadsheet->getActiveSheet()->getCell('F41')->getFormattedValue() ?? '-' }} Mcal/kg DM Diet</td>
                         <td>RDP Diet:</td>
-                        <td class="info2">{{ $result['rdp_diet'] ?? '-' }} % DM</td>
+                        <td class="info2">{{ $spreadsheet->getActiveSheet()->getCell('I41')->getFormattedValue() ?? '-' }} % DM</td>
                     </tr>
                     <tr>
                         <td>Total Digestible Energy (DE) Intake:</td>
-                        <td class="info2">{{ $result['digestible_energy_intake'] ?? '-' }} Mcal/cow/day</td>
+                        <td class="info2">{{ $spreadsheet->getActiveSheet()->getCell('F42')->getFormattedValue() ?? '-' }} Mcal/cow/day</td>
                         <td>Rumen Undegradable Protein (RUP) Intake:</td>
-                        <td class="info2">{{ $result['rup_intake'] ?? '-' }} kg/cow/day</td>
+                        <td class="info2">{{ $spreadsheet->getActiveSheet()->getCell('I42')->getFormattedValue() ?? '-' }} kg/cow/day</td>
                     </tr>
                     <tr>
                         <td>DE Diet:</td>
-                        <td class="info2">{{ $result['digestible_energy_diet'] ?? '-' }} Mcal/kg DM Diet</td>
+                        <td class="info2">{{ $spreadsheet->getActiveSheet()->getCell('F43')->getFormattedValue() ?? '-' }} Mcal/kg DM Diet</td>
                         <td>RUP Diet:</td>
-                        <td class="info2">{{ $result['rup_diet'] ?? '-' }} % DM</td>
+                        <td class="info2">{{ $spreadsheet->getActiveSheet()->getCell('I43')->getFormattedValue() ?? '-' }} % DM</td>
                     </tr>
                     <tr>
                         <td>Total Digestible Nutrient (TDN) Intake:</td>
-                        <td class="info2">{{ $result['tdn_intake'] ?? '-' }} kg/cow/day</td>
+                        <td class="info2">{{ $spreadsheet->getActiveSheet()->getCell('F44')->getFormattedValue() ?? '-' }} kg/cow/day</td>
                         <td>Metabolizable Protein (MP) Intake:</td>
-                        <td class="info2">{{ $result['mp_intake'] ?? '-' }} kg/cow/day</td>
+                        <td class="info2">{{ $spreadsheet->getActiveSheet()->getCell('I44')->getFormattedValue() ?? '-' }} kg/cow/day</td>
                     </tr>
                     <tr>
                         <td>TDN Diet:</td>
-                        <td class="info2">{{ $result['tdn_diet'] ?? '-' }} % DM</td>
+                        <td class="info2">{{ $spreadsheet->getActiveSheet()->getCell('F45')->getFormattedValue() ?? '-' }} % DM</td>
                         <td>MP Diet:</td>
-                        <td class="info2">{{ $result['mp_diet'] ?? '-' }} % DM</td>
+                        <td class="info2">{{ $spreadsheet->getActiveSheet()->getCell('I45')->getFormattedValue() ?? '-' }} % DM</td>
                     </tr>
                     <tr>
                         <td></td>
                         <td class="info2"></td>
                         <td>MP From Microbial Rumen Protein:</td>
-                        <td class="info2">{{ $result['mp_microbial_rumen'] ?? '-' }} % MP</td>
+                        <td class="info2">{{ $spreadsheet->getActiveSheet()->getCell('I46')->getFormattedValue() ?? '-' }} % MP</td>
                     </tr>
                     <tr>
                         <td></td>
                         <td class="info2"></td>
                         <td>Digestible Lysine Diet:</td>
-                        <td class="info2">{{ $result['digestible_lysine_diet'] ?? '-' }} % MP</td>
+                        <td class="info2">{{ $spreadsheet->getActiveSheet()->getCell('I47')->getFormattedValue() ?? '-' }} % MP</td>
                     </tr>
                     <tr>
                         <td></td>
                         <td class="info2"></td>
                         <td>Digestible Methionine Diet:</td>
-                        <td class="info2">{{ $result['digestible_methionine_diet'] ?? '-' }} % MP</td>
+                        <td class="info2">{{ $spreadsheet->getActiveSheet()->getCell('I48')->getFormattedValue() ?? '-' }} % MP</td>
                     </tr>
                 </tbody>
                 <tbody class="labels">
@@ -256,99 +256,99 @@
                 <tbody>
                     <tr>
                         <td>Ca Intake:</td>
-                        <td class="success">{{ $result['calcium_intake'] ?? '-' }} g/cow/day</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('F51')->getFormattedValue() ?? '-' }} g/cow/day</td>
                         <td>Zn Intake:</td>
-                        <td class="success">{{ $result['zinc_intake'] ?? '-' }} mg/cow/day</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('I51')->getFormattedValue() ?? '-' }} mg/cow/day</td>
                     </tr>
                     <tr>
                         <td>Ca Diet:</td>
-                        <td class="success">{{ $result['calcium_diet'] ?? '-' }} % DM</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('F52')->getFormattedValue() ?? '-' }} % DM</td>
                         <td>Zn Diet:</td>
-                        <td class="success">{{ $result['zinc_diet'] ?? '-' }} mg/kg DM</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('I52')->getFormattedValue() ?? '-' }} mg/kg DM</td>
                     </tr>
                     <tr>
                         <td>P Intake:</td>
-                        <td class="success">{{ $result['phosphorus_intake'] ?? '-' }} g/cow/day</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('F53')->getFormattedValue() ?? '-' }} g/cow/day</td>
                         <td>Cu Intake:</td>
-                        <td class="success">{{ $result['copper_intake'] ?? '-' }} mg/cow/day</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('I53')->getFormattedValue() ?? '-' }} mg/cow/day</td>
                     </tr>
                     <tr>
                         <td>P Diet:</td>
-                        <td class="success">{{ $result['phosphorus_diet'] ?? '-' }} % DM</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('F54')->getFormattedValue() ?? '-' }} % DM</td>
                         <td>Cu Diet:</td>
-                        <td class="success">{{ $result['copper_diet'] ?? '-' }} mg/kg DM</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('I54')->getFormattedValue() ?? '-' }} mg/kg DM</td>
                     </tr>
                     <tr>
                         <td>Na Intake:</td>
-                        <td class="success">{{ $result['sodium_intake'] ?? '-' }} g/cow/day</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('F55')->getFormattedValue() ?? '-' }} g/cow/day</td>
                         <td>Fe Intake:</td>
-                        <td class="success">{{ $result['iron_intake'] ?? '-' }} mg/cow/day</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('I55')->getFormattedValue() ?? '-' }} mg/cow/day</td>
                     </tr>
                     <tr>
                         <td>Na Diet:</td>
-                        <td class="success">{{ $result['sodium_diet'] ?? '-' }} % DM</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('F56')->getFormattedValue() ?? '-' }} % DM</td>
                         <td>Fe Diet:</td>
-                        <td class="success">{{ $result['iron_diet'] ?? '-' }} mg/kg DM</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('I56')->getFormattedValue() ?? '-' }} mg/kg DM</td>
                     </tr>
                     <tr>
                         <td>K Intake:</td>
-                        <td class="success">{{ $result['potassium_intake'] ?? '-' }} g/cow/day</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('F57')->getFormattedValue() ?? '-' }} g/cow/day</td>
                         <td>Mn Intake:</td>
-                        <td class="success">{{ $result['manganese_intake'] ?? '-' }} mg/cow/day</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('I57')->getFormattedValue() ?? '-' }} mg/cow/day</td>
                     </tr>
                     <tr>
                         <td>K Diet:</td>
-                        <td class="success">{{ $result['potassium_diet'] ?? '-' }} % DM</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('F58')->getFormattedValue() ?? '-' }} % DM</td>
                         <td>Mn Diet:</td>
-                        <td class="success">{{ $result['manganese_diet'] ?? '-' }} mg/kg DM</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('I58')->getFormattedValue() ?? '-' }} mg/kg DM</td>
                     </tr>
                     <tr>
                         <td>S Intake:</td>
-                        <td class="success">{{ $result['sulfur_intake'] ?? '-' }} g/cow/day</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('F59')->getFormattedValue() ?? '-' }} g/cow/day</td>
                         <td>Co Intake:</td>
-                        <td class="success">{{ $result['cobalt_intake'] ?? '-' }} mg/cow/day</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('I59')->getFormattedValue() ?? '-' }} mg/cow/day</td>
                     </tr>
                     <tr>
                         <td>S Diet:</td>
-                        <td class="success">{{ $result['sulfur_diet'] ?? '-' }} % DM</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('F60')->getFormattedValue() ?? '-' }} % DM</td>
                         <td>Co Diet:</td>
-                        <td class="success">{{ $result['cobalt_diet'] ?? '-' }} mg/kg DM</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('I60')->getFormattedValue() ?? '-' }} mg/kg DM</td>
                     </tr>
                     <tr>
                         <td>Mg Intake:</td>
-                        <td class="success">{{ $result['magnesium_intake'] ?? '-' }} g/cow/day</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('F61')->getFormattedValue() ?? '-' }} g/cow/day</td>
                         <td>I Intake:</td>
-                        <td class="success">{{ $result['iodine_intake'] ?? '-' }} g/cow/day</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('I61')->getFormattedValue() ?? '-' }} g/cow/day</td>
                     </tr>
                     <tr>
                         <td>Mg Diet:</td>
-                        <td class="success">{{ $result['magnesium_diet'] ?? '-' }} % DM</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('F62')->getFormattedValue() ?? '-' }} % DM</td>
                         <td>I Diet:</td>
-                        <td class="success">{{ $result['iodine_diet'] ?? '-' }} mg/kg DM</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('I62')->getFormattedValue() ?? '-' }} mg/kg DM</td>
                     </tr>
                     <tr>
                         <td></td>
                         <td class="success"></td>
                         <td>Se Intake:</td>
-                        <td class="success">{{ $result['selenium_intake'] ?? '-' }} mg/cow/day</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('I63')->getFormattedValue() ?? '-' }} mg/cow/day</td>
                     </tr>
                     <tr>
                         <td></td>
                         <td class="success"></td>
                         <td>Se Diet:</td>
-                        <td class="success">{{ $result['selenium_diet'] ?? '-' }} mg/kg DM</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('I64')->getFormattedValue() ?? '-' }} mg/kg DM</td>
                     </tr>
                     <tr>
                         <td></td>
                         <td class="success"></td>
                         <td>Cr Intake:</td>
-                        <td class="success">{{ $result['chromium_intake'] ?? '-' }} mg/cow/day</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('I65')->getFormattedValue() ?? '-' }} mg/cow/day</td>
                     </tr>
                     <tr>
                         <td></td>
                         <td class="success"></td>
                         <td>Cr Diet:</td>
-                        <td class="success">{{ $result['chromium_diet'] ?? '-' }} mg/kg DM</td>
+                        <td class="success">{{ $spreadsheet->getActiveSheet()->getCell('I66')->getFormattedValue() ?? '-' }} mg/kg DM</td>
                     </tr>
                 </tbody>
                 <tbody class="labels">
@@ -364,19 +364,19 @@
                 <tbody>
                     <tr>
                         <td>Vitamin A Diet:</td>
-                        <td class="primary">{{ $result['vitamin_a_diet'] ?? '-' }} IU/kg DM</td>
+                        <td class="primary">{{ $spreadsheet->getActiveSheet()->getCell('F69')->getFormattedValue() ?? '-' }} IU/kg DM</td>
                         <td>peNDF Diet:</td>
                         <td class="primary">≥21% DM</td>
                     </tr>
                     <tr>
                         <td>Vitamin D Diet:</td>
-                        <td class="primary">{{ $result['vitamin_d_diet'] ?? '-' }} IU/kg DM</td>
+                        <td class="primary">{{ $spreadsheet->getActiveSheet()->getCell('F70')->getFormattedValue() ?? '-' }} IU/kg DM</td>
                         <td>Fat Acid Diet:</td>
                         <td class="primary">≥6% DM</td>
                     </tr>
                     <tr>
                         <td>Vitamin E Diet:</td>
-                        <td class="primary">{{ $result['vitamin_e_diet'] ?? '-' }} IU/kg DM</td>
+                        <td class="primary">{{ $spreadsheet->getActiveSheet()->getCell('F71')->getFormattedValue() ?? '-' }} IU/kg DM</td>
                         <td></td>
                         <td class="primary"></td>
                     </tr>
@@ -391,13 +391,13 @@
                 <tbody>
                     <tr>
                         <td>Methane:</td>
-                        <td class="warning">{{ $result['methane_emission'] ?? '-' }} g/cow/day</td>
+                        <td class="warning">{{ $spreadsheet->getActiveSheet()->getCell('F73')->getFormattedValue() ?? '-' }} g/cow/day</td>
                         <td></td>
                         <td class="warning"></td>
                     </tr>
                 </tbody>
             </table>
         </div>
-    </div>  
+    </div>
 </body>
 </html>

@@ -1211,34 +1211,33 @@ public function feed_calculator(Request $request)
 
 
 
-    public function animalRequirements(Request $request)
+ public function animalRequirements(Request $request)
 {
- 
     try {
-    set_time_limit(300);
+        set_time_limit(300);
 
-         // Authenticate user using token
-            $token = $request->header('Authentication');
-            if (!$token) {
-                Log::warning('No bearer token provided');
-                return response()->json([
-                    'message' => 'Token required!',
-                    'status' => 201,
-                ], 401);
-            }
+        // Authenticate user using token
+        $token = $request->header('Authentication');
+        if (!$token) {
+            Log::warning('No bearer token provided');
+            return response()->json([
+                'message' => 'Token required!',
+                'status' => 201,
+            ], 401);
+        }
 
-            $user = Farmer::where('auth', $token)
-                ->where('is_active', 1)
-                ->first();
+        $user = Farmer::where('auth', $token)
+            ->where('is_active', 1)
+            ->first();
 
-            if (!$user) {
-                Log::warning('Invalid or inactive user for token', ['token' => $token]);
-                return response()->json([
-                    'message' => 'Invalid token or inactive user!',
-                    'status' => 201,
-                ], 403);
-            }
- 
+        if (!$user) {
+            Log::warning('Invalid or inactive user for token', ['token' => $token]);
+            return response()->json([
+                'message' => 'Invalid token or inactive user!',
+                'status' => 201,
+            ], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'group' => 'required|string',
             'feeding_system' => 'required|string',
@@ -1256,101 +1255,32 @@ public function feed_calculator(Request $request)
             'thi' => 'required|numeric',
             'fat_4' => 'required|numeric',
         ]);
- 
+
         if ($validator->fails()) {
             return response()->json([
                 'message' => $validator->errors()->first(),
                 'status' => 201,
             ], 422);
         }
- 
+
         $input = $request->only([
             'group', 'feeding_system', 'weight', 'milk_production', 'days_milk',
             'milk_fat', 'milk_protein', 'milk_lactose', 'weight_variation',
             'bcs', 'gestation_days', 'temp', 'humidity', 'thi', 'fat_4'
         ]);
- 
+
         Log::info('AnimalRequirements Input:', $input);
- 
+
         // Load Excel file
         $excelPath = public_path('assets/excel/animal_requirement.xlsx');
         if (!file_exists($excelPath)) {
             Log::error('Excel file not found:', ['path' => $excelPath]);
             return response()->json(['message' => 'Excel template not found'], 500);
         }
- 
-        $spreadsheet = IOFactory::load($excelPath);
+
+        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($excelPath);
         $sheet = $spreadsheet->getActiveSheet();
- 
-        // Define cell map for results
-        $cellMap = [
-            'dmi_kg_per_day' => 'K4',
-            'dmi_percent_bw' => 'K5',
-            'drinking_water_liters' => 'K6',
-            'drinking_water_percent_bw' => 'K7',
-            'net_energy_intake' => 'K8',
-            'net_energy_diet' => 'K9',
-            'metabolizable_energy_intake' => 'K10',
-            'metabolizable_energy_diet' => 'K11',
-            'digestible_energy_intake' => 'K12',
-            'digestible_energy_diet' => 'K13',
-            'tdn_intake' => 'K14',
-            'tdn_diet' => 'K15',
-            'crude_protein_intake' => 'K16',
-            'crude_protein_diet' => 'K17',
-            'rdp_intake' => 'K18',
-            'rdp_diet' => 'K19',
-            'rup_intake' => 'K20',
-            'rup_diet' => 'K21',
-            'mp_intake' => 'K22',
-            'mp_diet' => 'K23',
-            'mp_microbial_rumen' => 'K24',
-            'digestible_lysine_diet' => 'K25',
-            'digestible_methionine_diet' => 'K26',
-            'calcium_intake' => 'K27',
-            'calcium_diet' => 'K28',
-            'phosphorus_intake' => 'K29',
-            'phosphorus_diet' => 'K30',
-            'sodium_intake' => 'K31',
-            'sodium_diet' => 'K32',
-            'potassium_intake' => 'K33',
-            'potassium_diet' => 'K34',
-            'sulfur_intake' => 'K35',
-            'sulfur_diet' => 'K36',
-            'magnesium_intake' => 'K37',
-            'magnesium_diet' => 'K38',
-            'zinc_intake' => 'K39',
-            'zinc_diet' => 'K40',
-            'copper_intake' => 'K41',
-            'copper_diet' => 'K42',
-            'iron_intake' => 'K43',
-            'iron_diet' => 'K44',
-            'manganese_intake' => 'K45',
-            'manganese_diet' => 'K46',
-            'cobalt_intake' => 'K47',
-            'cobalt_diet' => 'K48',
-            'iodine_intake' => 'K49',
-            'iodine_diet' => 'K50',
-            'selenium_intake' => 'K51',
-            'selenium_diet' => 'K52',
-            'chromium_intake' => 'K53',
-            'chromium_diet' => 'K54',
-            'vitamin_a_diet' => 'K55',
-            'vitamin_d_diet' => 'K56',
-            'vitamin_e_diet' => 'K57',
-            'methane_emission' => 'K58',
-        ];
- 
-        // Log initial state of output cells
-        $initialState = [];
-        foreach ($cellMap as $key => $cell) {
-            $initialState[$key] = [
-                'raw' => $sheet->getCell($cell)->getValue(),
-                'calculated' => $sheet->getCell($cell)->getCalculatedValue(),
-            ];
-        }
-        Log::info('Output Cells Initial:', $initialState);
- 
+
         // Write user inputs with explicit type casting
         $sheet->setCellValue('F21', (int)$input['group']);
         $sheet->setCellValue('F22', (int)$input['feeding_system']);
@@ -1367,69 +1297,7 @@ public function feed_calculator(Request $request)
         $sheet->setCellValue('I25', (float)$input['humidity']);
         $sheet->setCellValue('I26', (float)$input['thi']);
         $sheet->setCellValue('I27', (float)$input['fat_4']);
- 
-        // Set formulas for output cells (placeholders, adjust as needed)
-        $sheet->setCellValue('K4', '=0.016*F23+0.05*F24'); // DMI to approximate 17.6 kg/day
-        $sheet->setCellValue('K5', '=K4/F23*100'); // DMI % BW
-        $sheet->setCellValue('K6', '=2.6*K4+14.5'); // Drinking water (L/day)
-        $sheet->setCellValue('K7', '=K6/F23*100'); // Drinking water % BW
-        $sheet->setCellValue('K8', '=0.71*F24+21.39+1.6'); // Net Energy Intake
-        $sheet->setCellValue('K9', '=K8/K4'); // Net Energy Diet
-        $sheet->setCellValue('K10', '=K8*1.514'); // Metabolizable Energy Intake
-        $sheet->setCellValue('K11', '=K10/K4'); // Metabolizable Energy Diet
-        $sheet->setCellValue('K12', '=K10*1.121'); // Digestible Energy Intake
-        $sheet->setCellValue('K13', '=K12/K4'); // Digestible Energy Diet
-        $sheet->setCellValue('K14', '=K4*0.9725'); // TDN Intake (97.25% DM)
-        $sheet->setCellValue('K15', '=97.25'); // TDN Diet (% DM)
-        $sheet->setCellValue('K16', '=K4*0.2212'); // Crude Protein Intake (22.12% DM)
-        $sheet->setCellValue('K17', '=22.12'); // Crude Protein Diet (% DM)
-        $sheet->setCellValue('K18', '=K4*0.1372'); // RDP Intake (13.72% DM)
-        $sheet->setCellValue('K19', '=13.72'); // RDP Diet (% DM)
-        $sheet->setCellValue('K20', '=K4*0.0841'); // RUP Intake (8.41% DM)
-        $sheet->setCellValue('K21', '=8.41'); // RUP Diet (% DM)
-        $sheet->setCellValue('K22', '=K4*0.1496'); // MP Intake (14.96% DM)
-        $sheet->setCellValue('K23', '=14.96'); // MP Diet (% DM)
-        $sheet->setCellValue('K24', '=57.84'); // MP from Microbial Rumen (% MP)
-        $sheet->setCellValue('K25', '=6.8'); // Digestible Lysine Diet (% MP)
-        $sheet->setCellValue('K26', '=2.3'); // Digestible Methionine Diet (% MP)
-        $sheet->setCellValue('K27', '=K4*0.0053*1000'); // Calcium Intake (g/day)
-        $sheet->setCellValue('K28', '=0.53'); // Calcium Diet (% DM)
-        $sheet->setCellValue('K29', '=K4*0.0033*1000'); // Phosphorus Intake (g/day)
-        $sheet->setCellValue('K30', '=0.33'); // Phosphorus Diet (% DM)
-        $sheet->setCellValue('K31', '=K4*0.0037*1000'); // Sodium Intake (g/day)
-        $sheet->setCellValue('K32', '=0.37'); // Sodium Diet (% DM)
-        $sheet->setCellValue('K33', '=K4*0.0091*1000'); // Potassium Intake (g/day)
-        $sheet->setCellValue('K34', '=0.91'); // Potassium Diet (% DM)
-        $sheet->setCellValue('K35', '=K4*0.0020*1000'); // Sulfur Intake (g/day)
-        $sheet->setCellValue('K36', '=0.20'); // Sulfur Diet (% DM)
-        $sheet->setCellValue('K37', '=K4*0.0035*1000'); // Magnesium Intake (g/day)
-        $sheet->setCellValue('K38', '=0.35'); // Magnesium Diet (% DM)
-        $sheet->setCellValue('K39', '=K4*0.051*1000'); // Zinc Intake (mg/day)
-        $sheet->setCellValue('K40', '=51'); // Zinc Diet (mg/kg DM)
-        $sheet->setCellValue('K41', '=K4*0.032*1000'); // Copper Intake (mg/day)
-        $sheet->setCellValue('K42', '=32'); // Copper Diet (mg/kg DM)
-        $sheet->setCellValue('K43', '=K4*0.010*1000'); // Iron Intake (mg/day)
-        $sheet->setCellValue('K44', '=10'); // Iron Diet (mg/kg DM)
-        $sheet->setCellValue('K45', '=K4*0.030*1000'); // Manganese Intake (mg/day)
-        $sheet->setCellValue('K46', '=30'); // Manganese Diet (mg/kg DM)
-        $sheet->setCellValue('K47', '=K4*0.001*1000'); // Cobalt Intake (mg/day)
-        $sheet->setCellValue('K48', '=1'); // Cobalt Diet (mg/kg DM)
-        $sheet->setCellValue('K49', '=K4*0.00072*1000'); // Iodine Intake (mg/day)
-        $sheet->setCellValue('K50', '=0.72'); // Iodine Diet (mg/kg DM)
-        $sheet->setCellValue('K51', '=K4*0.00030*1000'); // Selenium Intake (mg/day)
-        $sheet->setCellValue('K52', '=0.30'); // Selenium Diet (mg/kg DM)
-        $sheet->setCellValue('K53', '=K4*0.00050*1000'); // Chromium Intake (mg/day)
-        $sheet->setCellValue('K54', '=0.50'); // Chromium Diet (mg/kg DM)
-        $sheet->setCellValue('K55', '=1024'); // Vitamin A Diet (IU/kg DM)
-        $sheet->setCellValue('K56', '=512'); // Vitamin D Diet (IU/kg DM)
-        $sheet->setCellValue('K57', '=17'); // Vitamin E Diet (IU/kg DM)
-        $sheet->setCellValue('K58', '=23.35*K4'); // Methane Emission (g/day)
- 
-        // Set format for output cells
-        foreach ($cellMap as $cell) {
-            $sheet->getStyle($cell)->getNumberFormat()->setFormatCode(\PhpOffice\PhpSpreadsheet\Style\NumberFormat::FORMAT_NUMBER_00);
-        }
- 
+
         // Log inputs written
         Log::info('Inputs Written:', [
             'F21' => $sheet->getCell('F21')->getCalculatedValue(),
@@ -1448,76 +1316,73 @@ public function feed_calculator(Request $request)
             'I26' => $sheet->getCell('I26')->getCalculatedValue(),
             'I27' => $sheet->getCell('I27')->getCalculatedValue(),
         ]);
- 
+
         // Force recalculation
-        \PhpOffice\PhpSpreadsheet\Calculation\Calculation::getInstance($spreadsheet)->setCalculationCacheEnabled(false);
-        $spreadsheet->getActiveSheet()->getParent()->getCalculationEngine()->clearCalculationCache();
+        \PhpOffice\PhpSpreadsheet\Calculation\Calculation::getInstance($spreadsheet)->disableCalculationCache();
         $spreadsheet->getActiveSheet()->getParent()->getCalculationEngine()->calculate();
- 
-        // Log output cells before saving
-        $beforeSaveState = [];
-        foreach ($cellMap as $key => $cell) {
-            $beforeSaveState[$key] = [
-                'raw' => $sheet->getCell($cell)->getValue(),
-                'calculated' => $sheet->getCell($cell)->getCalculatedValue(),
-            ];
-        }
-        Log::info('Output Cells Before Save:', $beforeSaveState);
- 
+
+        // Log DMI cells before save
+        Log::info('DMI Cells Before Save:', [
+            'F32' => [
+                'raw' => $sheet->getCell('F32')->getValue(),
+                'calculated' => $sheet->getCell('F32')->getCalculatedValue(),
+                'formatted' => $sheet->getCell('F32')->getFormattedValue(),
+            ],
+            'F33' => [
+                'raw' => $sheet->getCell('F33')->getValue(),
+                'calculated' => $sheet->getCell('F33')->getCalculatedValue(),
+                'formatted' => $sheet->getCell('F33')->getFormattedValue(),
+            ],
+        ]);
+
         // Verify output directory
         $newExcelPath = public_path('assets/excel/animal_requirement_updated.xlsx');
         if (!is_writable(dirname($newExcelPath))) {
             Log::error('Directory not writable:', ['path' => dirname($newExcelPath)]);
             return response()->json(['message' => 'Cannot write to Excel directory'], 500);
         }
- 
+
         // Save updated file
-        $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
         $writer->setPreCalculateFormulas(true);
         $writer->save($newExcelPath);
         Log::info('Excel file saved:', ['path' => $newExcelPath, 'size' => filesize($newExcelPath)]);
- 
+
         // Reload the updated file
-        $spreadsheet = IOFactory::load($newExcelPath);
+        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($newExcelPath);
         $sheet = $spreadsheet->getActiveSheet();
- 
-        // Read calculated results
-        $result = [];
-        foreach ($cellMap as $key => $cell) {
-            $result[$key] = $sheet->getCell($cell)->getCalculatedValue();
-        }
- 
-        // Debug if any result is null
-        foreach ($result as $key => $value) {
-            if ($value === null) {
-                $cell = $cellMap[$key];
-                Log::warning("{$key} is null, checking details:", [
-                    'cell' => $cell,
-                    'raw' => $sheet->getCell($cell)->getValue(),
-                    'formatted' => $sheet->getCell($cell)->getFormattedValue(),
-                    'dependencies' => $sheet->getCell($cell)->getFormulaAttributes()['dependencies'] ?? [],
-                ]);
-            }
-        }
- 
-        Log::info('Calculated Results:', $result);
- 
-       // Prepare data for the view
+
+        // Log DMI cells after reload
+        Log::info('DMI Cells After Reload:', [
+            'F32' => [
+                'raw' => $sheet->getCell('F32')->getValue(),
+                'calculated' => $sheet->getCell('F32')->getCalculatedValue(),
+                'formatted' => $sheet->getCell('F32')->getFormattedValue(),
+            ],
+            'F33' => [
+                'raw' => $sheet->getCell('F33')->getValue(),
+                'calculated' => $sheet->getCell('F33')->getCalculatedValue(),
+                'formatted' => $sheet->getCell('F33')->getFormattedValue(),
+            ],
+        ]);
+
+        // Prepare data for the view
         $farmername = $user->company_name ?? 'N/A';
         $viewData = [
             'input' => $input,
-            'result' => $result,
+            'spreadsheet' => $spreadsheet, // Pass the spreadsheet object
             'farmername' => $farmername,
         ];
 
         // Render the HTML view
         $htmlContent = view('pdf.animal_requirements', $viewData)->render();
+
         // Update service record
         $serviceRecord = ServiceRecord::first();
         if ($serviceRecord) {
             $serviceRecord->increment('animal_req');
         }
- 
+
         // Record transaction
         ServiceRecordTxn::create([
             'farmer_id' => $user->id,
@@ -1526,19 +1391,20 @@ public function feed_calculator(Request $request)
             'date' => now(),
             'only_date' => now()->format('Y-m-d'),
         ]);
-        $send = array_merge($input, $result, ['html' => $htmlContent]);
+
+        $send = array_merge($input, ['html' => $htmlContent]);
         return response()->json([
             'message' => 'Success!',
             'status' => 200,
             'data' => $send,
         ], 200);
- 
+
     } catch (\Exception $e) {
         Log::error('Error in animalRequirements', [
             'error' => $e->getMessage(),
             'trace' => $e->getTraceAsString(),
         ]);
- 
+
         return response()->json([
             'message' => 'Error calculating animal requirements: ' . $e->getMessage(),
             'status' => 500,
