@@ -823,6 +823,7 @@ public function feed_calculator(Request $request)
             'dmb' => $dmb,
             'row_ton' => round($value, 2),
             'row_qtl' => round($value / 10, 2),
+            'html' => $htmlContent,
         ];
  
         $serviceRecord = ServiceRecord::first();
@@ -853,8 +854,8 @@ public function feed_calculator(Request $request)
         return response()->json([
             'message' => 'Success!',
             'status' => 200,
-            'data' => [$send,
-        'html' => $htmlContent],
+            'data' => $send,
+        
              
         ], 200);
  
