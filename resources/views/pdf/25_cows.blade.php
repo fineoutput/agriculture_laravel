@@ -716,15 +716,233 @@
                                 <td class="info1">{{ $worksheet->getCell($cell)->getFormattedValue() ?? 'N/A' }}</td>
                             @endforeach
                         </tr>
+                        <tr>
+                            <td>Total Sales</td>
+                            <td class="info1"></td>
+                            @foreach (['C117', 'D117', 'E117', 'F117', 'G117'] as $cell)
+                                <td class="info1">{{ $worksheet->getCell($cell)->getFormattedValue() ?? 'N/A' }}</td>
+                            @endforeach
+                        </tr>
                     </tbody>
-                    <!-- Placeholder for missing sections (e.g., E, F, G, etc.) -->
                     <tbody>
                         <tr>
                             <td colspan="7" class="text-center">
-                                <p><em>Additional sections (e.g., Operational Costs, Total Costs, etc.) are not included in the provided template.</em></p>
+                                <label>E) Expected Operational Expenditure</label>
                             </td>
                         </tr>
+                         <tr>
+                            <th></th>
+                            <th>Ist year Unit Cost (Rs.)</th>
+                            <th>Year-1</th>
+                            <th>Year-2</th>
+                            <th>Year-3</th>
+                            <th>Year-4</th>
+                            <th>Year-5</th>
+                        </tr>
                     </tbody>
+                    <tbody class="hide">
+    <tr>
+        <td>G. Fodder Cost @ 40kg/Animal Unit</td>
+        <td>{{ $worksheet->getCell('B121')->getFormattedValue() ?? 'N/A' }}</td>
+        @foreach (['C121', 'D121', 'E121', 'F121', 'G121'] as $cell)
+            <td class="info1">{{ $worksheet->getCell($cell)->getFormattedValue() ?? 'N/A' }}</td>
+        @endforeach
+    </tr>
+    <tr>
+        <td>Straw @ 3Kg/Animal Unit</td>
+        <td>{{ $worksheet->getCell('B122')->getFormattedValue() ?? 'N/A' }}</td>
+        @foreach (['C122', 'D122', 'E122', 'F122', 'G122'] as $cell)
+            <td class="info1">{{ $worksheet->getCell($cell)->getFormattedValue() ?? 'N/A' }}</td>
+        @endforeach
+    </tr>
+    <tr>
+        <td>Concentrate For Milk Production @ 2.5Kg/Lit</td>
+        <td>{{ $worksheet->getCell('B123')->getFormattedValue() ?? 'N/A' }}</td>
+        @foreach (['C123', 'D123', 'E123', 'F123', 'G123'] as $cell)
+            <td class="info1">{{ $worksheet->getCell($cell)->getFormattedValue() ?? 'N/A' }}</td>
+        @endforeach
+    </tr>
+    <tr>
+        <td>Concentrate Maintenance @1.5Kg/Ani. Unit</td>
+        <td>{{ $worksheet->getCell('B124')->getFormattedValue() ?? 'N/A' }}</td>
+        @foreach (['C124', 'D124', 'E124', 'F124', 'G124'] as $cell)
+            <td class="info1">{{ $worksheet->getCell($cell)->getFormattedValue() ?? 'N/A' }}</td>
+        @endforeach
+    </tr>
+    <tr>
+        <td>Medicines & AI etc.</td>
+        <td>{{ $worksheet->getCell('B125')->getFormattedValue() ?? 'N/A' }}</td>
+        @foreach (['C125', 'D125', 'E125', 'F125', 'G125'] as $cell)
+            <td class="info1">{{ $worksheet->getCell($cell)->getFormattedValue() ?? 'N/A' }}</td>
+        @endforeach
+    </tr>
+    <tr>
+        <td>Rent/Leasing Cost For Land For Shed etc /A.Unit.</td>
+        <td>{{ $worksheet->getCell('B126')->getFormattedValue() ?? 'N/A' }}</td>
+        @foreach (['C126', 'D126', 'E126', 'F126', 'G126'] as $cell)
+            <td class="info1">{{ $worksheet->getCell($cell)->getFormattedValue() ?? 'N/A' }}</td>
+        @endforeach
+    </tr>
+    <tr>
+        <td>Contractual Labor Wages /Cow Unit/Year</td>
+        <td>{{ $worksheet->getCell('B127')->getFormattedValue() ?? 'N/A' }}</td>
+        @foreach (['C127', 'D127', 'E127', 'F127', 'G127'] as $cell)
+            <td class="info1">{{ $worksheet->getCell($cell)->getFormattedValue() ?? 'N/A' }}</td>
+        @endforeach
+    </tr>
+    <tr>
+        <td>Salary Of Supervisor/Annum</td>
+        <td></td>
+        @foreach (['C128', 'D128', 'E128', 'F128', 'G128'] as $cell)
+            <td class="info1">{{ $worksheet->getCell($cell)->getFormattedValue() ?? 'N/A' }}</td>
+        @endforeach
+    </tr>
+    <tr>
+        <td>Insurance Premium Cows Only</td>
+        <td>{{ $worksheet->getCell('B129')->getFormattedValue() ?? 'N/A' }}</td>
+        @foreach (['C129', 'D129', 'E129', 'F129', 'G129'] as $cell)
+            <td class="info1">{{ $worksheet->getCell($cell)->getFormattedValue() ?? 'N/A' }}</td>
+        @endforeach
+    </tr>
+    <tr>
+        <td>Electricity Charges@ 1200 /Animal Unit/Year</td>
+        <td>{{ $worksheet->getCell('B130')->getFormattedValue() ?? 'N/A' }}</td>
+        @foreach (['C130', 'D130', 'E130', 'F130', 'G130'] as $cell)
+            <td class="info1">{{ $worksheet->getCell($cell)->getFormattedValue() ?? 'N/A' }}</td>
+        @endforeach
+    </tr>
+    <tr>
+        <td>Other misc. charges@1200/animal unit</td>
+        <td>{{ $worksheet->getCell('B131')->getFormattedValue() ?? 'N/A' }}</td>
+        @foreach (['C131', 'D131', 'E131', 'F131', 'G131'] as $cell)
+            <td class="info1">{{ $worksheet->getCell($cell)->getFormattedValue() ?? 'N/A' }}</td>
+        @endforeach
+    </tr>
+    <tr>
+        <td><b>(a) Total Operating Cost</b></td>
+        <td></td>
+        @foreach (['C132', 'D132', 'E132', 'F132', 'G132'] as $cell)
+            <td class="info1">{{ $worksheet->getCell($cell)->getFormattedValue() ?? 'N/A' }}</td>
+        @endforeach
+    </tr>
+    <tr>
+        <td>Operating Surplus (Total Sale - Operational Cost)</td>
+        <td></td>
+        @foreach (['C133', 'D133', 'E133', 'F133', 'G133'] as $cell)
+            <td class="info1">{{ $worksheet->getCell($cell)->getFormattedValue() ?? 'N/A' }}</td>
+        @endforeach
+    </tr>
+    <tr>
+        <td>(b) Dep. On Shed Machinery & Equipments</td>
+        <td>{{ $worksheet->getCell('B134')->getFormattedValue() ?? 'N/A' }}</td>
+        @foreach (['C134', 'D134', 'E134', 'F134', 'G134'] as $cell)
+            <td class="info1">{{ $worksheet->getCell($cell)->getFormattedValue() ?? 'N/A' }}</td>
+        @endforeach
+    </tr>
+    <tr>
+        <td>Total Exp. (a+b)</td>
+        <td></td>
+        @foreach (['C135', 'D135', 'E135', 'F135', 'G135'] as $cell)
+            <td class="info1">{{ $worksheet->getCell($cell)->getFormattedValue() ?? 'N/A' }}</td>
+        @endforeach
+    </tr>
+    <tr>
+        <td colspan="7"></td>
+    </tr>
+    <tr>
+        <td>F) Net Profit</td>
+        <td></td>
+        @foreach (['C136', 'D136', 'E136', 'F136', 'G136'] as $cell)
+            <td class="info1">{{ $worksheet->getCell($cell)->getFormattedValue() ?? 'N/A' }}</td>
+        @endforeach
+    </tr>
+    <tr>
+        <td>G) A)Return On Capital Invest.(%)</td>
+        <td></td>
+        @foreach (['C137', 'D137', 'E137', 'F137', 'G137'] as $cell)
+            <td class="info1">{{ $worksheet->getCell($cell)->getFormattedValue() ?? 'N/A' }}</td>
+        @endforeach
+    </tr>
+    <tr>
+        <td>G) B)Return On Capital Invest.( %)INCL ANI></td>
+        <td></td>
+        @foreach (['C138', 'D138', 'E138', 'F138', 'G138'] as $cell)
+            <td class="info1">{{ $worksheet->getCell($cell)->getFormattedValue() ?? 'N/A' }}</td>
+        @endforeach
+    </tr>
+    <tr>
+        <td>H) BC Ratio</td>
+        <td></td>
+        @foreach (['C139', 'D139', 'E139', 'F139', 'G139'] as $cell)
+            <td class="info1">{{ $worksheet->getCell($cell)->getFormattedValue() ?? 'N/A' }}</td>
+        @endforeach
+    </tr>
+    <tr>
+        <td>Ia) Cost Of Milk Production (Rs) With Animal Gain</td>
+        <td></td>
+        @foreach (['C140', 'D140', 'E140', 'F140', 'G140'] as $cell)
+            <td class="info1">{{ $worksheet->getCell($cell)->getFormattedValue() ?? 'N/A' }}</td>
+        @endforeach
+    </tr>
+    <tr>
+        <td>Ib) Cost Of Milk Production (Rs)</td>
+        <td></td>
+        @foreach (['C141', 'D141', 'E141', 'F141', 'G141'] as $cell)
+            <td class="info1">{{ $worksheet->getCell($cell)->getFormattedValue() ?? 'N/A' }}</td>
+        @endforeach
+    </tr>
+</tbody>
+<tbody class="labels">
+    <tr>
+        <td colspan="7">
+            <label>J) Loan Disbursement And Payment Schedule</label>
+        </td>
+    </tr>
+    <tr>
+        <th>Year</th>
+        <th>Loan</th>
+        <th>Interest</th>
+        <th colspan="2">Installment</th>
+        <th colspan="2">Total</th>
+    </tr>
+</tbody>
+<tbody class="hide">
+    <tr>
+        <td>1</td>
+        <td class="primary1">{{ $worksheet->getCell('B144')->getFormattedValue() ?? 'N/A' }}</td>
+        <td class="primary1">{{ $worksheet->getCell('C144')->getFormattedValue() ?? 'N/A' }}</td>
+        <td class="primary1" colspan="2">{{ $worksheet->getCell('D144')->getFormattedValue() ?? 'N/A' }}</td>
+        <td class="primary1" colspan="2">{{ $worksheet->getCell('E144')->getFormattedValue() ?? 'N/A' }}</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td class="primary1">{{ $worksheet->getCell('B145')->getFormattedValue() ?? 'N/A' }}</td>
+        <td class="primary1">{{ $worksheet->getCell('C145')->getFormattedValue() ?? 'N/A' }}</td>
+        <td class="primary1" colspan="2">{{ $worksheet->getCell('D145')->getFormattedValue() ?? 'N/A' }}</td>
+        <td class="primary1" colspan="2">{{ $worksheet->getCell('E145')->getFormattedValue() ?? 'N/A' }}</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td class="primary1">{{ $worksheet->getCell('B146')->getFormattedValue() ?? 'N/A' }}</td>
+        <td class="primary1">{{ $worksheet->getCell('C146')->getFormattedValue() ?? 'N/A' }}</td>
+        <td class="primary1" colspan="2">{{ $worksheet->getCell('D146')->getFormattedValue() ?? 'N/A' }}</td>
+        <td class="primary1" colspan="2">{{ $worksheet->getCell('E146')->getFormattedValue() ?? 'N/A' }}</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td class="primary1">{{ $worksheet->getCell('B147')->getFormattedValue() ?? 'N/A' }}</td>
+        <td class="primary1">{{ $worksheet->getCell('C147')->getFormattedValue() ?? 'N/A' }}</td>
+        <td class="primary1" colspan="2">{{ $worksheet->getCell('D147')->getFormattedValue() ?? 'N/A' }}</td>
+        <td class="primary1" colspan="2">{{ $worksheet->getCell('E147')->getFormattedValue() ?? 'N/A' }}</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td class="primary1">{{ $worksheet->getCell('B148')->getFormattedValue() ?? 'N/A' }}</td>
+        <td class="primary1">{{ $worksheet->getCell('C148')->getFormattedValue() ?? 'N/A' }}</td>
+        <td class="primary1" colspan="2">{{ $worksheet->getCell('D148')->getFormattedValue() ?? 'N/A' }}</td>
+        <td class="primary1" colspan="2">{{ $worksheet->getCell('E148')->getFormattedValue() ?? 'N/A' }}</td>
+    </tr>
+</tbody>
                 </table>
             </div>
         </div>
