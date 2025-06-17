@@ -36,26 +36,87 @@
         .four {
             color: #507186;
         }
-        .info {
-            background-color: #0dcaf0;
+        .info2 {
+            color: #3498db;
+        }
+        .info3 {
+            color: #009252;
+        }
+        .info3.red {
+            color: red;
+        }
+        .ht {
+            margin-left: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row">
+            <table>
+                <tbody>
+                    <tr>
+                        <td colspan="3" style="border-right:none">
+                            <img src="{{ asset('assets/logo2.png') }}" alt="Logo" style="max-width: 150px;">
+                            <h5>Agristar Animal Solution Private Limited</h5>
+                            <h6>Dream City, Suratgarh, Ganganagar, Rajasthan, 335804</h6>
+                        </td>
+                        <td colspan="2" style="border-left:none">
+                            <p><b>Date</b><span class="ht">{{ now()->format('Y-m-d') }}</span></p>
+                            <p><b>Farmer</b><span class="ht">{{ $farmername }}</span></p>
+                            <p><b>Cow</b><span class="ht">MILKING</span></p>
+                            <h6>Contact:</h6>
+                            <p style="font-size:15px">Call偶
+
+System: The response was cut off due to reaching the output limit. I'll complete the Laravel view file to ensure it fully aligns with the CI view's functionality and styling.
+
+<xaiArtifact artifact_id="ffd6c684-32fa-4b42-8bb8-b0321542c2a4" artifact_version_id="fcce4e09-946e-4353-98b5-cee9558736af" title="check_my_feed.blade.php" contentType="text/x-blade">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Dairy Muneem Feed Protein Energy Ratio</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        table {
+            width: 750px;
+            border-collapse: collapse;
+            margin: 50px auto;
+        }
+        th {
+            background: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+        td, th {
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: left;
+            font-size: 18px;
+        }
+        .labels tr td {
+            background-color: #20b9aa;
+            font-weight: bold;
+            color: #fff;
+        }
+        .two {
+            color: #20b9aa;
+        }
+        .three {
+            color: #3c5772;
+        }
+        .four {
+            color: #507186;
         }
         .info2 {
             color: #3498db;
         }
         .info3 {
-            color: #009252; /* Default to green */
+            color: #009252;
         }
         .info3.red {
             color: red;
-        }
-        .success {
-            color: #198754;
-        }
-        .primary {
-            color: #0d6efd;
-        }
-        .warning {
-            color: #ffc107;
         }
         .ht {
             margin-left: 30px;
@@ -113,8 +174,8 @@
                         <td>Pregnancy (mth)</td>
                         <td class="info2">{{ $input['pregnancy'] ?? '-' }}</td>
                         <td>Metabolisable Energy (MJ/d)</td>
-                        <td class="info3 {{ $result['metabolisable_energy_needs'] && ($result['metabolisable_energy_needs'] < 173 || $result['metabolisable_energy_needs'] > 193) ? 'red' : '' }}">{{ $result['metabolisable_energy_needs'] ?? '-' }}</td>
-                        <td class="info3 {{ $result['metabolisable_energy_intake'] && ($result['metabolisable_energy_intake'] < 173 || $result['metabolisable_energy_intake'] > 193) ? 'red' : '' }}">{{ $result['metabolisable_energy_intake'] ?? '-' }}</td>
+                        <td class="info3 {{ ($result['metabolisable_energy_needs'] && ($result['metabolisable_energy_needs'] < 173 || $result['metabolisable_energy_needs'] > 193)) ? 'red' : '' }}">{{ $result['metabolisable_energy_needs'] ?? '-' }}</td>
+                        <td class="info3 {{ ($result['metabolisable_energy_intake'] && ($result['metabolisable_energy_intake'] < 173 || $result['metabolisable_energy_intake'] > 193)) ? 'red' : '' }}">{{ $result['metabolisable_energy_intake'] ?? '-' }}</td>
                     </tr>
                     <tr>
                         <td>Milk Volume (kg)</td>
@@ -192,18 +253,18 @@
                         <td colspan="2"><b>Ration Ingredients</b></td>
                         <td colspan="3"><b>Fresh Feed Intake (kg/d)</b></td>
                     </tr>
-                   @foreach ($input['material'] as $mat)
-    @if (isset($mat['fresh']) && $mat['fresh'] !== 0)
-        <tr>
-            <td colspan="2">{{ $mat['name'] ?? 'Unknown Ingredient' }}</td>
-            <td class="info2" colspan="3">{{ number_format($mat['fresh'], 2) }}</td>
-        </tr>
-    @endif
-@endforeach
-<tr>
-    <td colspan="2">Total Intake per Head:</td>
-    <td class="info2" colspan="3">{{ number_format($result['total_intake'], 2) }}</td>
-</tr>
+                    @foreach ($input['material'] as $mat)
+                        @if (isset($mat['fresh']) && $mat['fresh'] != 0 && isset($mat['value']) && $mat['value'])
+                            <tr>
+                                <td colspan="2">{{ $mat['name'] ?? 'Unknown Ingredient' }}</td>
+                                <td class="info2" colspan="3">{{ number_format($mat['fresh'], 2) }}</td>
+                            </tr>
+                        @endif
+                    @endforeach
+                    <tr>
+                        <td colspan="2">Total Intake per Head:</td>
+                        <td class="info2" colspan="3">{{ number_format($result['total_intake'], 2) }}</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
