@@ -320,10 +320,10 @@ Route::get('/farmers/semen-tank-list/{farmer_id}', [FarmersController::class, 'v
 
 
 
-    ////push notification
-    Route::get('/Pushnotifications/view_pushnotifications', [PushNotificationsController::class, 'viewPushNotifications'])->name('admin.pushnotifications.view');
-    Route::post('/Pushnotifications/add_pushnotifications', [PushNotificationsController::class, 'addPushNotifications'])->name('admin.pushnotifications.add');
-    
+Route::get('/pushnotifications/view', [PushNotificationsController::class, 'viewPushNotifications'])->name('admin.pushnotifications.view');
+Route::get('/pushnotifications/add', [PushNotificationsController::class, 'addPushNotifications'])->name('admin.pushnotifications.add');
+Route::post('/pushnotifications/add', [PushNotificationsController::class, 'addPushNotificationsData'])->name('admin.pushnotifications.store');
+
 
     Route::get('/popup_images', [PopupImageController::class, 'index'])->name('admin.popup_images.index');
     Route::post('/popup_images', [PopupImageController::class, 'store'])->name('admin.popup_images.store');

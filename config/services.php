@@ -20,6 +20,10 @@ return [
         'endpoint' => env('MAILGUN_ENDPOINT', 'api.mailgun.net'),
     ],
 
+   'firebase' => [
+    'credentials' => env('FIREBASE_CREDENTIALS', public_path('public/admin/assets/dairy-muneem-firebase-adminsdk-9cc60-10f1283429.json')),
+    ],
+
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),
     ],
