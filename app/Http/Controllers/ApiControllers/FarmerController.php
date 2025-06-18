@@ -1031,31 +1031,31 @@ class FarmerController extends Controller
                             'account' => $vendor->account + $order1->total_amount - $amt,
                         ]);
 
-                        if ($vendor->fcm_token) {
-                            $client = new Client();
-                            $response = $client->post('https://fcm.googleapis.com/fcm/send', [
-                                'headers' => [
-                                    'Authorization' => 'key=' . config('services.fcm.server_key'),
-                                    'Content-Type' => 'application/json',
-                                ],
-                                'json' => [
-                                    'to' => $vendor->fcm_token,
-                                    'notification' => [
-                                        'title' => 'New Order',
-                                        'body' => "New order #{$order_id} received with the amount of ₹{$order1->final_amount}",
-                                        'sound' => 'default',
-                                    ],
-                                    'priority' => 'high',
-                                ],
-                            ]);
+                        // if ($vendor->fcm_token) {
+                        //     $client = new Client();
+                        //     $response = $client->post('https://fcm.googleapis.com/fcm/send', [
+                        //         'headers' => [
+                        //             'Authorization' => 'key=' . config('services.fcm.server_key'),
+                        //             'Content-Type' => 'application/json',
+                        //         ],
+                        //         'json' => [
+                        //             'to' => $vendor->fcm_token,
+                        //             'notification' => [
+                        //                 'title' => 'New Order',
+                        //                 'body' => "New order #{$order_id} received with the amount of ₹{$order1->final_amount}",
+                        //                 'sound' => 'default',
+                        //             ],
+                        //             'priority' => 'high',
+                        //         ],
+                        //     ]);
 
-                            VendorNotification::create([
-                                'vendor_id' => $order1->vendor_id,
-                                'name' => 'New Order',
-                                'dsc' => "New order #{$order_id} received with the amount of ₹{$order1->final_amount}",
-                                'date' => now(),
-                            ]);
-                        }
+                        //     VendorNotification::create([
+                        //         'vendor_id' => $order1->vendor_id,
+                        //         'name' => 'New Order',
+                        //         'dsc' => "New order #{$order_id} received with the amount of ₹{$order1->final_amount}",
+                        //         'date' => now(),
+                        //     ]);
+                        // }
                     }
                 } else {
                     // Send email to admin
