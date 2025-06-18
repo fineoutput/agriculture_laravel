@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Dairy Muneem Feed Protein Energy Ratio</title>
+    <title>Feed Protein Energy Ratio</title>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <style>
         table {
             width: 750px;
@@ -23,7 +24,7 @@
             font-size: 18px;
         }
         .labels tr td {
-            background-color: #20b9aa;
+            background-color: #3498db;
             font-weight: bold;
             color: #fff;
         }
@@ -51,113 +52,32 @@
     </style>
 </head>
 <body>
-    <div class="container mt-5">
+    <div class="container mt-2">
         <div class="row">
-            <table>
+            <table class="table table-bordered">
                 <tbody>
                     <tr>
                         <td colspan="3" style="border-right:none">
-                            <img src="{{ asset('assets/logo2.png') }}" alt="Logo" style="max-width: 150px;">
-                            <h5>Agristar Animal Solution Private Limited</h5>
-                            <h6>Dream City, Suratgarh, Ganganagar, Rajasthan, 335804</h6>
+                            <img src="{{ asset('assets/logo2.png') }}" alt="Logo">
                         </td>
                         <td colspan="2" style="border-left:none">
                             <p><b>Date</b><span class="ht">{{ now()->format('Y-m-d') }}</span></p>
                             <p><b>Farmer</b><span class="ht">{{ $farmername }}</span></p>
                             <p><b>Cow</b><span class="ht">MILKING</span></p>
-                            <h6>Contact:</h6>
-                            <p style="font-size:15px">Call偶
-
-System: The response was cut off due to reaching the output limit. I'll complete the Laravel view file to ensure it fully aligns with the CI view's functionality and styling.
-
-<xaiArtifact artifact_id="ffd6c684-32fa-4b42-8bb8-b0321542c2a4" artifact_version_id="fcce4e09-946e-4353-98b5-cee9558736af" title="check_my_feed.blade.php" contentType="text/x-blade">
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <title>Dairy Muneem Feed Protein Energy Ratio</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        table {
-            width: 750px;
-            border-collapse: collapse;
-            margin: 50px auto;
-        }
-        th {
-            background: #3498db;
-            color: white;
-            font-weight: bold;
-        }
-        td, th {
-            padding: 10px;
-            border: 1px solid #ccc;
-            text-align: left;
-            font-size: 18px;
-        }
-        .labels tr td {
-            background-color: #20b9aa;
-            font-weight: bold;
-            color: #fff;
-        }
-        .two {
-            color: #20b9aa;
-        }
-        .three {
-            color: #3c5772;
-        }
-        .four {
-            color: #507186;
-        }
-        .info2 {
-            color: #3498db;
-        }
-        .info3 {
-            color: #009252;
-        }
-        .info3.red {
-            color: red;
-        }
-        .ht {
-            margin-left: 30px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container mt-5">
-        <div class="row">
-            <table>
-                <tbody>
-                    <tr>
-                        <td colspan="3" style="border-right:none">
-                            <img src="{{ asset('assets/logo2.png') }}" alt="Logo" style="max-width: 150px;">
-                            <h5>Agristar Animal Solution Private Limited</h5>
-                            <h6>Dream City, Suratgarh, Ganganagar, Rajasthan, 335804</h6>
-                        </td>
-                        <td colspan="2" style="border-left:none">
-                            <p><b>Date</b><span class="ht">{{ now()->format('Y-m-d') }}</span></p>
-                            <p><b>Farmer</b><span class="ht">{{ $farmername }}</span></p>
-                            <p><b>Cow</b><span class="ht">MILKING</span></p>
-                            <h6>Contact:</h6>
-                            <p style="font-size:15px">Call & Whatsapp- 7891029090</p>
-                            <h6>Email:</h6>
-                            <p style="font-size:15px">info@dairymuneem.in, dairymuneem@gmail.com</p>
-                            <h6>Website:</h6>
-                            <p style="font-size:15px">www.dairymuneem.com</p>
                         </td>
                     </tr>
                     <tr>
                         <td colspan="5" class="text-center">
-                            <h3><span class="two">F</span><span class="three">eed </span><span class="two">P</span><span class="three">rotein </span><span class="two">E</span><span class="three">nergy </span><span class="two">R</span><span class="four">atio</span></h3>
+                            <h3><span class="two">Feed</span><span class="three"> Protein </span><span class="two">Energy </span><span class="four">Ratio</span></h3>
                         </td>
                     </tr>
                 </tbody>
                 <tbody class="labels">
                     <tr>
-                        <td colspan="2" style="background-color: #3498db;">
+                        <td colspan="2">
                             <label>Cow Characteristics</label>
                         </td>
-                        <td colspan="3" style="background-color: #3498db;">
+                        <td colspan="3">
                             <label>Ration Nutritional Analysis</label>
                         </td>
                     </tr>
@@ -232,19 +152,19 @@ System: The response was cut off due to reaching the output limit. I'll complete
                     </tr>
                     <tr>
                         <td colspan="2">Milk Return (Rs./kg)</td>
-                        <td class="info2" colspan="3">{{ $result['milk_return_kg'] ? '₹' . number_format($result['milk_return_kg'], 2) : '-' }}</td>
+                        <td class="info2" colspan="3">₹{{ number_format($result['milk_return_kg'] ?? 0, 2) }}</td>
                     </tr>
                     <tr>
                         <td colspan="2">Milk Return (Rs./d)</td>
-                        <td class="info2" colspan="3">{{ $result['milk_return_day'] ? '₹' . number_format($result['milk_return_day'], 2) : '-' }}</td>
+                        <td class="info2" colspan="3">₹{{ number_format($result['milk_return_day'] ?? 0, 2) }}</td>
                     </tr>
                     <tr>
                         <td colspan="2">Feed Cost (Rs./d)</td>
-                        <td class="info2" colspan="3">{{ $result['feed_cost_day'] ? '₹' . number_format($result['feed_cost_day'], 2) : '-' }}</td>
+                        <td class="info2" colspan="3">₹{{ number_format($result['feed_cost_day'] ?? 0, 2) }}</td>
                     </tr>
                     <tr>
                         <td colspan="2">MIFC ROI (Rs./d)</td>
-                        <td class="info2" colspan="3">{{ $result['mifc_roi_day'] ? '₹' . number_format($result['mifc_roi_day'], 2) : '-' }}</td>
+                        <td class="info2" colspan="3">₹{{ number_format($result['mifc_roi_day'] ?? 0, 2) }}</td>
                     </tr>
                     <tr>
                         <th colspan="5">Composition of the Ration</th>
@@ -254,16 +174,19 @@ System: The response was cut off due to reaching the output limit. I'll complete
                         <td colspan="3"><b>Fresh Feed Intake (kg/d)</b></td>
                     </tr>
                     @foreach ($input['material'] as $mat)
-                        @if (isset($mat['fresh']) && $mat['fresh'] != 0 && isset($mat['value']) && $mat['value'])
+                        @if ($mat->value && $mat->fresh != '0')
                             <tr>
-                                <td colspan="2">{{ $mat['name'] ?? 'Unknown Ingredient' }}</td>
-                                <td class="info2" colspan="3">{{ number_format($mat['fresh'], 2) }}</td>
+                                <td colspan="2">{{ $mat->label ?? 'Unknown Ingredient' }}</td>
+                                <td class="info2" colspan="3">{{ number_format((float)$mat->fresh, 2) }}</td>
                             </tr>
                         @endif
                     @endforeach
                     <tr>
+                        <td colspan="5"></td>
+                    </tr>
+                    <tr>
                         <td colspan="2">Total Intake per Head:</td>
-                        <td class="info2" colspan="3">{{ number_format($result['total_intake'], 2) }}</td>
+                        <td class="info2" colspan="3">{{ number_format($result['total_intake'] ?? 0, 2) }}</td>
                     </tr>
                 </tbody>
             </table>
