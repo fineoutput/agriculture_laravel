@@ -1059,16 +1059,16 @@ class FarmerController extends Controller
                     }
                 } else {
                     // Send email to admin
-                    Mail::send([], [], function ($message) use ($order1) {
-                        $message->to(config('mail.to.address'), 'Dairy Muneem')
-                            ->subject('New Order received')
-                            ->setBody(
-                                "Hello Admin<br/><br/>You have received new Order and below are the details<br/><br/>" .
-                                "<b>Order ID</b> - {$order1->id}<br/>" .
-                                "<b>Amount</b> - Rs.{$order1->final_amount}<br/>",
-                                'text/html'
-                            );
-                    });
+                    // Mail::send([], [], function ($message) use ($order1) {
+                    //     $message->to(config('mail.to.address'), 'Dairy Muneem')
+                    //         ->subject('New Order received')
+                    //         ->setBody(
+                    //             "Hello Admin<br/><br/>You have received new Order and below are the details<br/><br/>" .
+                    //             "<b>Order ID</b> - {$order1->id}<br/>" .
+                    //             "<b>Amount</b> - Rs.{$order1->final_amount}<br/>",
+                    //             'text/html'
+                    //         );
+                    // });
 
                     // Placeholder for WhatsApp message
                     $this->sendWhatsAppMsgAdmin($order1, $user);
