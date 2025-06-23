@@ -14,6 +14,7 @@ use App\Models\Order1;
 use App\Models\Product;
 use App\Models\Cart;
 use App\Models\GiftCard;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -1109,6 +1110,156 @@ class FarmerController extends Controller
         }
     }
 
+
+    public function getOrders(Request $request)
+{
+    try {
+        $authToken = $request->header('Authentication');
+
+        // Validate Authentication header
+        $validator = Validator::make([
+            'Authentication' => $authToken,
+        ], [
+            'Authentication' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('GetOrders: Validation failed', [
+                'ip' => $request->ip(),
+                'errors' => $validator->errors(),
+            ]);
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
+
+        // Authenticate farmer
+        $farmer = Farmer::where('auth', $authToken)
+            ->where('is_active', 1)
+            ->first();
+
+        if (!$farmer) {
+            Log::warning('GetOrders: Authentication failed', [
+                'ip' => $request->ip(),
+                'auth_token' => $authToken,
+            ]);
+            return response()->json([
+                'message' => 'Permission Denied!',
+                'status' => 201,
+            ], 401);
+        }
+
+        // Fetch orders
+        $orders = Order1::where('farmer_id', $farmer->id)
+            ->whereIn('payment_status', [1, 2])
+            ->orderBy('id', 'desc')
+            ->get();
+
+        if ($orders->isEmpty()) {
+            Log::info('GetOrders: No orders found', [
+                'farmer_id' => $farmer->id,
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'message' => 'No Orders Found!',
+                'status' => 201,
+                'data' => [],
+            ], 200);
+        }
+
+        // Map orders to response format
+        $data = $orders->map(function ($order) {
+            // Map order status to text and color
+            $statusDetails = match ($order->order_status) {
+                1 => ['status' => 'Pending', 'bg_color' => '#65bcd7'],
+                2 => ['status' => 'Accepted', 'bg_color' => '#3b71ca'],
+                3 => ['status' => 'Dispatched', 'bg_color' => '#e4a11b'],
+                4 => ['status' => 'Completed', 'bg_color' => '#139c49'],
+                5 => ['status' => 'Rejected', 'bg_color' => '#dc4c64'],
+                6 => ['status' => 'Cancelled', 'bg_color' => '#dc4c64'],
+                default => ['status' => 'Unknown', 'bg_color' => '#000000'],
+            };
+
+            // Fetch order details
+            $orderDetails = Order2::where('main_id', $order->id)->get();
+            $details = $orderDetails->map(function ($order2) {
+                return [
+                    'id' => $order2->id,
+                    'en' => $order2->product_name_en,
+                    'hi' => $order2->product_name_hi,
+                    'pn' => $order2->product_name_pn,
+                    'mr' => $order2->product_name_mr,
+                    'image' => $order2->image ? asset($order2->image) : '',
+                    'qty' => $order2->qty,
+                    'selling_price' => $order2->selling_price,
+                    'total_amount' => $order2->total_amount,
+                ];
+            })->toArray();
+
+            // Handle vendor names
+            if ($order->is_admin == 1) {
+                $vendorNames = [
+                    'en' => 'Dairy Mart',
+                    'hi' => 'डेयरी मार्ट',
+                    'pn' => 'ਡੇਅਰੀ ਮਾਰਟ',
+                    'mr' => 'डेअरी मार्ट',
+                ];
+            } else {
+                $vendor = Vendor::find($order->vendor_id);
+                $vendorNames = $vendor ? [
+                    'en' => $vendor->shop_name,
+                    'hi' => $vendor->shop_hi_name,
+                    'pn' => $vendor->shop_pn_name,
+                    'mr' => $vendor->shop_mr_name,
+                ] : [
+                    'en' => 'Vendor not found',
+                    'hi' => 'विक्रेता नहीं मिला',
+                    'pn' => 'ਵਿਕਰੇਤਾ ਨਹੀਂ ਮਿਲਿਆ',
+                    'mr' => 'विक्रेता सापडला नाही',
+                ];
+            }
+
+            return [
+                'id' => $order->id,
+                'charges' => $order->charges,
+                'discount' => $orderDetails->isNotEmpty() ? $orderDetails->first()->discount : 0,
+                'total_amount' => $order->total_amount,
+                'final_amount' => $order->final_amount,
+                'status' => $statusDetails['status'],
+                'bg_color' => $statusDetails['bg_color'],
+                'en' => $vendorNames['en'],
+                'hi' => $vendorNames['hi'],
+                'pn' => $vendorNames['pn'],
+                'mr' => $vendorNames['mr'],
+                'date' => Carbon::parse($order->date)->format('d/m/Y'),
+                'details' => $details,
+            ];
+        })->toArray();
+
+        Log::info('GetOrders: Orders retrieved successfully', [
+            'farmer_id' => $farmer->id,
+            'order_count' => count($data),
+            'ip' => $request->ip(),
+        ]);
+
+        return response()->json([
+            'message' => 'Success!',
+            'status' => 200,
+            'data' => $data,
+        ], 200);
+    } catch (\Exception $e) {
+        Log::error('GetOrders: Error processing request', [
+            'farmer_id' => $farmer->id ?? null,
+            'error' => $e->getMessage(),
+            'ip' => $request->ip(),
+        ]);
+        return response()->json([
+            'message' => 'Error processing orders: ' . $e->getMessage(),
+            'status' => 201,
+        ], 500);
+    }
+}
     protected function sendWhatsAppMsgAdmin($order1, $user)
     {
         // Implement WhatsApp API integration here

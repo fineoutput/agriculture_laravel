@@ -161,6 +161,10 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
     
     Route::post('FarmerCheckOut', [FarmerController::class, 'checkout']);
 
+
+
+    Route::get('FarmerGet-Orders', [FarmerController::class, 'getOrders']);
+
     
     Route::get('homeGetState', [HomeController::class, 'getState']);
 
