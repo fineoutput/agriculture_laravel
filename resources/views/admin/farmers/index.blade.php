@@ -75,9 +75,9 @@
                                                 <td>{{ $data->state }}</td>
                                                 <td>{{ $data->district }}</td>
                                                 <td>{{ $data->city }}</td>
-                                                <td>{{ $data->Pincode }}</td>
+                                                <td>{{ $data->pincode }}</td>
                                                 <td>{{ $data->no_animals ?? '0' }}</td>
-                                                <td>{{ $data->phone_number }}</td>
+                                                <td>{{ $data->phone}}</td>
                                                 <td>{{ $data->date }}</td>
                                                 <td>
                                                     @if ($data->is_active == 1)
