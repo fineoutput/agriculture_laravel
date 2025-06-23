@@ -37,6 +37,7 @@ Route::post('loginVerify_otp', [UserloginController::class, 'farmer_login_otp_ve
 
 Route::post('register', [UserloginController::class, 'registerWithOtp']);
 Route::post('userRegisterOtpVerify', [UserloginController::class, 'register_otp_verify']);
+
 Route::post('login', [UserloginController::class, 'login_process']);
 // Route::post('LoginOtpVerify', [UserloginController::class, 'login_otp_verify']);
 Route::post('LoginOtpVerify', [UserloginController::class, 'verify_login_otp']);

@@ -13,6 +13,7 @@ class Otp extends Model
         'phone',
         'otp',
         'type',
+        'status',
         'data',
         'expires_at',
         'created_at',
@@ -20,6 +21,7 @@ class Otp extends Model
 
     protected $casts = [
         'data' => 'array', // Automatically decode JSON data field
+        'status' => 'integer',
         'expires_at' => 'datetime',
         'created_at' => 'datetime',
     ];

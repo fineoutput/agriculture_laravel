@@ -15,6 +15,7 @@ use Str;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Http\Controllers\Controller;
 use App\Models\GiftCard;
+use App\Models\RegisterTemp;
 use Illuminate\Support\Facades\DB;
 
 class UserloginController extends Controller
@@ -111,7 +112,6 @@ class UserloginController extends Controller
             ], 500);
         }
     }
-
     private function farmerRegister(array $receive)
     {
         // Check if farmer exists
@@ -423,7 +423,6 @@ class UserloginController extends Controller
             ], 500);
         }
     }
-
     private function farmerLoginOtpVerify($phone, $input_otp, $call_type)
     {
         // Get latest OTP record
@@ -512,7 +511,7 @@ class UserloginController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string',
             'phone' => 'required|string',
-            'type' => 'required|string|in:doctor,vendor',
+            'type' => 'required|string|in:farmer,doctor,vendor',
             'village' => 'nullable|string',
             'district' => 'nullable|string',
             'city' => 'nullable|string',
@@ -529,9 +528,9 @@ class UserloginController extends Controller
             'gst_no' => 'nullable|string',
             'aadhar_no' => 'nullable|string',
             'pan_no' => 'nullable|string',
-            'latitude' => 'nullable|numeric',
-            'longitude' => 'nullable|numeric',
-            'no_of_animals' => 'nullable|integer',
+            'latitude' => 'nullable|string',
+            'longitude' => 'nullable|string',
+            'no_of_animals' => 'nullable|string',
             'expert_category' => 'nullable|string',
         ]);
 
@@ -542,45 +541,15 @@ class UserloginController extends Controller
             ], 422);
         }
 
-        // Handle image upload
-        $imagePath = null;
-        if ($request->hasFile('image')) {
-            $image = $request->file('image');
-            $imageName = 'image_' . date('YmdHis') . '.' . $image->getClientOriginalExtension();
-            $imagePath = $image->storeAs('uploads/aadhar', $imageName, 'public');
-            $imagePath = 'assets/' . $imagePath;
-        }
-
         try {
-            $phone = $request->phone;
-            $type = $request->type;
-
-            // Check if user exists
-            $farmer = Farmer::where('phone', $phone)->first();
-            if ($farmer) {
-                return response()->json([
-                    'status' => 201,
-                    'message' => 'User Already Exist!',
-                ], 400);
+            $imagePath = null;
+            if ($request->hasFile('image')) {
+                $image = $request->file('image');
+                $imageName = 'image_' . date('YmdHis') . '.' . $image->getClientOriginalExtension();
+                $imagePath = $image->storeAs('uploads/aadhar', $imageName, 'public');
+                $imagePath = 'assets/' . $imagePath;
             }
 
-            $doctor = Doctor::where('phone', $phone)->first();
-            if ($doctor) {
-                return response()->json([
-                    'status' => 201,
-                    'message' => 'User Already Exist!',
-                ], 400);
-            }
-
-            $vendor = Vendor::where('phone', $phone)->first();
-            if ($vendor) {
-                return response()->json([
-                    'status' => 201,
-                    'message' => 'User Already Exist!',
-                ], 400);
-            }
-
-            // Prepare data for OTP table
             $data = [
                 'name' => $request->name,
                 'village' => $request->village,
@@ -589,7 +558,7 @@ class UserloginController extends Controller
                 'state' => $request->state,
                 'pincode' => $request->pincode,
                 'refer_code' => $request->refer_code,
-                'phone' => $phone,
+                'phone' => $request->phone,
                 'email' => $request->email,
                 'image' => $imagePath,
                 'doc_type' => $request->doc_type,
@@ -600,42 +569,21 @@ class UserloginController extends Controller
                 'gst_no' => $request->gst_no,
                 'aadhar_no' => $request->aadhar_no,
                 'pan_no' => $request->pan_no,
-                'type' => $type,
+                'type' => $request->type,
                 'latitude' => $request->latitude,
                 'longitude' => $request->longitude,
-                'no_of_animals' => $request->no_of_animals,
+                'no_animals' => $request->no_of_animals,
                 'expert_category' => $request->expert_category,
+                'ip' => $request->ip(),
                 'date' => now()->toDateTimeString(),
             ];
 
-            $otp = rand(100000, 999999);
-            $expiresAt = now()->addMinutes(10);
-
-            $otpRecord = Otp::create([
-                'phone' => $phone,
-                'otp' => $otp,
-                'type' => $type,
-                'data' => $data,
-                'expires_at' => $expiresAt,
-                'created_at' => now(),
-            ]);
-
-            Log::info('OTP stored for registration', [
-                'phone' => $phone,
-                'otp' => $otp,
-                'otp_record_id' => $otpRecord->id,
-            ]);
-
-            $msg = "Your OTP for DAIRY MUNEEM registration is: $otp. Valid for 10 minutes.";
-            $this->sendSmsMsg91($phone, $msg, env('DLT_CODE', '645ca6f9d6fc057295695743'));
-
-            Log::info('OTP sent for registration', ['phone' => $phone]);
+            $result = $this->registerWithOtp1($data);
 
             return response()->json([
-                'status' => 200,
-                'message' => 'Please enter OTP sent to your registered mobile number',
-                'data' => ['phone' => $phone],
-            ], 200);
+                'status' => $result['status'],
+                'message' => $result['message'],
+            ], $result['status'] == 200 ? 200 : 400);
         } catch (\Exception $e) {
             Log::error('Error in registerWithOtp', [
                 'phone' => $request->phone,
@@ -647,11 +595,96 @@ class UserloginController extends Controller
             ], 500);
         }
     }
+    private function registerWithOtp1(array $receive)
+    {
+        // Check if user exists
+        $farmer = Farmer::where('phone', $receive['phone'])->first();
+        $doctor = Doctor::where('phone', $receive['phone'])->first();
+        $vendor = Vendor::where('phone', $receive['phone'])->first();
+
+        if ($farmer || $doctor || $vendor) {
+            return [
+                'status' => 201,
+                'message' => 'User Already Exist!',
+            ];
+        }
+
+        // Insert into tbl_register_temp
+        $tempData = [
+            'name' => $receive['name'],
+            'village' => $receive['village'],
+            'district' => $receive['district'],
+            'city' => $receive['city'],
+            'state' => $receive['state'],
+            'pincode' => $receive['pincode'],
+            'phone' => $receive['phone'],
+            'refer_code' => $receive['refer_code'],
+            'type' => $receive['type'],
+            'email' => $receive['email'],
+            'image' => $receive['image'],
+            'doc_type' => $receive['doc_type'],
+            'degree' => $receive['degree'],
+            'experience' => $receive['experience'],
+            'shop_name' => $receive['shop_name'],
+            'address' => $receive['address'],
+            'gst' => $receive['gst_no'],
+            'aadhar_no' => $receive['aadhar_no'],
+            'pan_no' => $receive['pan_no'],
+            'latitude' => $receive['latitude'],
+            'longitude' => $receive['longitude'],
+            'no_animals' => $receive['no_animals'],
+            'expert_category' => $receive['expert_category'],
+            'ip' => $receive['ip'],
+            'date' => $receive['date'],
+        ];
+
+        $tempId = DB::table('tbl_register_temp')->insertGetId($tempData);
+
+        // Generate and store OTP
+        $otp = rand(100000, 999999);
+        $cur_date = now()->toDateTimeString();
+
+        $otpRecord = Otp::create([
+            'phone' => $receive['phone'],
+            'otp' => $otp,
+            'type' => $receive['type'],
+            'status' => 0,
+            // 'temp_id' => $tempId,
+            'ip' => $receive['ip'],
+            'created_at' => $cur_date,
+        ]);
+
+        if (!$otpRecord) {
+            DB::table('tbl_register_temp')->where('id', $tempId)->delete();
+            return [
+                'status' => 201,
+                'message' => 'Some error occurred!',
+            ];
+        }
+
+        // Send OTP
+        $msg = "Your OTP for DAIRY MUNEEM registration is: $otp. Valid for 10 minutes.";
+        $this->sendSmsMsg91($receive['phone'], $msg, env('DLT_CODE', '645ca6f9d6fc057295695743'));
+
+        Log::info('OTP stored and sent for registration', [
+            'phone' => $receive['phone'],
+            'type' => $receive['type'],
+            'otp' => $otp,
+            'otp_record_id' => $otpRecord->id,
+        ]);
+
+        return [
+            'status' => 200,
+            'message' => 'Please enter otp sent to your register mobile number',
+        ];
+    }
+
+
 
     /**
      * Doctor/Vendor Register OTP Verify
      */
-    public function register_otp_verify(Request $request)
+     public function register_otp_verify(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'phone' => 'required|string',
@@ -666,86 +699,16 @@ class UserloginController extends Controller
         }
 
         try {
-            $otpRecord = Otp::where('phone', $request->phone)
-                ->where('otp', $request->otp)
-                ->where('expires_at', '>', now())
-                ->first();
+            $phone = $request->phone;
+            $otp = $request->otp;
 
-            if (!$otpRecord) {
-                return response()->json([
-                    'status' => 201,
-                    'message' => 'Invalid or expired OTP',
-                ], 400);
-            }
+            $result = $this->registerOtpVerify($phone, $otp);
 
-            $userData = $otpRecord->data;
-            $type = $userData['type'];
-
-            $modelMap = [
-                'doctor' => Doctor::class,
-                'vendor' => Vendor::class,
-            ];
-
-            if (!isset($modelMap[$type])) {
-                throw new \Exception('Invalid user type');
-            }
-
-            $model = new $modelMap[$type]();
-
-            $model->name = $userData['name'];
-            $model->village = $userData['village'];
-            $model->district = $userData['district'];
-            $model->city = $userData['city'];
-            $model->state = $userData['state'];
-            $model->pincode = $userData['pincode'];
-            $model->refer_code = $userData['refer_code'];
-            $model->phone = $userData['phone'];
-            $model->email = $userData['email'];
-            $model->image = $userData['image'];
-            $model->doc_type = $userData['doc_type'];
-            $model->degree = $userData['degree'];
-            $model->experience = $userData['experience'];
-            $model->shop_name = $userData['shop_name'];
-            $model->address = $userData['address'];
-            $model->gst_no = $userData['gst_no'];
-            $model->aadhar_no = $userData['aadhar_no'];
-            $model->pan_no = $userData['pan_no'];
-            $model->type = $userData['type'];
-            $model->latitude = $userData['latitude'];
-            $model->longitude = $userData['longitude'];
-            $model->no_of_animals = $userData['no_of_animals'];
-            $model->expert_category = $userData['expert_category'];
-            $model->is_approved = 0;
-
-            if ($model->save()) {
-                $otpRecord->delete();
-
-                $msg = "आदरणीय {$userData['name']} जी, आपका पंजीकरण सफल हुआ, DAIRY MUNEEM में आपका स्वागत है। कुछ देर में आप की आईडी एक्टिव हो जाएगी। व्हाट्सएप द्वारा हमसे जुड़ने के लिए क्लिक करें bit.ly/dairy_muneem। अधिक जानकारी के लिए 7891029090 पर कॉल करें। धन्यवाद! – DAIRY MUNEEM";
-                $this->sendSmsMsg91($userData['phone'], $msg, env('DLT_CODE', '645ca6f9d6fc057295695743'));
-
-                $token = JWTAuth::fromUser($model);
-                $model->auth = $token;
-                $model->save();
-                Log::info('User registered successfully', [
-                    'phone' => $userData['phone'],
-                    'user_id' => $model->id,
-                    'type' => $type,
-                    'token' => $token,
-                ]);
-
-                return response()->json([
-                    'status' => 200,
-                    'message' => 'Registration verified successfully',
-                    'user_id' => $model->id,
-                    'token' => $token,
-                ], 200);
-            } else {
-                Log::error('Failed to save user data', ['phone' => $userData['phone'], 'type' => $type]);
-                return response()->json([
-                    'status' => 201,
-                    'message' => 'Failed to save user data',
-                ], 500);
-            }
+            return response()->json([
+                'status' => $result['status'],
+                'message' => $result['message'],
+                'data' => $result['data'],
+            ], $result['status'] == 200 ? 200 : 400);
         } catch (\Exception $e) {
             Log::error('Error in register_otp_verify', [
                 'phone' => $request->phone,
@@ -756,6 +719,204 @@ class UserloginController extends Controller
                 'message' => 'Error during OTP verification: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    private function registerOtpVerify($phone, $input_otp)
+    {
+        // Get latest OTP record
+        $otpRecord = Otp::where('phone', $phone)
+            ->orderBy('id', 'desc')
+            ->first();
+
+        if (!$otpRecord) {
+            return [
+                'status' => 201,
+                'message' => 'Invalid OTP!',
+                'data' => [],
+            ];
+        }
+
+        if ($otpRecord->otp != $input_otp) {
+            return [
+                'status' => 201,
+                'message' => 'Wrong OTP Entered!',
+                'data' => [],
+            ];
+        }
+
+        if ($otpRecord->status == 2) {
+            return [
+                'status' => 201,
+                'message' => 'OTP is already used!',
+                'data' => [],
+            ];
+        }
+
+        // Update OTP status
+        $otpRecord->status = 1;
+        if (!$otpRecord->save()) {
+            return [
+                'status' => 201,
+                'message' => 'Some error occurred! Please try again',
+                'data' => [],
+            ];
+        }
+
+        // Fetch temp data
+        $tempRecord = RegisterTemp::where('phone', $otpRecord->phone)->first();
+        if (!$tempRecord) {
+            return [
+                'status' => 201,
+                'message' => 'Registration data not found!',
+                'data' => [],
+            ];
+        }
+
+        $type = $tempRecord->type;
+        $auth = Str::random(32);;
+        $cur_date = now()->toDateTimeString();
+        $ip = $otpRecord->ip;
+
+        if ($type == 'farmer') {
+            $giftCard = null;
+            $giftCardUrl = null;
+            if (!empty($tempRecord->no_animals)) {
+                $giftCard = GiftCard::where('gift_count', '>', 0)
+                    ->where('start_range', '<', $tempRecord->no_animals)
+                    ->where('end_range', '>', $tempRecord->no_animals)
+                    ->inRandomOrder()
+                    ->first();
+            }
+
+            if ($giftCard && env('GIFTCARD', 0) == 1) {
+                $giftCard->decrement('gift_count');
+                $giftCardUrl = env('APP_URL') . '/assets/uploads/gift_card/' . $giftCard->image;
+            }
+
+            $data_insert = [
+                'name' => $tempRecord->name,
+                'village' => $tempRecord->village,
+                'district' => $tempRecord->district,
+                'city' => $tempRecord->city,
+                'state' => $tempRecord->state,
+                'pincode' => $tempRecord->pincode,
+                'refer_code' => $tempRecord->refer_code,
+                'phone' => $tempRecord->phone,
+                'no_animals' => $tempRecord->no_animals,
+                'gst_no' => $tempRecord->gst,
+                'latitude' => $tempRecord->latitude,
+                'longitude' => $tempRecord->longitude,
+                'auth' => $auth,
+                'ip' => $ip,
+                'is_active' => 1,
+                'giftcard_id' => $giftCard ? $giftCard->id : null,
+                'date' => $cur_date,
+            ];
+
+            $last_id = DB::table('tbl_farmers')->insertGetId($data_insert);
+
+            // $this->sendWelcomeSms($phone, $tempRecord->name, 'farmer', '649e7ef5d6fc055fd16f92a2');
+
+            $data = [
+                'name' => $tempRecord->name,
+                'auth' => $auth,
+                'is_login' => 1,
+                'giftcard' => env('GIFTCARD', 0),
+                'giftcard_url' => $giftCardUrl,
+            ];
+        } elseif ($type == 'doctor') {
+             switch ($tempRecord->doc_type) {
+        case '1':
+            $doc_type = 'Vet';
+            break;
+        case '2':
+            $doc_type = 'Livestock Assistant';
+            break;
+        default:
+            $doc_type = 'Private Practitioner';
+            break;
+    }
+
+            $data_insert = [
+                'name' => $tempRecord->name,
+                'district' => $tempRecord->district,
+                'city' => $tempRecord->city,
+                'state' => $tempRecord->state,
+                'phone' => $tempRecord->phone,
+                'email' => $tempRecord->email,
+                'type' => $doc_type,
+                'degree' => $tempRecord->degree,
+                'experience' => $tempRecord->experience,
+                'pincode' => $tempRecord->pincode,
+                'refer_code' => $tempRecord->refer_code,
+                'aadhar_no' => $tempRecord->aadhar_no,
+                'image' => $tempRecord->image,
+                'expert_category' => $tempRecord->expert_category,
+                'auth' => $auth,
+                'is_active' => 1,
+                'is_approved' => 1,
+                'is_expert' => 0,
+                'account' => 0,
+                'latitude' => $tempRecord->latitude,
+                'longitude' => $tempRecord->longitude,
+                'date' => $cur_date,
+            ];
+
+            $last_id = DB::table('tbl_doctor')->insertGetId($data_insert);
+
+            $this->sendWelcomeSms($phone, $tempRecord->name, 'doctor', '649e7f1bd6fc0504df28fcc3');
+            $this->sendAdminEmail($tempRecord->toArray(), $last_id, 'doctor');
+
+            $data = [
+                'name' => $tempRecord->name,
+                'is_expert' => 0,
+                'auth' => $auth,
+                'is_login' => 1,
+            ];
+        } else {
+            $data_insert = [
+                'name' => $tempRecord->name,
+                'district' => $tempRecord->district,
+                'city' => $tempRecord->city,
+                'state' => $tempRecord->state,
+                'pincode' => $tempRecord->pincode,
+                'refer_code' => $tempRecord->refer_code,
+                'phone' => $tempRecord->phone,
+                'shop_name' => $tempRecord->shop_name,
+                'address' => $tempRecord->address,
+                'image' => $tempRecord->image,
+                'pan_number' => $tempRecord->pan_no,
+                'gst_no' => $tempRecord->gst,
+                'aadhar_no' => $tempRecord->aadhar_no,
+                'email' => $tempRecord->email,
+                'auth' => $auth,
+                'is_approved' => 1,
+                'is_active' => 1,
+                'latitude' => $tempRecord->latitude,
+                'longitude' => $tempRecord->longitude,
+                'date' => $cur_date,
+            ];
+
+            $last_id = DB::table('tbl_vendor')->insertGetId($data_insert);
+
+            // $this->sendWelcomeSms($phone, $tempRecord->name, 'vendor', '649e7f76d6fc056e32336712');
+            // $this->sendAdminEmail($tempRecord->toArray(), $last_id, 'vendor');
+
+            $data = [
+                'name' => $tempRecord->name,
+                'auth' => $auth,
+                'is_login' => 1,
+            ];
+        }
+
+        // Delete temp record
+        $tempRecord->delete();
+
+        return [
+            'status' => 200,
+            'message' => 'Successfully Registered!',
+            'data' => $data,
+        ];
     }
 
     /**
@@ -795,7 +956,6 @@ class UserloginController extends Controller
             ], 500);
         }
     }
-
     private function loginWithOtp($phone, $call_type, $ip)
     {
         $cur_date = now()->toDateTimeString();
@@ -894,6 +1054,7 @@ class UserloginController extends Controller
             'message' => 'Please enter OTP sent to your registered mobile number',
         ];
     }
+
 
     /**
      * Doctor/Vendor Login OTP Verify
