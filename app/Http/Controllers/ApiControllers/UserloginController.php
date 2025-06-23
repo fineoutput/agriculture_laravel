@@ -1004,7 +1004,7 @@ class UserloginController extends Controller
         $validator = Validator::make($request->all(), [
             'phone' => 'required|string',
             'otp' => 'required|string',
-            'type' => 'required|string',
+            'type' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
