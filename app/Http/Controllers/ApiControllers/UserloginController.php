@@ -1019,7 +1019,7 @@ class UserloginController extends Controller
                 ->where('otp', $request->otp)
                 ->where('type', $request->type)
                 ->where('status', 0)
-                ->where('expires_at', '>', now())
+                // ->where('expires_at', '>', now())
                 ->first();
 
             if (!$otpRecord) {
