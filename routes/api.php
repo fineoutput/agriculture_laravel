@@ -115,8 +115,6 @@ Route::get('SemenTransaction', [DoctorController::class, 'getSemenTransactions']
 Route::middleware(['auth:vendor'])->group(function () {
     Route::post('products-all', [ToolsController::class, 'vendorAllProducts']);
 
-    ////vendorController
-    Route::get('vendorordersnew', [VendorController::class, 'newOrders']);
     Route::get('VendorOrdersAcepted', [VendorController::class, 'acceptedOrders']);
     Route::get('VendorOrdersDispatched', [VendorController::class, 'dispatchedOrders']);
     Route::get('CompletedORdes', [VendorController::class, 'completedOrders']);
@@ -125,7 +123,6 @@ Route::middleware(['auth:vendor'])->group(function () {
     Route::get('vendorpayment-info', [VendorController::class, 'paymentInfo']);
     Route::get('admin-payment-info', [VendorController::class, 'adminPaymentInfo']);
     Route::post('Product-add', [VendorController::class, 'addVendorProduct']);
-    Route::get('Data-Home', [VendorController::class, 'homeData']);
     Route::get('vendor/profile', [VendorController::class, 'getVendorProfile']);
     Route::post('update/Bank-info', [VendorController::class, 'updateBankInfo']);
     Route::post('update/vendor-profile', [VendorController::class, 'updateProfile']);
@@ -350,3 +347,12 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
 
     
     Route::post('Buy-Feed', [FeedController::class, 'buyFeed']);
+
+
+
+    
+    ////vendorController
+    Route::get('vendorordersnew', [VendorController::class, 'newOrders']);
+
+    
+    Route::get('Data-Home', [VendorController::class, 'homeData']);

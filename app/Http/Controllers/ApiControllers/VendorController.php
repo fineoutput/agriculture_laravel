@@ -26,14 +26,34 @@ class VendorController extends Controller
     public function newOrders(Request $request)
     {
         try {
-            /** @var \App\Models\Vendor $vendor */
-            $vendor = auth('vendor')->user();
-            Log::info('NewOrders auth attempt', [
-                'vendor_id' => $vendor ? $vendor->id : null,
-                'is_active' => $vendor ? ($vendor->is_active ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
-                'ip_address' => $request->ip(),
-            ]);
+            $token = $request->header('Authentication');
+            if (!$token) {
+                Log::warning('No bearer token provided');
+                return response()->json([
+                    'message' => 'Token required!',
+                    'status' => 201,
+                ], 401);
+            }
+
+            $vendor = Vendor::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$vendor) {
+                Log::warning('Invalid or inactive user for token', ['token' => $token]);
+                return response()->json([
+                    'message' => 'Invalid token or inactive user!',
+                    'status' => 201,
+                ], 403);
+            }
+            // /** @var \App\Models\Vendor $vendor */
+            // $vendor = auth('vendor')->user();
+            // Log::info('NewOrders auth attempt', [
+            //     'vendor_id' => $vendor ? $vendor->id : null,
+            //     'is_active' => $vendor ? ($vendor->is_active ?? 'missing') : null,
+            //     'request_token' => $request->bearerToken(),
+            //     'ip_address' => $request->ip(),
+            // ]);
 
             if (!$vendor || !$vendor->is_active || !$vendor->is_approved) {
                 Log::warning('NewOrders: Authentication failed or vendor inactive/unapproved', [
@@ -1154,19 +1174,23 @@ class VendorController extends Controller
         try {
             // Authenticate vendor
             // /** @var \App\Models\Vendor $vendor */
-            $vendor = auth('vendor')->user();
-            Log::info('HomeData: Auth attempt', [
-                'vendor_id' => $vendor ? $vendor->id : null,
-                'is_active' => $vendor ? $vendor->is_active : null,
-                'ip' => $request->ip(),
-            ]);
-
-            if (!$vendor || !$vendor->is_active || !$vendor->is_approved) {
-                Log::warning('HomeData: Authentication failed or vendor inactive/unapproved', [
-                    'vendor_id' => $vendor ? $vendor->id : null,
-                ]);
+           $token = $request->header('Authentication');
+            if (!$token) {
+                Log::warning('No bearer token provided');
                 return response()->json([
-                    'message' => 'Permission Denied!',
+                    'message' => 'Token required!',
+                    'status' => 201,
+                ], 401);
+            }
+
+            $vendor = Vendor::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$vendor) {
+                Log::warning('Invalid or inactive user for token', ['token' => $token]);
+                return response()->json([
+                    'message' => 'Invalid token or inactive user!',
                     'status' => 201,
                 ], 403);
             }
