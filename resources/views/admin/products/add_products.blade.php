@@ -55,11 +55,11 @@
                             </div>
                             <div class="form-group">
                                 <label>Description (Marathi)</label>
-                                <textarea name="description_punjabi" class="form-control" required></textarea>
+                                <textarea name="description_marathi" class="form-control" required></textarea>
                             </div>
                             <div class="form-group">
                                 <label>Description (Gujrati)</label>
-                                <textarea name="description_punjabi" class="form-control" required></textarea>
+                                <textarea name="description_gujrati" class="form-control" required></textarea>
                             </div>
                             <div class="form-group">
                                 <label>Images</label>
@@ -124,8 +124,15 @@
                                 <input type="number" name="min_qty" class="form-control">
                             </div>
                             <div class="form-group">
-                                <label>Show Product</label>
-                                <input type="checkbox" name="show_product" value="1">
+                               <td> <strong>Show Products</strong></strong> </td>
+                      <td>
+                        <select class="form-control" name="show_product">
+                          <option>---select---</option>
+                          <option value="0">Farmer</option>
+                          <option value="1">Vendor</option>
+                          <option value="2">Both</option>
+
+                        </select>
                             </div>
                              <tr>
                       <td> <strong>Vendor MRP</strong> <span style="color:red;">*</span></strong> </td>
