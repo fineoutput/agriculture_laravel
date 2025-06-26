@@ -4,6 +4,7 @@ namespace App\Http\Controllers\ApiControllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cart;
+use App\Models\Farmer;
 use App\Models\State;
 use App\Models\Order1;
 use App\Models\Order2;
@@ -1353,23 +1354,42 @@ class VendorController extends Controller
         try {
             // Authenticate vendor
             // /** @var \App\Models\Vendor $vendor */
-            $vendor = auth('vendor')->user();
-            Log::info('GetProfile: Auth attempt', [
-                'vendor_id' => $vendor ? $vendor->id : null,
-                'is_active' => $vendor ? $vendor->is_active : null,
-                'ip' => $request->ip(),
-            ]);
+            // $vendor = auth('vendor')->user();
+            // Log::info('GetProfile: Auth attempt', [
+            //     'vendor_id' => $vendor ? $vendor->id : null,
+            //     'is_active' => $vendor ? $vendor->is_active : null,
+            //     'ip' => $request->ip(),
+            // ]);
 
-            if (!$vendor || !$vendor->is_active || !$vendor->is_approved) {
-                Log::warning('GetProfile: Authentication failed or vendor inactive/unapproved', [
-                    'vendor_id' => $vendor ? $vendor->id : null,
-                ]);
+            // if (!$vendor || !$vendor->is_active || !$vendor->is_approved) {
+            //     Log::warning('GetProfile: Authentication failed or vendor inactive/unapproved', [
+            //         'vendor_id' => $vendor ? $vendor->id : null,
+            //     ]);
+            //     return response()->json([
+            //         'message' => 'Permission Denied!',
+            //         'status' => 201,
+            //     ], 403);
+            // }
+            $token = $request->header('Authentication');
+            if (!$token) {
+                Log::warning('No bearer token provided');
                 return response()->json([
-                    'message' => 'Permission Denied!',
+                    'message' => 'Token required!',
+                    'status' => 201,
+                ], 401);
+            }
+
+            $vendor = Vendor::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$vendor) {
+                Log::warning('Invalid or inactive user for token', ['token' => $token]);
+                return response()->json([
+                    'message' => 'Invalid token or inactive user!',
                     'status' => 201,
                 ], 403);
             }
-
             // Fetch state name
             $state = State::where('id', $vendor->state)->first();
 
@@ -1852,8 +1872,20 @@ class VendorController extends Controller
     public function viewVendorSliders(Request $request)
     {
         try {
-            $farmer = auth('farmer')->user();
-            $vendor = auth('vendor')->user();
+             $token = $request->header('Authentication');
+             if (!$token) {
+                Log::warning('No bearer token provided');
+                return response()->json([
+                    'message' => 'Token required!',
+                    'status' => 201,
+                ], 401);
+            }
+            $farmer = Farmer::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();;
+            $vendor = Vendor::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();;
 
             Log::info('ViewVendorSliders: Auth attempt', [
                 'farmer_id' => $farmer ? $farmer->id : null,

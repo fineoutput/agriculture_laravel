@@ -123,11 +123,9 @@ Route::middleware(['auth:vendor'])->group(function () {
     Route::get('vendorpayment-info', [VendorController::class, 'paymentInfo']);
     Route::get('admin-payment-info', [VendorController::class, 'adminPaymentInfo']);
     Route::post('Product-add', [VendorController::class, 'addVendorProduct']);
-    Route::get('vendor/profile', [VendorController::class, 'getVendorProfile']);
     Route::post('update/Bank-info', [VendorController::class, 'updateBankInfo']);
     Route::post('update/vendor-profile', [VendorController::class, 'updateProfile']);
     Route::post('store/slider', [VendorController::class, 'storeSlider']);
-    Route::get('view/slider', [VendorController::class, 'viewVendorSliders']);
     Route::post('delete/slider', [VendorController::class, 'deleteVendorSlider']);
     Route::delete('delete/vendor', [VendorController::class, 'deleteAccount']);
 
@@ -356,3 +354,9 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
 
     
     Route::get('Data-Home', [VendorController::class, 'homeData']);
+
+    
+    Route::get('view/slider', [VendorController::class, 'viewVendorSliders']);
+
+    
+    Route::get('vendor/profile', [VendorController::class, 'getVendorProfile']);
