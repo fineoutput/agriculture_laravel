@@ -1012,7 +1012,104 @@ class VendorController extends Controller
     }
 
 
+public function vendorProducts(Request $request)
+{
+    try {
+        $authentication = $request->header('Authentication');
+        $page_index = (int) $request->header('Index', 1);
+        $search = $request->query('search');
+        $limit = 20;
+        $start = ($page_index - 1) * $limit;
 
+        // Get vendor by auth token
+        $vendor = Vendor::where([
+            ['is_active', 1],
+            ['is_approved', 1],
+            ['auth', $authentication]
+        ])->first();
+
+        if (!$vendor) {
+            return response()->json([
+                'message' => 'Permission Denied!',
+                'status' => 201
+            ], 403);
+        }
+
+        // Count total matching products
+        $query = Product::where('added_by', $vendor->id)
+                        ->where('is_admin', 0);
+
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name_english', 'like', "%$search%")
+                  ->orWhere('name_hindi', 'like', "%$search%")
+                  ->orWhere('name_punjabi', 'like', "%$search%");
+            });
+        }
+
+        $count = $query->count();
+        $pages = (int) ceil($count / $limit);
+
+        // Apply pagination
+        $products = $query->orderByDesc('id')
+                          ->offset($start)
+                          ->limit($limit)
+                          ->get();
+
+        $data = [];
+        foreach ($products as $pro) {
+            $image = $pro->image ? url($pro->image) : '';
+            $stock = $pro->inventory != 0 ? 'In Stock' : 'Out of Stock';
+
+            $discount = (int) $pro->mrp - (int) $pro->selling_price;
+            $percent = $discount > 0 ? round($discount / $pro->mrp * 100) : 0;
+
+            $status = $pro->is_active ? 'Active' : 'Inactive';
+            $bg_color = $pro->is_active ? '#139c49' : '#ffc30e';
+
+            $data[] = [
+                'pro_id' => $pro->id,
+                'name_english' => $pro->name_english,
+                'name_hindi' => $pro->name_hindi,
+                'name_punjabi' => $pro->name_punjabi,
+                'description_english' => $pro->description_english,
+                'description_hindi' => $pro->description_hindi,
+                'description_punjabi' => $pro->description_punjabi,
+                'image' => $image,
+                'min_qty' => $pro->min_qty ?: 1,
+                'mrp' => $pro->mrp,
+                'selling_price' => $pro->selling_price,
+                'suffix' => $pro->suffix,
+                'stock' => $stock,
+                'percent' => $percent,
+                'inventory' => $pro->inventory,
+                'vendor_id' => $pro->added_by,
+                'is_active' => $pro->is_active,
+                'status' => $status,
+                'bg_color' => $bg_color,
+                'is_admin' => $pro->is_admin,
+            ];
+        }
+
+        return response()->json([
+            'message' => 'Success!',
+            'status' => 200,
+            'data' => $data,
+            'pagination' => $this->createPagination($page_index, $pages),
+            'last' => $pages
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error in vendorProducts API', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        return response()->json([
+            'message' => 'Internal Server Error',
+            'status' => 500
+        ], 500);
+    }
+}
     public function addVendorProduct(Request $request)
     {
         try {
