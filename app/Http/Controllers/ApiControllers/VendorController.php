@@ -1058,7 +1058,17 @@ public function vendorProducts(Request $request)
 
         $data = [];
         foreach ($products as $pro) {
-            $image = $pro->image ? url($pro->image) : '';
+            $image = '';
+if (!empty($pro->image)) {
+    $imageData = json_decode($pro->image, true);
+    if (is_array($imageData)) {
+        // Take the first image in the array
+        $image = url($imageData[0]);
+    } else {
+        // Fallback if not a valid array
+        $image = url($pro->image);
+    }
+}
             $stock = $pro->inventory != 0 ? 'In Stock' : 'Out of Stock';
 
             $discount = (int) $pro->mrp - (int) $pro->selling_price;
