@@ -1275,13 +1275,20 @@ class VendorController extends Controller
             }
 
             // Vendor sliders
-            $vendor_sliders = VendorSlider::where('is_active', 1)
-                ->get()
-                ->map(function ($slider) {
-                    return [
-                        'image' => $slider->image ? url($slider->image) : '',
-                    ];
-                })->toArray();
+           $vendor_sliders = VendorSlider::where('is_active', 1)
+    ->get()
+    ->map(function ($slider) {
+        // Decode JSON if stored as array (even if it's a single image)
+        $images = json_decode($slider->image, true);
+
+        // Get the first image if it's an array, else fallback to null
+        $imagePath = is_array($images) && count($images) > 0 ? $images[0] : null;
+
+        return [
+            'image' => $imagePath ? url($imagePath) : '',
+        ];
+    })
+    ->toArray();
 
             // Vendor notifications
             $vendor_notifications = VendorNotification::where('vendor_id', $vendor->id)
