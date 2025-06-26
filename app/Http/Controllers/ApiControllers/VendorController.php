@@ -2012,6 +2012,28 @@ class VendorController extends Controller
     public function deleteVendorSlider(Request $request)
     {
         try {
+
+             $token = $request->header('Authentication');
+             if (!$token) {
+                Log::warning('No bearer token provided');
+                return response()->json([
+                    'message' => 'Token required!',
+                    'status' => 201,
+                ], 401);
+            }
+
+            $vendor = Vendor::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$vendor) {
+                Log::warning('Invalid or inactive user for token', ['token' => $token]);
+                return response()->json([
+                    'message' => 'Invalid token or inactive user!',
+                    'status' => 201,
+                ], 403);
+            }
+            
             // Validate form data
             $validator = Validator::make($request->all(), [
                 'id' => 'required|integer|min:1',
@@ -2031,8 +2053,7 @@ class VendorController extends Controller
 
             $sliderId = $request->input('id');
 
-            // Authenticate vendor
-            $vendor = auth('vendor')->user();
+            
 
             Log::info('DeleteVendorSlider: Auth attempt', [
                 'vendor_id' => $vendor ? $vendor->id : null,
