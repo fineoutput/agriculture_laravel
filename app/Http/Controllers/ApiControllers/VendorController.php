@@ -1690,21 +1690,23 @@ class VendorController extends Controller
         try {
             // Authenticate vendor
             // /** @var \App\Models\Vendor $vendor */
-            $vendor = auth('vendor')->user();
-            Log::info('StoreSlider: Auth attempt', [
-                'vendor_id' => $vendor ? $vendor->id : null,
-                'is_active' => $vendor ? $vendor->is_active : null,
-                'ip' => $request->ip(),
-                'host' => $request->getHost(),
-                'url' => $request->fullUrl(),
-            ]);
-
-            if (!$vendor || !$vendor->is_active || !$vendor->is_approved) {
-                Log::warning('StoreSlider: Authentication failed or vendor inactive/unapproved', [
-                    'vendor_id' => $vendor ? $vendor->id : null,
-                ]);
+            $token = $request->header('Authentication');
+            if (!$token) {
+                Log::warning('No bearer token provided');
                 return response()->json([
-                    'message' => 'Permission Denied!',
+                    'message' => 'Token required!',
+                    'status' => 201,
+                ], 401);
+            }
+
+            $vendor = Vendor::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$vendor) {
+                Log::warning('Invalid or inactive user for token', ['token' => $token]);
+                return response()->json([
+                    'message' => 'Invalid token or inactive user!',
                     'status' => 201,
                 ], 403);
             }
