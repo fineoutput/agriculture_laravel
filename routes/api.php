@@ -34,6 +34,7 @@ Route::post('Login_process', [UserloginController::class, 'farmer_login_process'
 
 Route::post('loginVerify_otp', [UserloginController::class, 'farmer_login_otp_verify']);
 
+////////////vendor register and login start
 
 Route::post('register', [UserloginController::class, 'registerWithOtp']);
 Route::post('userRegisterOtpVerify', [UserloginController::class, 'register_otp_verify']);
@@ -41,6 +42,11 @@ Route::post('userRegisterOtpVerify', [UserloginController::class, 'register_otp_
 Route::post('login', [UserloginController::class, 'login_process']);
 // Route::post('LoginOtpVerify', [UserloginController::class, 'login_otp_verify']);
 Route::post('LoginOtpVerify', [UserloginController::class, 'verify_login_otp']);
+
+
+////////////vendor register and login end
+
+
     // Add e-commerce routes here
     // Route::get('/products', [ProductController::class, 'index']);
 

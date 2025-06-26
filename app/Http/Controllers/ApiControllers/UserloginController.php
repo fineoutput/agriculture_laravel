@@ -1180,14 +1180,14 @@ class UserloginController extends Controller
                 ->where('otp', $request->otp)
                 ->where('type', $request->type)
                 ->where('status', 0)
-                // ->where('expires_at', '>', now())
+                ->where('expires_at', '>', now())
                 ->first();
 
             if (!$otpRecord) {
                 return response()->json([
                     'status' => 201,
                     'message' => 'Invalid or expired OTP',
-                ], 400);
+                ], 200);
             }
 
             $data = $otpRecord->data;
