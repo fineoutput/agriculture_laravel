@@ -233,7 +233,7 @@ class VendorController extends Controller
                           ->where('order_status', 2)
                           ->count();
 
-            $orders = Order2::where('vendor_id', $vendor->id)
+            $orders = Order1::where('vendor_id', $vendor->id)
                            ->where('is_admin', 0)
                            ->whereIn('payment_status', [1, 2])
                            ->where('order_status', 2)
