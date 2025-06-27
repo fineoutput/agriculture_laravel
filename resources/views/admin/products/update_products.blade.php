@@ -128,9 +128,9 @@
                                 <label>Show Products</label>
                                 <select class="form-control" name="show_product">
                           <option>---select---</option>
-                          <option value="0">Farmer</option>
-                          <option value="1">Vendor</option>
-                          <option value="2">Both</option>
+                          <option value="0" {{ $products->show_product == 0 ? 'selected' : '' }}>Farmer</option>
+                          <option value="1" {{ $products->show_product == 1 ? 'selected' : '' }}>Vendor</option>
+                          <option value="2" {{ $products->show_product == 2 ? 'selected' : '' }}>Both</option>
 
                         </select>
                             </div>
