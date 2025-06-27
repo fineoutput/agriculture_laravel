@@ -114,9 +114,7 @@ Route::get('SemenTransaction', [DoctorController::class, 'getSemenTransactions']
 
 Route::middleware(['auth:vendor'])->group(function () {
 
-    Route::get('CompletedORdes', [VendorController::class, 'completedOrders']);
     Route::get('CancelORd', [VendorController::class, 'cancelledOrders']);
-    Route::post('update-status', [VendorController::class, 'updateOrderStatus']);
     Route::get('vendorpayment-info', [VendorController::class, 'paymentInfo']);
     Route::get('admin-payment-info', [VendorController::class, 'adminPaymentInfo']);
     Route::post('update/Bank-info', [VendorController::class, 'updateBankInfo']);
@@ -377,3 +375,9 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
 
     
     Route::get('VendorOrdersDispatched', [VendorController::class, 'dispatchedOrders']);
+
+    
+    Route::get('CompletedORdes', [VendorController::class, 'completedOrders']);
+
+    
+    Route::post('update-status', [VendorController::class, 'updateOrderStatus']);
