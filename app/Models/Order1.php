@@ -40,4 +40,9 @@ class Order1 extends Model
     {
         return $this->belongsTo(Farmer::class, 'farmer_id', 'id');
     }
+
+    public function items()
+{
+    return $this->hasMany(Order2::class, 'main_id', 'id');
+}
 }
