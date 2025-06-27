@@ -34,4 +34,13 @@ class Order2 extends Model
     // {
     //     return $this->belongsTo(Farmer::class, 'farmer_id', 'id');
     // }
+   public function farmer()
+    {
+        return $this->belongsTo(Farmer::class, 'farmer_id', 'id');
+    }
+
+    // public function items()
+    // {
+    //     return $this->hasMany(OrderItem::class, 'order_id', 'id');
+    // }
 }
