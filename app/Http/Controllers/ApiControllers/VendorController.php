@@ -85,7 +85,7 @@ class VendorController extends Controller
                            ->orderBy('id', 'desc')
                            ->offset($start)
                            ->limit($limit)
-                           ->with(['farmer', 'items'])
+                        //    ->with(['farmer', 'items'])
                            ->get();
 
             $pages = (int) ceil($count / $limit);
@@ -480,17 +480,37 @@ class VendorController extends Controller
     public function completedOrders(Request $request)
     {
         try {
-            /** @var \App\Models\Vendor $vendor */
-            $vendor = auth('vendor')->user();
-            Log::info('CompletedOrders auth attempt', [
-                'vendor_id' => $vendor ? $vendor->id : null,
-                'is_active' => $vendor ? ($vendor->is_active ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
-                'ip_address' => $request->ip(),
-            ]);
+            $token = $request->header('Authentication');
+            if (!$token) {
+                Log::warning('No bearer token provided');
+                return response()->json([
+                    'message' => 'Token required!',
+                    'status' => 201,
+                ], 401);
+            }
+
+            $vendor = Vendor::where('auth', $token)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$vendor) {
+                Log::warning('Invalid or inactive user for token', ['token' => $token]);
+                return response()->json([
+                    'message' => 'Invalid token or inactive user!',
+                    'status' => 201,
+                ], 403);
+            }
+            // /** @var \App\Models\Vendor $vendor */
+            // $vendor = auth('vendor')->user();
+            // Log::info('NewOrders auth attempt', [
+            //     'vendor_id' => $vendor ? $vendor->id : null,
+            //     'is_active' => $vendor ? ($vendor->is_active ?? 'missing') : null,
+            //     'request_token' => $request->bearerToken(),
+            //     'ip_address' => $request->ip(),
+            // ]);
 
             if (!$vendor || !$vendor->is_active || !$vendor->is_approved) {
-                Log::warning('CompletedOrders: Authentication failed or vendor inactive/unapproved', [
+                Log::warning('NewOrders: Authentication failed or vendor inactive/unapproved', [
                     'vendor_id' => $vendor ? $vendor->id : null,
                     'is_active' => $vendor ? $vendor->is_active : null,
                     'is_approved' => $vendor ? $vendor->is_approved : null,
