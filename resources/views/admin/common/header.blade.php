@@ -194,6 +194,18 @@
                         </li>
                         <li>
                             <a href="{{route('admin.products.view')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Products</span></a>
+                           
+                        </li>
+                       
+                         <li>
+                            <a href="javascript:void(0);" class="waves-effect"><i class="bi bi-sliders"></i><span> Vendor Products <span class="float-right menu-arrow"></span> </span></a>
+                            <ul class="submenu">
+                                <li>
+                             <a href="{{route('admin.vendor.products.view')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Vendor pending products</span></a>
+                           
+                        </li>
+                                <li><a href="{{ route('admin.products.vendor_accepted') }}">Vendor accepted products</a></li>
+                            </ul>
                         </li>
                         <li>
                             <a href="{{route('farmer_slider.list')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Farmer Slider 2</span></a>

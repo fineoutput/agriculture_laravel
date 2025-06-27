@@ -156,7 +156,11 @@ Route::get('/farmers/semen-tank-list/{farmer_id}', [FarmersController::class, 'v
     Route::get('/doctor/accepted', [DoctorsController::class, 'acceptedDoctors'])->name('admin.doctor.accepted');
 ///////Products
     Route::get('/Products/View_products', [ProductController::class, 'viewProducts'])->name('admin.products.view');
+
+    Route::get('/Vendor/Products/View_products', [ProductController::class, 'vendorPendingProducts'])->name('admin.vendor.products.view');
+
     Route::get('/Products/vendor_pending_products', [ProductController::class, 'vendorPendingProducts'])->name('admin.products.vendor_pending');
+    
     Route::get('/Products/vendor_accepted_products', [ProductController::class, 'vendorAcceptedProducts'])->name('admin.products.vendor_accepted');
     Route::get('/Products/add_products', [ProductController::class, 'addProducts'])->name('admin.products.add');
     Route::post('/Products/add_products_data/{t}/{iw?}', [ProductController::class, 'addProductsData'])->name('admin.products.add_data');
