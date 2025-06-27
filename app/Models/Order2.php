@@ -30,8 +30,8 @@ class Order2 extends Model
         'date'
     ];
 
-    public function farmer()
-    {
-        return $this->belongsTo(Farmer::class, 'farmer_id', 'id');
-    }
+    // public function farmer()
+    // {
+    //     return $this->belongsTo(Farmer::class, 'farmer_id', 'id');
+    // }
 }
