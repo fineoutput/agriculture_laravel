@@ -1196,7 +1196,7 @@ class ToolsController extends Controller
 
             // Validate inputs
             $validator = Validator::make($request->all(), [
-                'is_admin' => 'required|string',
+                'is_admin' => 'required|0,1',
                 'vendor_id' => 'nullable|integer',
                 'search' => 'nullable|string',
             ]);
