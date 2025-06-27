@@ -365,7 +365,7 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
     Route::post('Product-add', [VendorController::class, 'addVendorProduct']);
 
     
-    Route::get('Vendor-products-all', [ToolsController::class, 'vendorAllProducts']);
+    Route::post('Vendor-products-all', [ToolsController::class, 'vendorAllProducts']);
 
 
     Route::get('Vendor_products', [VendorController::class, 'vendorProducts']);
