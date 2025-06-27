@@ -35,11 +35,11 @@
                             </div>
                             <div class="form-group">
                                 <label>Name (Marathi)</label>
-                                <input type="text" name="name_punjabi" class="form-control" value="{{ $products->name_punjabi }}" required>
+                                <input type="text" name="name_marathi" class="form-control" value="{{ $products->name_marathi }}" required>
                             </div>
                             <div class="form-group">
                                 <label>Name (Gujrati)</label>
-                                <input type="text" name="name_punjabi" class="form-control" value="{{ $products->name_punjabi }}" required>
+                                <input type="text" name="name_gujrati" class="form-control" value="{{ $products->name_gujrati }}" required>
                             </div>
                             <div class="form-group">
                                 <label>Description (English)</label>
@@ -55,11 +55,11 @@
                             </div>
                             <div class="form-group">
                                 <label>Description (Marathi)</label>
-                                <textarea name="description_punjabi" class="form-control" required>{{ $products->description_punjabi }}</textarea>
+                                <textarea name="description_marathi" class="form-control" required>{{ $products->description_marathi }}</textarea>
                             </div>
                             <div class="form-group">
                                 <label>Description (Gujrati)</label>
-                                <textarea name="description_punjabi" class="form-control" required>{{ $products->description_punjabi }}</textarea>
+                                <textarea name="description_gujrati" class="form-control" required>{{ $products->description_gujrati }}</textarea>
                             </div>
                             <div class="form-group">
                                 <label>Current Images</label>
@@ -125,8 +125,13 @@
                                 <input type="number" name="min_qty" class="form-control" value="{{ $products->min_qty }}">
                             </div>
                             <div class="form-group">
-                                <label>Show Product</label>
-                                <input type="checkbox" name="show_product" value="1" {{ $products->show_product ? 'checked' : '' }}>
+                                <select class="form-control" name="show_product">
+                          <option>---select---</option>
+                          <option value="0">Farmer</option>
+                          <option value="1">Vendor</option>
+                          <option value="2">Both</option>
+
+                        </select>
                             </div>
                             <div class="form-group">
                                 <label>Vendor Min Quantity</label>
