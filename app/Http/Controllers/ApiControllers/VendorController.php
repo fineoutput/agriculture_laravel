@@ -85,7 +85,7 @@ class VendorController extends Controller
                            ->orderBy('id', 'desc')
                            ->offset($start)
                            ->limit($limit)
-                        //    ->with(['farmer', 'items'])
+                           ->with(['farmer', 'items'])
                            ->get();
 
             $pages = (int) ceil($count / $limit);
