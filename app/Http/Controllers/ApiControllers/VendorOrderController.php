@@ -349,186 +349,207 @@ class VendorOrderController extends Controller
         }
     }
 
-    public function getProductDetails(Request $request)
-    {
-        try {
-            // Validate inputs
-            $validator = Validator::make($request->all(), [
-                'product_id' => 'required|integer|min:1',
-            ]);
+   public function getProductDetails(Request $request)
+{
+    try {
+        // Validate inputs
+        $validator = Validator::make($request->all(), [
+            'product_id' => 'required|integer|min:1',
+        ]);
 
-            if ($validator->fails()) {
-                Log::warning('GetProductDetails: Validation failed', [
-                    'ip' => $request->ip(),
-                    'errors' => $validator->errors(),
-                    'url' => $request->fullUrl(),
-                ]);
-                return response()->json([
-                    'message' => $validator->errors()->first(),
-                    'status' => 400,
-                ], 422);
-            }
-
-            // Validate X-Language header
-            $lang = $request->header('X-Language', 'en');
-            $validator = Validator::make(['lang' => $lang], [
-                'lang' => 'in:en,hi,pn',
-            ]);
-
-            if ($validator->fails()) {
-                Log::warning('GetProductDetails: Validation failed for X-Language header', [
-                    'ip' => $request->ip(),
-                    'errors' => $validator->errors(),
-                    'url' => $request->fullUrl(),
-                    'header' => $request->header('X-Language'),
-                ]);
-                return response()->json([
-                    'message' => $validator->errors()->first(),
-                    'status' => 400,
-                ], 422);
-            }
-
-            $product_id = $request->input('product_id');
-
-            // Authenticate vendor
-            /** @var \App\Models\Vendor $vendor */
-            $vendor = auth('vendor')->user();
-            Log::info('GetProductDetails: Auth attempt', [
-                'vendor_id' => $vendor ? $vendor->id : null,
-                'product_id' => $product_id,
-                'lang' => $lang,
+        if ($validator->fails()) {
+            Log::warning('GetProductDetails: Validation failed', [
                 'ip' => $request->ip(),
-                'host' => $request->getHost(),
+                'errors' => $validator->errors(),
                 'url' => $request->fullUrl(),
             ]);
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 400,
+            ], 422);
+        }
 
-            if (!$vendor || !$vendor->is_active) {
-                Log::warning('GetProductDetails: Authentication failed or vendor inactive', [
-                    'vendor_id' => $vendor ? $vendor->id : null,
-                    'product_id' => $product_id,
-                ]);
-                return response()->json([
-                    'message' => 'Permission Denied!',
-                    'status' => 401,
-                ], 403);
-            }
+        // Validate X-Language header
+        $lang = $request->header('X-Language', 'en');
+        $validator = Validator::make(['lang' => $lang], [
+            'lang' => 'in:en,hi,pn',
+        ]);
 
-            // Fetch product
-            $product = Product::where('id', $product_id)
-                ->where('is_active', 1)
-                ->first();
+        if ($validator->fails()) {
+            Log::warning('GetProductDetails: Validation failed for X-Language header', [
+                'ip' => $request->ip(),
+                'errors' => $validator->errors(),
+                'url' => $request->fullUrl(),
+                'header' => $request->header('X-Language'),
+            ]);
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 400,
+            ], 422);
+        }
 
-            if (!$product) {
-                Log::warning('GetProductDetails: Product not found', [
-                    'vendor_id' => $vendor->id,
-                    'product_id' => $product_id,
-                ]);
-                return response()->json([
-                    'message' => 'Product not found!',
-                    'status' => 404,
-                ], 404);
-            }
+        $product_id = $request->input('product_id');
 
-            // Handle images
-            $images = [];
-            if ($product->image) {
-                $imageArray = json_decode($product->image, true);
-                if (is_array($imageArray) && !empty($imageArray)) {
-                    foreach ($imageArray as $imagePath) {
-                        $images[] = url($imagePath);
-                    }
-                } else {
-                    $images[] = url($product->image);
-                }
-            }
+        // Authenticate vendor using header token
+        $token = $request->header('Authentication');
+        if (!$token) {
+            Log::warning('No bearer token provided');
+            return response()->json([
+                'message' => 'Token required!',
+                'status' => 201,
+            ], 401);
+        }
 
-            // Handle video
-            if ($product->video) {
-                $images[] = url($product->video);
-            }
+        $vendor = Vendor::where('auth', $token)
+            ->where('is_active', 1)
+            ->first();
 
-            // Check inventory
-            $stock = $product->inventory != 0 ? 'In Stock' : 'Out of Stock';
+        if (!$vendor) {
+            Log::warning('Invalid or inactive user for token', ['token' => $token]);
+            return response()->json([
+                'message' => 'Invalid token or inactive user!',
+                'status' => 201,
+            ], 403);
+        }
 
-            // Check cart
-            $cart = Cart::where('vendor_id', $vendor->id)
-                ->where('product_id', $product_id)
-                ->first();
-            $cart_qty = $cart ? $cart->qty : 0;
+        if (!$vendor || !$vendor->is_active || !$vendor->is_approved) {
+            Log::warning('GetProductDetails: Authentication failed or vendor inactive/unapproved', [
+                'vendor_id' => $vendor ? $vendor->id : null,
+                'is_active' => $vendor ? $vendor->is_active : null,
+                'is_approved' => $vendor ? $vendor->is_approved : null,
+            ]);
+            return response()->json([
+                'message' => 'Permission Denied!',
+                'status' => 201,
+            ], 403);
+        }
 
-            // Calculate discount
-            $discount = (int)$product->vendor_mrp - (int)$product->vendor_selling_price;
-            $percent = 0;
-            if ($discount > 0 && $product->vendor_mrp > 0) {
-                $percent = round(($discount / $product->vendor_mrp) * 100);
-            }
+        Log::info('GetProductDetails: Auth attempt', [
+            'vendor_id' => $vendor ? $vendor->id : null,
+            'product_id' => $product_id,
+            'lang' => $lang,
+            'ip' => $request->ip(),
+            'host' => $request->getHost(),
+            'url' => $request->fullUrl(),
+        ]);
 
-            // Prepare response data
-            $data = [
-                'pro_id' => $product->id,
-                'images' => $images,
-                'stock' => $stock,
-                'vendor_id' => $product->added_by,
-                'percent' => $percent,
-                'cod' => $product->cod,
-                'cart_qty' => $cart_qty,
-                'is_cod' => $vendor->cod,
-                'vendor_mrp' => $product->vendor_mrp,
-                'vendor_min_qty' => $product->vendor_min_qty ?? 1,
-                'vendor_selling_price' => $product->vendor_selling_price,
-                'suffix' => $product->suffix,
-                'offer' => $product->offer,
-            ];
+        // Fetch product
+        $product = Product::where('id', $product_id)
+            ->where('is_active', 1)
+            ->first();
 
-            // Set language-specific fields
-            if ($lang === 'en') {
-                $data['name'] = $product->name_english;
-                $data['description'] = $product->description_english;
-            } elseif ($lang === 'hi') {
-                $data['name'] = $product->name_hindi;
-                $data['description'] = $product->description_hindi;
-            } elseif ($lang === 'pn') {
-                $data['name'] = $product->name_punjabi;
-                $data['description'] = $product->description_punjabi;
-            }
-
-            Log::info('GetProductDetails: Product details retrieved', [
+        if (!$product) {
+            Log::warning('GetProductDetails: Product not found', [
                 'vendor_id' => $vendor->id,
                 'product_id' => $product_id,
-                'lang' => $lang,
-            ]);
-
-            return response()->json([
-                'message' => 'Product details fetched successfully!',
-                'status' => 200,
-                'data' => $data,
-            ], 200);
-        } catch (\Illuminate\Database\QueryException $e) {
-            Log::error('GetProductDetails: Database error', [
-                'vendor_id' => auth('vendor')->id() ?? null,
-                'product_id' => $product_id ?? null,
-                'lang' => $request->header('X-Language') ?? null,
-                'error' => $e->getMessage(),
-                'sql' => $e->getSql(),
-                'bindings' => $e->getBindings(),
             ]);
             return response()->json([
-                'message' => 'Database error: ' . $e->getMessage(),
-                'status' => 500,
-            ], 500);
-        } catch (\Exception $e) {
-            Log::error('GetProductDetails: General error', [
-                'vendor_id' => auth('vendor')->id() ?? null,
-                'product_id' => $product_id ?? null,
-                'lang' => $request->header('X-Language') ?? null,
-                'error' => $e->getMessage(),
-            ]);
-            return response()->json([
-                'message' => 'Error processing request: ' . $e->getMessage(),
-                'status' => 500,
-            ], 500);
+                'message' => 'Product not found!',
+                'status' => 404,
+            ], 404);
         }
+
+        // Handle images
+        $images = [];
+        if ($product->image) {
+            $imageArray = json_decode($product->image, true);
+            if (is_array($imageArray) && !empty($imageArray)) {
+                foreach ($imageArray as $imagePath) {
+                    $images[] = url($imagePath);
+                }
+            } else {
+                $images[] = url($product->image);
+            }
+        }
+
+        // Handle video
+        if ($product->video) {
+            $images[] = url($product->video);
+        }
+
+        // Check inventory
+        $stock = $product->inventory != 0 ? 'In Stock' : 'Out of Stock';
+
+        // Check cart
+        $cart = Cart::where('vendor_id', $vendor->id)
+            ->where('product_id', $product_id)
+            ->first();
+        $cart_qty = $cart ? $cart->qty : 0;
+
+        // Calculate discount
+        $discount = (int)$product->vendor_mrp - (int)$product->vendor_selling_price;
+        $percent = 0;
+        if ($discount > 0 && $product->vendor_mrp > 0) {
+            $percent = round(($discount / $product->vendor_mrp) * 100);
+        }
+
+        // Prepare response data
+        $data = [
+            'pro_id' => $product->id,
+            'images' => $images,
+            'stock' => $stock,
+            'vendor_id' => $product->added_by,
+            'percent' => $percent,
+            'cod' => $product->cod,
+            'cart_qty' => $cart_qty,
+            'is_cod' => $vendor->cod,
+            'vendor_mrp' => $product->vendor_mrp,
+            'vendor_min_qty' => $product->vendor_min_qty ?? 1,
+            'vendor_selling_price' => $product->vendor_selling_price,
+            'suffix' => $product->suffix,
+            'offer' => $product->offer,
+        ];
+
+        // Set language-specific fields
+        if ($lang === 'en') {
+            $data['name'] = $product->name_english;
+            $data['description'] = $product->description_english;
+        } elseif ($lang === 'hi') {
+            $data['name'] = $product->name_hindi;
+            $data['description'] = $product->description_hindi;
+        } elseif ($lang === 'pn') {
+            $data['name'] = $product->name_punjabi;
+            $data['description'] = $product->description_punjabi;
+        }
+
+        Log::info('GetProductDetails: Product details retrieved', [
+            'vendor_id' => $vendor->id,
+            'product_id' => $product_id,
+            'lang' => $lang,
+        ]);
+
+        return response()->json([
+            'message' => 'Product details fetched successfully!',
+            'status' => 200,
+            'data' => $data,
+        ], 200);
+    } catch (\Illuminate\Database\QueryException $e) {
+        Log::error('GetProductDetails: Database error', [
+            'vendor_id' => $vendor->id ?? null,
+            'product_id' => $product_id ?? null,
+            'lang' => $request->header('X-Language') ?? null,
+            'error' => $e->getMessage(),
+            'sql' => $e->getSql(),
+            'bindings' => $e->getBindings(),
+        ]);
+        return response()->json([
+            'message' => 'Database error: ' . $e->getMessage(),
+            'status' => 500,
+        ], 500);
+    } catch (\Exception $e) {
+        Log::error('GetProductDetails: General error', [
+            'vendor_id' => $vendor->id ?? null,
+            'product_id' => $product_id ?? null,
+            'lang' => $request->header('X-Language') ?? null,
+            'error' => $e->getMessage(),
+        ]);
+        return response()->json([
+            'message' => 'Error processing request: ' . $e->getMessage(),
+            'status' => 500,
+        ], 500);
     }
+}
+
 
     public function updateCart(Request $request)
     {
