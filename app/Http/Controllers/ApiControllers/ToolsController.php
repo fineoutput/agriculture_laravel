@@ -1128,7 +1128,7 @@ class ToolsController extends Controller
         }
     }
 
-    public function allProducts(Request $request)
+   public function allProducts(Request $request)
     {
         Log::info('allProducts request', [
             'is_admin' => $request->input('is_admin'),
@@ -1196,7 +1196,7 @@ class ToolsController extends Controller
 
             // Validate inputs
             $validator = Validator::make($request->all(), [
-                'is_admin' => 'required|in:0,1',
+                'is_admin' => 'required|string',
                 'vendor_id' => 'nullable|integer',
                 'search' => 'nullable|string',
             ]);
