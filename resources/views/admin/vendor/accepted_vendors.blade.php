@@ -102,9 +102,19 @@
                                                     <td>{{ $data->pan_number }}</td>
                                                     <td>{{ $data->email }}</td>
                                                     <td>{{ $data->account ? '₹' . $data->account : '₹0' }}</td>
-                                                    <td>
-                                                        <input type="checkbox" class="mycheckbox" data-id="{{ $data->id }}" name="checkbox" {{ $data->cod ? 'checked' : '' }}>
-                                                    </td>
+                                                     <td>
+    @if(!empty($data->id))
+        <form action="{{ route('admin.vendor.store_cod', ['id' => $data->id]) }}" method="POST">
+            @csrf
+            <input type="checkbox"
+                   name="cod"
+                   onchange="this.form.submit()"
+                   {{ $data->cod == 1 ? 'checked' : '' }}>
+        </form>
+    @else
+        <span>No ID</span>
+    @endif
+</td>
                                                     <td>
                                                         <input type="text" class="qtydiscount" data-id="{{ $data->id }}" name="qty_discount" value="{{ $data->qty_discount ?? '' }}" style="width: 100px;">
                                                     </td>
@@ -172,7 +182,7 @@
 <script src="https://cdn.datatables.net/buttons/1.6.1/js/buttons.html5.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/1.6.1/js/buttons.print.min.js"></script>
 
-<script type="text/javascript">
+{{-- <script type="text/javascript">
 $(document).ready(function() {
     $('#dataTable').DataTable({
         responsive: true,
@@ -271,5 +281,5 @@ $(document).ready(function() {
         });
     }
 });
-</script>
+</script> --}}
 @endpush

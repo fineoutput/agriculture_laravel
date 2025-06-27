@@ -254,7 +254,8 @@ Route::get('/farmers/semen-tank-list/{farmer_id}', [FarmersController::class, 'v
     Route::get('/Vendor/accepted_vendors', [VendorController::class, 'acceptedVendors'])->name('admin.vendor.accepted');
     Route::get('/Vendor/rejected_vendors', [VendorController::class, 'rejectedVendors'])->name('admin.vendor.rejected');
     Route::post('/Vendor/add_vendor_data/{t}/{iw?}', [VendorController::class, 'addVendorData'])->name('admin.vendor.add_data');
-    Route::post('/Vendor/store_cod_data', [VendorController::class, 'storeCodData'])->name('admin.vendor.store_cod');
+    Route::post('/Vendor/store_cod_data/{id}', [VendorController::class, 'storeCodData'])->name('admin.vendor.store_cod');
+
     Route::post('/Vendor/delete_vendor/{idd}', [VendorController::class, 'deleteVendor'])->name('admin.vendor.delete');
     Route::get('/Vendor/updateVendorStatus/{idd}/{t}', [VendorController::class, 'updateVendorStatus'])->name(  'admin.vendor.update_status');
     Route::get('/Vendor/update_vendor/{idd}', [VendorController::class, 'updateVendor'])->name('admin.vendor.update');

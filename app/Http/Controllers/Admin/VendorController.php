@@ -6,6 +6,7 @@ use App\Models\Vendor;
 use App\Models\State;
 use App\Models\City;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class VendorController extends Controller
@@ -131,17 +132,20 @@ class VendorController extends Controller
         return redirect()->back()->with('emessage', 'Sorry, an error occurred');
     }
 
-    public function storeCodData(Request $request)
-    {
-        if ($request->ajax()) {
-            $user_id = $request->userId;
-            $is_checked = filter_var($request->isChecked, FILTER_VALIDATE_BOOLEAN);
-            $data = ['cod' => $is_checked ? 1 : 0];
-            $updated = Vendor::where('id', $user_id)->update($data);
-            return response()->json(['status' => $updated ? 'success' : 'error']);
-        }
-        return response()->json(['error' => 'Invalid request'], 400);
+  public function storeCodData(Request $request, $id)
+{
+    try {
+        $vendor = Vendor::findOrFail($id);
+        $cod = $request->has('cod') ? 1 : 0; // Checkbox checked = 1, unchecked = 0
+        $vendor->update(['cod' => $cod]);
+
+        return redirect()->back()->with('smessage', 'COD status updated successfully');
+    } catch (\Exception $e) {
+        Log::error('COD Update Error: ' . $e->getMessage());
+        return redirect()->back()->with('emessage', 'Error updating COD status.');
     }
+}
+
 
     public function deleteVendor(Request $request, $idd)
     {
