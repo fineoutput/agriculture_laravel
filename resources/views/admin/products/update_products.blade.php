@@ -125,6 +125,7 @@
                                 <input type="number" name="min_qty" class="form-control" value="{{ $products->min_qty }}">
                             </div>
                             <div class="form-group">
+                                <label>Show Products</label>
                                 <select class="form-control" name="show_product">
                           <option>---select---</option>
                           <option value="0">Farmer</option>
