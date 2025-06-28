@@ -810,106 +810,118 @@ class VendorOrderController extends Controller
 }
 
 
-    public function removeCart(Request $request)
-    {
-        try {
-            // Check if POST data exists
-            if (!$request->has('product_id')) {
-                Log::warning('RemoveCart: Missing POST data', [
-                    'ip' => $request->ip(),
-                    'url' => $request->fullUrl(),
-                ]);
-                return response()->json([
-                    'message' => 'Please Insert Data',
-                    'status' => 201,
-                ], 422);
-            }
-
-            // Validate inputs
-            $validator = Validator::make($request->all(), [
-                'product_id' => 'required|integer|min:1',
-            ]);
-
-            if ($validator->fails()) {
-                Log::warning('RemoveCart: Validation failed', [
-                    'ip' => $request->ip(),
-                    'errors' => $validator->errors(),
-                    'url' => $request->fullUrl(),
-                ]);
-                return response()->json([
-                    'message' => $validator->errors()->first(),
-                    'status' => 201,
-                ], 422);
-            }
-
-            $product_id = $request->input('product_id');
-
-            // Authenticate vendor
-            /** @var \App\Models\Vendor $vendor */
-            $vendor = auth('vendor')->user();
-            Log::info('RemoveCart: Auth attempt', [
-                'vendor_id' => $vendor ? $vendor->id : null,
-                'product_id' => $product_id,
+   public function removeCart(Request $request)
+{
+    try {
+        // Check if POST data exists
+        if (!$request->has('product_id')) {
+            Log::warning('RemoveCart: Missing POST data', [
                 'ip' => $request->ip(),
-                'host' => $request->getHost(),
                 'url' => $request->fullUrl(),
             ]);
-
-            if (!$vendor || !$vendor->is_active) {
-                Log::warning('RemoveCart: Authentication failed or vendor inactive', [
-                    'vendor_id' => $vendor ? $vendor->id : null,
-                    'product_id' => $product_id,
-                ]);
-                return response()->json([
-                    'message' => 'Permission Denied!',
-                    'status' => 201,
-                ], 403);
-            }
-
-            // Delete cart item
-            $deleted = Cart::where('vendor_id', $vendor->id)
-                ->where('product_id', $product_id)
-                ->delete();
-
-            // Count remaining cart items
-            $cartCount = Cart::where('vendor_id', $vendor->id)->count();
-
-            Log::info('RemoveCart: Cart item removed', [
-                'vendor_id' => $vendor->id,
-                'product_id' => $product_id,
-                'deleted' => $deleted,
-                'cart_count' => $cartCount,
-            ]);
-
             return response()->json([
-                'message' => 'Success!',
-                'status' => 200,
-                'data' => $cartCount,
-            ], 200);
-        } catch (\Illuminate\Database\QueryException $e) {
-            Log::error('RemoveCart: Database error', [
-                'vendor_id' => auth('vendor')->id() ?? null,
-                'product_id' => $product_id ?? null,
-                'error' => $e->getMessage(),
-                'sql' => $e->getSql(),
-                'bindings' => $e->getBindings(),
-            ]);
-            return response()->json([
-                'message' => 'Database error: ' . $e->getMessage(),
-                'status' => 500,
-            ], 500);
-        } catch (\Exception $e) {
-            Log::error('RemoveCart: General error', [
-                'vendor_id' => auth('vendor')->id() ?? null,
-                'product_id' => $product_id ?? null,
-                'error' => $e->getMessage(),
-            ]);
-            return response()->json([
-                'message' => 'Error processing request: ' . $e->getMessage(),
-                'status' => 500,
-            ], 500);
+                'message' => 'Please Insert Data',
+                'status' => 201,
+            ], 422);
         }
+
+        // Validate inputs
+        $validator = Validator::make($request->all(), [
+            'product_id' => 'required|integer|min:1',
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('RemoveCart: Validation failed', [
+                'ip' => $request->ip(),
+                'errors' => $validator->errors(),
+                'url' => $request->fullUrl(),
+            ]);
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
+
+        $product_id = $request->input('product_id');
+
+        // Authenticate vendor using token
+        $token = $request->header('Authentication');
+        if (!$token) {
+            Log::warning('RemoveCart: Missing token');
+            return response()->json([
+                'message' => 'Token required!',
+                'status' => 201,
+            ], 401);
+        }
+
+        $vendor = Vendor::where('auth', $token)
+                        ->where('is_active', 1)
+                        ->first();
+
+        if (!$vendor || !$vendor->is_approved) {
+            Log::warning('RemoveCart: Authentication failed or vendor inactive/unapproved', [
+                'token' => $token,
+            ]);
+            return response()->json([
+                'message' => 'Permission Denied!',
+                'status' => 201,
+            ], 403);
+        }
+
+        Log::info('RemoveCart: Auth success', [
+            'vendor_id' => $vendor->id,
+            'product_id' => $product_id,
+            'ip' => $request->ip(),
+            'host' => $request->getHost(),
+            'url' => $request->fullUrl(),
+        ]);
+
+        // Delete cart item
+        $deleted = Cart::where('vendor_id', $vendor->id)
+                       ->where('product_id', $product_id)
+                       ->delete();
+
+        // Count remaining cart items
+        $cartCount = Cart::where('vendor_id', $vendor->id)->count();
+
+        Log::info('RemoveCart: Cart item removed', [
+            'vendor_id' => $vendor->id,
+            'product_id' => $product_id,
+            'deleted' => $deleted,
+            'cart_count' => $cartCount,
+        ]);
+
+        return response()->json([
+            'message' => 'Success!',
+            'status' => 200,
+            'data' => $cartCount,
+        ], 200);
+
+    } catch (\Illuminate\Database\QueryException $e) {
+        Log::error('RemoveCart: Database error', [
+            'vendor_id' => $vendor->id ?? null,
+            'product_id' => $product_id ?? null,
+            'error' => $e->getMessage(),
+            'sql' => $e->getSql(),
+            'bindings' => $e->getBindings(),
+        ]);
+        return response()->json([
+            'message' => 'Database error: ' . $e->getMessage(),
+            'status' => 500,
+        ], 500);
+    } catch (\Exception $e) {
+        Log::error('RemoveCart: General error', [
+            'vendor_id' => $vendor->id ?? null,
+            'product_id' => $product_id ?? null,
+            'error' => $e->getMessage(),
+        ]);
+        return response()->json([
+            'message' => 'Error processing request: ' . $e->getMessage(),
+            'status' => 500,
+        ], 500);
     }
+}
+
 
     public function calculate(Request $request)
     {
