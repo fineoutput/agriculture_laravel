@@ -923,202 +923,206 @@ class VendorOrderController extends Controller
 }
 
 
-    public function calculate(Request $request)
-    {
-        try {
-            // Authenticate vendor
-            /** @var \App\Models\Vendor $vendor */
-            $vendor = auth('vendor')->user();
-            Log::info('Calculate: Auth attempt', [
-                'vendor_id' => $vendor ? $vendor->id : null,
+   public function calculate(Request $request)
+{
+    try {
+        // Authenticate vendor via token
+        $token = $request->header('Authentication');
+        if (!$token) {
+            Log::warning('Calculate: Token missing', [
                 'ip' => $request->ip(),
-                'host' => $request->getHost(),
                 'url' => $request->fullUrl(),
             ]);
+            return response()->json([
+                'message' => 'Token required!',
+                'status' => 201,
+            ], 401);
+        }
 
-            if (!$vendor || !$vendor->is_active) {
-                Log::warning('Calculate: Authentication failed or vendor inactive', [
-                    'vendor_id' => $vendor ? $vendor->id : null,
+        $vendor = Vendor::where('auth', $token)->where('is_active', 1)->first();
+
+        Log::info('Calculate: Auth attempt', [
+            'vendor_id' => $vendor?->id,
+            'ip' => $request->ip(),
+            'host' => $request->getHost(),
+            'url' => $request->fullUrl(),
+        ]);
+
+        if (!$vendor || !$vendor->is_approved) {
+            Log::warning('Calculate: Authentication failed or vendor inactive/unapproved', [
+                'token' => $token,
+            ]);
+            return response()->json([
+                'message' => 'Permission Denied!',
+                'status' => 201,
+            ], 403);
+        }
+
+        // Fetch cart items
+        $cartItems = Cart::where('vendor_id', $vendor->id)->get();
+
+        if ($cartItems->isEmpty()) {
+            Cart::where('vendor_id', $vendor->id)->delete();
+            $cartCount = Cart::where('vendor_id', $vendor->id)->count();
+            Log::info('Calculate: Cart is empty', [
+                'vendor_id' => $vendor->id,
+                'cart_count' => $cartCount,
+            ]);
+            return response()->json([
+                'message' => 'Cart is empty!',
+                'status' => 201,
+                'data' => [],
+                'count' => $cartCount,
+            ], 200);
+        }
+
+        $total = 0;
+        $charges = 0;
+        $discount = 0;
+        $is_admin = 0;
+        $validItems = [];
+
+        foreach ($cartItems as $cart) {
+            $product = Product::where('id', $cart->product_id)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$product) {
+                Cart::where('vendor_id', $vendor->id)
+                    ->where('product_id', $cart->product_id)
+                    ->delete();
+                Log::info('Calculate: Deleted cart item for inactive product', [
+                    'vendor_id' => $vendor->id,
+                    'product_id' => $cart->product_id,
+                    'cart_id' => $cart->id,
                 ]);
-                return response()->json([
-                    'message' => 'Permission Denied!',
-                    'status' => 201,
-                ], 403);
+                continue;
             }
 
-            // Fetch cart items
-            $cartItems = Cart::where('vendor_id', $vendor->id)->get();
-
-            if ($cartItems->isEmpty()) {
-                Cart::where('vendor_id', $vendor->id)->delete();
-                $cartCount = Cart::where('vendor_id', $vendor->id)->count();
-                Log::info('Calculate: Cart is empty', [
+            if ($product->inventory < $cart->qty) {
+                Log::warning('Calculate: Product out of stock', [
                     'vendor_id' => $vendor->id,
-                    'cart_count' => $cartCount,
+                    'product_id' => $cart->product_id,
+                    'inventory' => $product->inventory,
+                    'requested_qty' => $cart->qty,
                 ]);
                 return response()->json([
-                    'message' => 'Cart is empty!',
+                    'message' => "{$product->name_english} is out of stock. Please remove this from cart!",
                     'status' => 201,
-                    'data' => [],
-                    'count' => $cartCount,
                 ], 200);
             }
 
-            $total = 0;
-            $charges = 0;
-            $discount = 0;
-            $is_admin = 0;
-            $validItems = [];
-
-            foreach ($cartItems as $cart) {
-                // Fetch product
-                $product = Product::where('id', $cart->product_id)
-                    ->where('is_active', 1)
-                    ->first();
-
-                if (!$product) {
-                    // Delete cart item if product is inactive
-                    Cart::where('vendor_id', $vendor->id)
-                        ->where('product_id', $cart->product_id)
-                        ->delete();
-                    Log::info('Calculate: Deleted cart item for inactive product', [
-                        'vendor_id' => $vendor->id,
-                        'product_id' => $cart->product_id,
-                        'cart_id' => $cart->id,
-                    ]);
-                    continue;
-                }
-
-                // Check inventory
-                if ($product->inventory < $cart->qty) {
-                    Log::warning('Calculate: Product out of stock', [
-                        'vendor_id' => $vendor->id,
-                        'product_id' => $cart->product_id,
-                        'inventory' => $product->inventory,
-                        'requested_qty' => $cart->qty,
-                    ]);
-                    return response()->json([
-                        'message' => "{$product->name_english} is out of stock. Please remove this from cart!",
-                        'status' => 201,
-                    ], 200);
-                }
-
-                // Check minimum quantity
-                if ($product->vendor_min_qty && $cart->qty < $product->vendor_min_qty) {
-                    Log::warning('Calculate: Minimum quantity not met', [
-                        'vendor_id' => $vendor->id,
-                        'product_id' => $cart->product_id,
-                        'qty' => $cart->qty,
-                        'vendor_min_qty' => $product->vendor_min_qty,
-                    ]);
-                    return response()->json([
-                        'message' => "{$product->name_english} minimum quantity should be {$product->vendor_min_qty}",
-                        'status' => 201,
-                        'data' => [],
-                    ], 200);
-                }
-
-                $is_admin = $cart->is_admin;
-                $total += $product->vendor_selling_price * $cart->qty;
-                $discount += ($vendor->qty_discount ?? 0) * $cart->qty;
-                $validItems[] = [
-                    'cart' => $cart,
-                    'product' => $product,
-                ];
-            }
-
-            // Calculate charges
-            if ($is_admin == 1) {
-                $charges = $total <= config('app.admin_amount') ? config('app.admin_charges') : 0;
-            } else {
-                $charges = array_sum(array_map(function ($item) {
-                    return $item['cart']->qty * config('app.vendor_charges');
-                }, $validItems));
-            }
-
-            // Insert into vendor_order1
-            $order1Data = [
-                'is_admin' => $is_admin,
-                'vendor_id' => $vendor->id,
-                'total_amount' => $total,
-                'charges' => $charges,
-                'final_amount' => $total + $charges - $discount,
-                'payment_status' => 0,
-                'order_status' => 0,
-                'date' => Carbon::now('Asia/Kolkata'),
-            ];
-
-            $order1 = VendorOrder1::create($order1Data);
-            $order1_id = $order1->id;
-
-            // Insert into vendor_order2
-            foreach ($validItems as $item) {
-                $cart = $item['cart'];
-                $product = $item['product'];
-
-                $order2Data = [
-                    'main_id' => $order1_id,
-                    'product_id' => $product->id,
-                    'discount' => ($vendor->qty_discount ?? 0) * $cart->qty,
-                    'product_name_en' => $product->name_english,
-                    'image' => $product->image,
+            if ($product->vendor_min_qty && $cart->qty < $product->vendor_min_qty) {
+                Log::warning('Calculate: Minimum quantity not met', [
+                    'vendor_id' => $vendor->id,
+                    'product_id' => $cart->product_id,
                     'qty' => $cart->qty,
-                    'mrp' => $product->vendor_mrp,
-                    'selling_price' => $product->vendor_selling_price,
-                    'gst' => $product->vendor_gst,
-                    'gst_price' => $product->gst_price,
-                    'selling_price_wo_gst' => $product->vendor_selling_price_wo_gst,
-                    'total_amount' => $product->vendor_selling_price * $cart->qty,
-                    'date' => Carbon::now('Asia/Kolkata'),
-                ];
-
-                VendorOrder2::create($order2Data);
+                    'vendor_min_qty' => $product->vendor_min_qty,
+                ]);
+                return response()->json([
+                    'message' => "{$product->name_english} minimum quantity should be {$product->vendor_min_qty}",
+                    'status' => 201,
+                    'data' => [],
+                ], 200);
             }
 
-            $responseData = [
-                'order_id' => $order1_id,
-                'total' => $total,
-                'charges' => $charges,
-                'final' => $total + $charges - $discount,
-                'discount' => $discount,
-            ];
-
-            Log::info('Calculate: Order created successfully', [
-                'vendor_id' => $vendor->id,
-                'order_id' => $order1_id,
-                'total' => $total,
-                'charges' => $charges,
-                'discount' => $discount,
-                'final' => $responseData['final'],
-            ]);
-
-            return response()->json([
-                'message' => 'Success!',
-                'status' => 200,
-                'data' => $responseData,
-            ], 200);
-        } catch (\Illuminate\Database\QueryException $e) {
-            Log::error('Calculate: Database error', [
-                'vendor_id' => auth('vendor')->id() ?? null,
-                'error' => $e->getMessage(),
-                'sql' => $e->getSql(),
-                'bindings' => $e->getBindings(),
-            ]);
-            return response()->json([
-                'message' => 'Database error: ' . $e->getMessage(),
-                'status' => 500,
-            ], 500);
-        } catch (\Exception $e) {
-            Log::error('Calculate: General error', [
-                'vendor_id' => auth('vendor')->id() ?? null,
-                'error' => $e->getMessage(),
-            ]);
-            return response()->json([
-                'message' => 'Error processing request: ' . $e->getMessage(),
-                'status' => 500,
-            ], 500);
+            $is_admin = $cart->is_admin;
+            $total += $product->vendor_selling_price * $cart->qty;
+            $discount += ($vendor->qty_discount ?? 0) * $cart->qty;
+            $validItems[] = compact('cart', 'product');
         }
+
+        // Calculate delivery/extra charges
+        if ($is_admin == 1) {
+            $charges = $total <= config('app.admin_amount') ? config('app.admin_charges') : 0;
+        } else {
+            $charges = array_sum(array_map(function ($item) {
+                return $item['cart']->qty * config('app.vendor_charges');
+            }, $validItems));
+        }
+
+        // Insert main order (VendorOrder1)
+        $order1Data = [
+            'is_admin' => $is_admin,
+            'vendor_id' => $vendor->id,
+            'total_amount' => $total,
+            'charges' => $charges,
+            'final_amount' => $total + $charges - $discount,
+            'payment_status' => 0,
+            'order_status' => 0,
+            'date' => Carbon::now('Asia/Kolkata'),
+        ];
+
+        $order1 = VendorOrder1::create($order1Data);
+        $order1_id = $order1->id;
+
+        // Insert products into VendorOrder2
+        foreach ($validItems as $item) {
+            $cart = $item['cart'];
+            $product = $item['product'];
+
+            VendorOrder2::create([
+                'main_id' => $order1_id,
+                'product_id' => $product->id,
+                'discount' => ($vendor->qty_discount ?? 0) * $cart->qty,
+                'product_name_en' => $product->name_english,
+                'image' => $product->image,
+                'qty' => $cart->qty,
+                'mrp' => $product->vendor_mrp,
+                'selling_price' => $product->vendor_selling_price,
+                'gst' => $product->vendor_gst,
+                'gst_price' => $product->gst_price,
+                'selling_price_wo_gst' => $product->vendor_selling_price_wo_gst,
+                'total_amount' => $product->vendor_selling_price * $cart->qty,
+                'date' => Carbon::now('Asia/Kolkata'),
+            ]);
+        }
+
+        $responseData = [
+            'order_id' => $order1_id,
+            'total' => $total,
+            'charges' => $charges,
+            'final' => $total + $charges - $discount,
+            'discount' => $discount,
+        ];
+
+        Log::info('Calculate: Order created successfully', [
+            'vendor_id' => $vendor->id,
+            'order_id' => $order1_id,
+            'total' => $total,
+            'charges' => $charges,
+            'discount' => $discount,
+            'final' => $responseData['final'],
+        ]);
+
+        return response()->json([
+            'message' => 'Success!',
+            'status' => 200,
+            'data' => $responseData,
+        ], 200);
+    } catch (\Illuminate\Database\QueryException $e) {
+        Log::error('Calculate: Database error', [
+            'vendor_id' => $vendor->id ?? null,
+            'error' => $e->getMessage(),
+            'sql' => $e->getSql(),
+            'bindings' => $e->getBindings(),
+        ]);
+        return response()->json([
+            'message' => 'Database error: ' . $e->getMessage(),
+            'status' => 500,
+        ], 500);
+    } catch (\Exception $e) {
+        Log::error('Calculate: General error', [
+            'vendor_id' => $vendor->id ?? null,
+            'error' => $e->getMessage(),
+        ]);
+        return response()->json([
+            'message' => 'Error processing request: ' . $e->getMessage(),
+            'status' => 500,
+        ], 500);
     }
+}
+
 
     public function getOrders(Request $request)
     {
