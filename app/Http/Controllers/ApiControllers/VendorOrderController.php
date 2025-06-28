@@ -1250,66 +1250,51 @@ class VendorOrderController extends Controller
     public function checkout(Request $request)
     {
         try {
-            // Check if POST data exists
             if (!$request->isMethod('post')) {
-                Log::warning('Checkout: Invalid request method', [
-                    'ip' => $request->ip(),
-                    'url' => $request->fullUrl(),
-                ]);
-                return response()->json([
-                    'message' => 'Please Insert Data',
-                    'status' => 201,
-                ], 422);
-            }
-
-            // Validate inputs
-            $validator = Validator::make($request->all(), [
-                'order_id' => 'required|integer|min:1',
-                'name' => 'required|string|max:255',
-                'address' => 'required|string|max:500',
-                'city' => 'required|string|max:100',
-                'state' => 'required|integer|min:1',
-                'district' => 'required|string|max:100',
-                'pincode' => 'required|string|size:6',
-                'phone' => 'required|string|size:10',
-                'cod' => 'required|in:0,1',
-            ]);
-
-            if ($validator->fails()) {
-                Log::warning('Checkout: Validation failed', [
-                    'ip' => $request->ip(),
-                    'errors' => $validator->errors(),
-                    'url' => $request->fullUrl(),
-                ]);
-                return response()->json([
-                    'message' => $validator->errors()->first(),
-                    'status' => 201,
-                ], 422);
-            }
-
-            // Authenticate vendor
-            /** @var \App\Models\Vendor $vendor */
-            $vendor = auth('vendor')->user();
-            Log::info('Checkout: Auth attempt', [
-                'vendor_id' => $vendor ? $vendor->id : null,
-                'order_id' => $request->input('order_id'),
-                'cod' => $request->input('cod'),
+            Log::warning('Checkout: Invalid request method', [
                 'ip' => $request->ip(),
-                'host' => $request->getHost(),
                 'url' => $request->fullUrl(),
             ]);
+            return response()->json([
+                'message' => 'Please Insert Data',
+                'status' => 201,
+            ], 422);
+        }
 
-            if (!$vendor || !$vendor->is_active) {
-                Log::warning('Checkout: Authentication failed or vendor inactive', [
-                    'vendor_id' => $vendor ? $vendor->id : null,
-                    'order_id' => $request->input('order_id'),
-                ]);
-                return response()->json([
-                    'message' => 'Permission Denied!',
-                    'status' => 201,
-                ], 403);
-            }
+        $validator = Validator::make($request->all(), [
+            'order_id' => 'required|integer|min:1',
+            'name' => 'required|string|max:255',
+            'address' => 'required|string|max:500',
+            'city' => 'required|string|max:100',
+            'state' => 'required|integer|min:1',
+            'district' => 'required|string|max:100',
+            'pincode' => 'required|string|size:6',
+            'phone' => 'required|string|size:10',
+            'cod' => 'required|in:0,1',
+        ]);
 
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
+
+        $token = $request->header('Authentication');
+        if (!$token) {
+            return response()->json([
+                'message' => 'Token required!',
+                'status' => 201,
+            ], 401);
+        }
+
+        $vendor = Vendor::where('auth', $token)->where('is_active', 1)->first();
+        if (!$vendor || !$vendor->is_approved) {
+            return response()->json([
+                'message' => 'Permission Denied!',
+                'status' => 201,
+            ], 403);
+        }
             // Fetch cart items
             $cartItems = Cart::where('vendor_id', $vendor->id)->get();
 
