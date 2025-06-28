@@ -1125,127 +1125,130 @@ class VendorOrderController extends Controller
 
 
     public function getOrders(Request $request)
-    {
-        try {
-            // Authenticate vendor
-            /** @var \App\Models\Vendor $vendor */
-            $vendor = auth('vendor')->user();
-            Log::info('GetOrders: Auth attempt', [
-                'vendor_id' => $vendor ? $vendor->id : null,
-                'ip' => $request->ip(),
-                'host' => $request->getHost(),
-                'url' => $request->fullUrl(),
-            ]);
-
-            if (!$vendor || !$vendor->is_active) {
-                Log::warning('GetOrders: Authentication failed or vendor inactive', [
-                    'vendor_id' => $vendor ? $vendor->id : null,
-                ]);
-                return response()->json([
-                    'message' => 'Permission Denied!',
-                    'status' => 201,
-                ], 403);
-            }
-
-            // Fetch orders
-            $orders = VendorOrder1::where('vendor_id', $vendor->id)
-                ->whereIn('payment_status', [1, 2])
-                ->orderBy('id', 'desc')
-                ->get();
-
-            if ($orders->isEmpty()) {
-                Log::info('GetOrders: No orders found', [
-                    'vendor_id' => $vendor->id,
-                ]);
-                return response()->json([
-                    'message' => 'No Orders Found!',
-                    'status' => 201,
-                    'data' => [],
-                ], 200);
-            }
-
-            $data = [];
-
-            foreach ($orders as $order) {
-                // Map order status
-                $statusMap = [
-                    1 => ['status' => 'Pending', 'bg_color' => '#65bcd7'],
-                    2 => ['status' => 'Accepted', 'bg_color' => '#3b71ca'],
-                    3 => ['status' => 'Dispatched', 'bg_color' => '#e4a11b'],
-                    4 => ['status' => 'Completed', 'bg_color' => '#139c49'],
-                    5 => ['status' => 'Rejected', 'bg_color' => '#dc4c64'],
-                    6 => ['status' => 'Cancelled', 'bg_color' => '#dc4c64'],
-                ];
-
-                $statusInfo = $statusMap[$order->order_status] ?? ['status' => 'Unknown', 'bg_color' => '#000000'];
-
-                // Fetch order details
-                $orderDetails = VendorOrder2::where('main_id', $order->id)->get();
-                $details = [];
-
-                foreach ($orderDetails as $orderDetail) {
-                    $image = $orderDetail->image ? url($orderDetail->image) : '';
-                    $details[] = [
-                        'id' => $orderDetail->id,
-                        'en' => $orderDetail->product_name_en,
-                        'image' => $image,
-                        'qty' => $orderDetail->qty,
-                        'selling_price' => $orderDetail->selling_price,
-                        'total_amount' => $orderDetail->total_amount,
-                    ];
-                }
-
-                // Determine shop name
-                $en = $order->is_admin == 1 ? 'Dairy Mart' : ($vendor->shop_name ?? 'Vendor not found');
-
-                // Format date
-                $date = Carbon::parse($order->date)->format('d/m/Y');
-
-                $data[] = [
-                    'id' => $order->id,
-                    'charges' => $order->charges,
-                    'total_amount' => $order->total_amount,
-                    'final_amount' => $order->final_amount,
-                    'status' => $statusInfo['status'],
-                    'bg_color' => $statusInfo['bg_color'],
-                    'en' => $en,
-                    'date' => $date,
-                    'details' => $details,
-                ];
-            }
-
-            Log::info('GetOrders: Orders retrieved successfully', [
-                'vendor_id' => $vendor->id,
-                'order_count' => count($data),
-            ]);
-
+{
+    try {
+        // Token-based authentication
+        $token = $request->header('Authentication');
+        if (!$token) {
             return response()->json([
-                'message' => 'Success!',
-                'status' => 200,
-                'data' => $data,
-            ], 200);
-        } catch (\Illuminate\Database\QueryException $e) {
-            Log::error('GetOrders: Database error', [
-                'vendor_id' => auth('vendor')->id() ?? null,
-                'error' => $e->getMessage(),
-                'sql' => $e->getSql(),
-                'bindings' => $e->getBindings(),
-            ]);
-            return response()->json([
-                'message' => 'Database error: ' . $e->getMessage(),
-                'status' => 500,
-            ], 500);
-        } catch (\Exception $e) {
-            Log::error('GetOrders: General error', [
-                'vendor_id' => auth('vendor')->id() ?? null,
-                'error' => $e->getMessage(),
-            ]);
-            return response()->json([
-                'message' => 'Error processing request: ' . $e->getMessage(),
-                'status' => 500,
-            ], 500);
+                'message' => 'Token required!',
+                'status' => 201,
+            ], 401);
         }
+
+        $vendor = Vendor::where('auth', $token)->where('is_active', 1)->first();
+
+        Log::info('GetOrders: Auth attempt', [
+            'vendor_id' => $vendor ? $vendor->id : null,
+            'ip' => $request->ip(),
+            'host' => $request->getHost(),
+            'url' => $request->fullUrl(),
+        ]);
+
+        if (!$vendor || !$vendor->is_active) {
+            Log::warning('GetOrders: Authentication failed or vendor inactive', [
+                'vendor_id' => $vendor ? $vendor->id : null,
+            ]);
+            return response()->json([
+                'message' => 'Permission Denied!',
+                'status' => 201,
+            ], 403);
+        }
+
+        // Fetch orders
+        $orders = VendorOrder1::where('vendor_id', $vendor->id)
+            ->whereIn('payment_status', [1, 2])
+            ->orderBy('id', 'desc')
+            ->get();
+
+        if ($orders->isEmpty()) {
+            Log::info('GetOrders: No orders found', [
+                'vendor_id' => $vendor->id,
+            ]);
+            return response()->json([
+                'message' => 'No Orders Found!',
+                'status' => 201,
+                'data' => [],
+            ], 200);
+        }
+
+        $data = [];
+        $statusMap = [
+            1 => ['status' => 'Pending', 'bg_color' => '#65bcd7'],
+            2 => ['status' => 'Accepted', 'bg_color' => '#3b71ca'],
+            3 => ['status' => 'Dispatched', 'bg_color' => '#e4a11b'],
+            4 => ['status' => 'Completed', 'bg_color' => '#139c49'],
+            5 => ['status' => 'Rejected', 'bg_color' => '#dc4c64'],
+            6 => ['status' => 'Cancelled', 'bg_color' => '#dc4c64'],
+        ];
+
+        foreach ($orders as $order) {
+            $statusInfo = $statusMap[$order->order_status] ?? ['status' => 'Unknown', 'bg_color' => '#000000'];
+
+            $orderDetails = VendorOrder2::where('main_id', $order->id)->get();
+            $details = [];
+
+            foreach ($orderDetails as $orderDetail) {
+                $image = $orderDetail->image ? url($orderDetail->image) : '';
+                $details[] = [
+                    'id' => $orderDetail->id,
+                    'en' => $orderDetail->product_name_en,
+                    'image' => $image,
+                    'qty' => $orderDetail->qty,
+                    'selling_price' => $orderDetail->selling_price,
+                    'total_amount' => $orderDetail->total_amount,
+                ];
+            }
+
+            $en = $order->is_admin == 1 ? 'Dairy Mart' : ($vendor->shop_name ?? 'Vendor not found');
+            $date = Carbon::parse($order->date)->format('d/m/Y');
+
+            $data[] = [
+                'id' => $order->id,
+                'charges' => $order->charges,
+                'total_amount' => $order->total_amount,
+                'final_amount' => $order->final_amount,
+                'status' => $statusInfo['status'],
+                'bg_color' => $statusInfo['bg_color'],
+                'en' => $en,
+                'date' => $date,
+                'details' => $details,
+            ];
+        }
+
+        Log::info('GetOrders: Orders retrieved successfully', [
+            'vendor_id' => $vendor->id,
+            'order_count' => count($data),
+        ]);
+
+        return response()->json([
+            'message' => 'Success!',
+            'status' => 200,
+            'data' => $data,
+        ], 200);
+    } catch (\Illuminate\Database\QueryException $e) {
+        Log::error('GetOrders: Database error', [
+            'vendor_id' => $vendor->id ?? null,
+            'error' => $e->getMessage(),
+            'sql' => $e->getSql(),
+            'bindings' => $e->getBindings(),
+        ]);
+        return response()->json([
+            'message' => 'Database error: ' . $e->getMessage(),
+            'status' => 500,
+        ], 500);
+    } catch (\Exception $e) {
+        Log::error('GetOrders: General error', [
+            'vendor_id' => $vendor->id ?? null,
+            'error' => $e->getMessage(),
+        ]);
+        return response()->json([
+            'message' => 'Error processing request: ' . $e->getMessage(),
+            'status' => 500,
+        ], 500);
     }
+}
+
 
     public function checkout(Request $request)
     {

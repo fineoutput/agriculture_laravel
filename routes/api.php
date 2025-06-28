@@ -122,7 +122,6 @@ Route::middleware(['auth:vendor'])->group(function () {
 
 
     //////////vendorORderController
-    Route::get('get/orders', [VendorOrderController::class, 'getOrders']);
     
 });
 Route::post('paymentSuccess', [FarmerController::class, 'paymentSuccess'])->name('payment.success');
@@ -395,3 +394,6 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
 
     
     Route::post('vendor/checkout', [VendorOrderController::class, 'checkout']);
+
+    
+    Route::get('get/orders', [VendorOrderController::class, 'getOrders']);
