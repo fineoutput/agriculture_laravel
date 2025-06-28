@@ -199,17 +199,17 @@ class VendorOrderController extends Controller
     public function getCart(Request $request)
 {
     try {
-        // Validate X-Language header
-        $validator = Validator::make(['lang' => $request->header('X-Language')], [
+        // Validate lan header
+        $validator = Validator::make(['lang' => $request->header('lan')], [
             'lang' => 'required|in:en,hi,pn',
         ]);
 
         if ($validator->fails()) {
-            Log::warning('GetCart: Validation failed for X-Language header', [
+            Log::warning('GetCart: Validation failed for lan header', [
                 'ip' => $request->ip(),
                 'errors' => $validator->errors(),
                 'url' => $request->fullUrl(),
-                'header' => $request->header('X-Language'),
+                'header' => $request->header('lan'),
             ]);
             return response()->json([
                 'message' => $validator->errors()->first(),
@@ -217,7 +217,7 @@ class VendorOrderController extends Controller
             ], 422);
         }
 
-        $lang = $request->header('X-Language');
+        $lang = $request->header('lan');
 
         // Authenticate vendor using header token
         $token = $request->header('Authentication');
@@ -368,7 +368,7 @@ class VendorOrderController extends Controller
     } catch (\Illuminate\Database\QueryException $e) {
         Log::error('GetCart: Database error', [
             'vendor_id' => $vendor->id ?? null,
-            'lang' => $request->header('X-Language') ?? null,
+            'lang' => $request->header('lan') ?? null,
             'error' => $e->getMessage(),
             'sql' => $e->getSql(),
             'bindings' => $e->getBindings(),
@@ -380,7 +380,7 @@ class VendorOrderController extends Controller
     } catch (\Exception $e) {
         Log::error('GetCart: General error', [
             'vendor_id' => $vendor->id ?? null,
-            'lang' => $request->header('X-Language') ?? null,
+            'lang' => $request->header('lan') ?? null,
             'error' => $e->getMessage(),
         ]);
         return response()->json([
@@ -411,18 +411,18 @@ class VendorOrderController extends Controller
             ], 422);
         }
 
-        // Validate X-Language header
-        $lang = $request->header('X-Language', 'en');
+        // Validate lan header
+        $lang = $request->header('lan', 'en');
         $validator = Validator::make(['lang' => $lang], [
             'lang' => 'in:en,hi,pn',
         ]);
 
         if ($validator->fails()) {
-            Log::warning('GetProductDetails: Validation failed for X-Language header', [
+            Log::warning('GetProductDetails: Validation failed for lan header', [
                 'ip' => $request->ip(),
                 'errors' => $validator->errors(),
                 'url' => $request->fullUrl(),
-                'header' => $request->header('X-Language'),
+                'header' => $request->header('lan'),
             ]);
             return response()->json([
                 'message' => $validator->errors()->first(),
@@ -569,7 +569,7 @@ class VendorOrderController extends Controller
         Log::error('GetProductDetails: Database error', [
             'vendor_id' => $vendor->id ?? null,
             'product_id' => $product_id ?? null,
-            'lang' => $request->header('X-Language') ?? null,
+            'lang' => $request->header('lan') ?? null,
             'error' => $e->getMessage(),
             'sql' => $e->getSql(),
             'bindings' => $e->getBindings(),
@@ -582,7 +582,7 @@ class VendorOrderController extends Controller
         Log::error('GetProductDetails: General error', [
             'vendor_id' => $vendor->id ?? null,
             'product_id' => $product_id ?? null,
-            'lang' => $request->header('X-Language') ?? null,
+            'lang' => $request->header('lan') ?? null,
             'error' => $e->getMessage(),
         ]);
         return response()->json([
