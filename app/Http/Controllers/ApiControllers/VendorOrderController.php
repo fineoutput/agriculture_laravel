@@ -1640,25 +1640,25 @@ class VendorOrderController extends Controller
                     }
                 } else {
                     // Admin order: Send email
-                    $message = <<<EOD
-                    Hello Admin<br/><br/>
-                    You have received new Order and below are the details<br/><br/>
-                    <b>Order ID</b> - {$order_id}<br/>
-                    <b>Amount</b> - Rs.{$order1Data->final_amount}<br/>
-                    EOD;
+                    // $message = <<<EOD
+                    // Hello Admin<br/><br/>
+                    // You have received new Order and below are the details<br/><br/>
+                    // <b>Order ID</b> - {$order_id}<br/>
+                    // <b>Amount</b> - Rs.{$order1Data->final_amount}<br/>
+                    // EOD;
 
-                    Mail::html($message, function ($message) use ($order_id) {
-                        $message->from(config('app.smtp.from'))
-                            ->to(config('app.smtp.to'), 'Dairy Muneem')
-                            ->subject('New Order received');
-                    });
+                    // Mail::html($message, function ($message) use ($order_id) {
+                    //     $message->from(config('app.smtp.from'))
+                    //         ->to(config('app.smtp.to'), 'Dairy Muneem')
+                    //         ->subject('New Order received');
+                    // });
 
-                    // Log WhatsApp message (replacement for send_whatsapp_msg_admin)
-                    Log::info('Checkout: WhatsApp message to admin (not implemented)', [
-                        'vendor_id' => $vendor->id,
-                        'order_id' => $order_id,
-                        'final_amount' => $order1Data->final_amount,
-                    ]);
+                    // // Log WhatsApp message (replacement for send_whatsapp_msg_admin)
+                    // Log::info('Checkout: WhatsApp message to admin (not implemented)', [
+                    //     'vendor_id' => $vendor->id,
+                    //     'order_id' => $order_id,
+                    //     'final_amount' => $order1Data->final_amount,
+                    // ]);
                 }
 
                 $send = [
