@@ -593,215 +593,222 @@ class VendorOrderController extends Controller
 }
 
 
-    public function updateCart(Request $request)
-    {
-        try {
-            // Check if POST data exists
-            if (!$request->has(['product_id', 'qty'])) {
-                Log::warning('UpdateCart: Missing POST data', [
-                    'ip' => $request->ip(),
-                    'url' => $request->fullUrl(),
-                ]);
-                return response()->json([
-                    'message' => 'Please Insert Data',
-                    'status' => 201,
-                ], 422);
-            }
-
-            // Validate inputs
-            $validator = Validator::make($request->all(), [
-                'product_id' => 'required|integer|min:1',
-                'qty' => 'required|integer|min:0',
-            ]);
-
-            if ($validator->fails()) {
-                Log::warning('UpdateCart: Validation failed', [
-                    'ip' => $request->ip(),
-                    'errors' => $validator->errors(),
-                    'url' => $request->fullUrl(),
-                ]);
-                return response()->json([
-                    'message' => $validator->errors()->first(),
-                    'status' => 201,
-                ], 422);
-            }
-
-            $product_id = $request->input('product_id');
-            $qty = $request->input('qty');
-
-            // Authenticate vendor
-            /** @var \App\Models\Vendor $vendor */
-            $vendor = auth('vendor')->user();
-            Log::info('UpdateCart: Auth attempt', [
-                'vendor_id' => $vendor ? $vendor->id : null,
-                'product_id' => $product_id,
-                'qty' => $qty,
+   public function updateCart(Request $request)
+{
+    try {
+        if (!$request->has(['product_id', 'qty'])) {
+            Log::warning('UpdateCart: Missing POST data', [
                 'ip' => $request->ip(),
-                'host' => $request->getHost(),
                 'url' => $request->fullUrl(),
             ]);
+            return response()->json([
+                'message' => 'Please Insert Data',
+                'status' => 201,
+            ], 422);
+        }
 
-            if (!$vendor || !$vendor->is_active) {
-                Log::warning('UpdateCart: Authentication failed or vendor inactive', [
-                    'vendor_id' => $vendor ? $vendor->id : null,
-                    'product_id' => $product_id,
-                ]);
-                return response()->json([
-                    'message' => 'Permission Denied!',
-                    'status' => 201,
-                ], 403);
-            }
+        // Validate inputs
+        $validator = Validator::make($request->all(), [
+            'product_id' => 'required|integer|min:1',
+            'qty' => 'required|integer|min:0',
+        ]);
 
-            // Check if cart exists
-            $cartItems = Cart::where('vendor_id', $vendor->id)->get();
-            if ($cartItems->isEmpty()) {
-                Log::info('UpdateCart: Cart is empty', [
-                    'vendor_id' => $vendor->id,
-                    'product_id' => $product_id,
-                ]);
-                return response()->json([
-                    'message' => 'Cart is empty!',
-                    'status' => 201,
-                    'data' => [],
-                ], 200);
-            }
+        if ($validator->fails()) {
+            Log::warning('UpdateCart: Validation failed', [
+                'ip' => $request->ip(),
+                'errors' => $validator->errors(),
+                'url' => $request->fullUrl(),
+            ]);
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 201,
+            ], 422);
+        }
 
-            // Check if cart item exists for product
-            $cartItem = Cart::where('vendor_id', $vendor->id)
-                ->where('product_id', $product_id)
-                ->first();
+        $product_id = $request->input('product_id');
+        $qty = $request->input('qty');
 
-            if (!$cartItem) {
-                Log::warning('UpdateCart: Cart item not found', [
-                    'vendor_id' => $vendor->id,
-                    'product_id' => $product_id,
-                ]);
-                return response()->json([
-                    'message' => 'Product Not Found in Cart!',
-                    'status' => 201,
-                    'data' => [],
-                ], 404);
-            }
+        // Authenticate vendor using token
+        $token = $request->header('Authentication');
+        if (!$token) {
+            Log::warning('UpdateCart: Missing token');
+            return response()->json([
+                'message' => 'Token required!',
+                'status' => 201,
+            ], 401);
+        }
 
-            // Check product exists and is active
-            $product = Product::where('id', $product_id)
-                ->where('is_active', 1)
-                ->first();
+        $vendor = Vendor::where('auth', $token)->where('is_active', 1)->first();
+        if (!$vendor || !$vendor->is_approved) {
+            Log::warning('UpdateCart: Authentication failed or vendor inactive/unapproved', [
+                'token' => $token,
+            ]);
+            return response()->json([
+                'message' => 'Permission Denied!',
+                'status' => 201,
+            ], 403);
+        }
 
-            if (!$product) {
-                Log::warning('UpdateCart: Product not found', [
-                    'vendor_id' => $vendor->id,
-                    'product_id' => $product_id,
-                ]);
-                return response()->json([
-                    'message' => 'Product Not Found!',
-                    'status' => 201,
-                    'data' => [],
-                ], 404);
-            }
+        Log::info('UpdateCart: Auth success', [
+            'vendor_id' => $vendor->id,
+            'product_id' => $product_id,
+            'qty' => $qty,
+            'ip' => $request->ip(),
+            'host' => $request->getHost(),
+            'url' => $request->fullUrl(),
+        ]);
 
-            // Check inventory
-            if ($product->inventory < $qty) {
-                Log::warning('UpdateCart: Product out of stock', [
-                    'vendor_id' => $vendor->id,
-                    'product_id' => $product_id,
-                    'inventory' => $product->inventory,
-                    'requested_qty' => $qty,
-                ]);
-                return response()->json([
-                    'message' => 'Product is out of Stock!',
-                    'status' => 201,
-                    'data' => [],
-                ], 200);
-            }
+        // Check if cart exists
+        $cartItems = Cart::where('vendor_id', $vendor->id)->get();
+        if ($cartItems->isEmpty()) {
+            Log::info('UpdateCart: Cart is empty', [
+                'vendor_id' => $vendor->id,
+                'product_id' => $product_id,
+            ]);
+            return response()->json([
+                'message' => 'Cart is empty!',
+                'status' => 201,
+                'data' => [],
+            ], 200);
+        }
 
-            // Check minimum quantity
-            if ($product->vendor_min_qty && $qty > 0 && $qty < $product->vendor_min_qty) {
-                Log::warning('UpdateCart: Minimum quantity not met', [
-                    'vendor_id' => $vendor->id,
-                    'product_id' => $product_id,
-                    'qty' => $qty,
-                    'vendor_min_qty' => $product->vendor_min_qty,
-                ]);
-                return response()->json([
-                    'message' => "Minimum Quantity should be {$product->vendor_min_qty}",
-                    'status' => 201,
-                    'data' => [],
-                ], 200);
-            }
+        // Check if cart item exists for product
+        $cartItem = Cart::where('vendor_id', $vendor->id)
+            ->where('product_id', $product_id)
+            ->first();
 
-            // Update cart
-            $cartItem->qty = $qty;
-            $cartItem->date = Carbon::now('Asia/Kolkata');
-            $cartItem->save();
+        if (!$cartItem) {
+            Log::warning('UpdateCart: Cart item not found', [
+                'vendor_id' => $vendor->id,
+                'product_id' => $product_id,
+            ]);
+            return response()->json([
+                'message' => 'Product Not Found in Cart!',
+                'status' => 201,
+                'data' => [],
+            ], 404);
+        }
 
-            // Calculate amount and total
-            $amount = $product->vendor_selling_price * $qty;
-            $total = 0;
+        // Check product exists and is active
+        $product = Product::where('id', $product_id)
+            ->where('is_active', 1)
+            ->first();
 
-            // Recalculate total for all cart items
-            $cartItems = Cart::where('vendor_id', $vendor->id)->get();
-            foreach ($cartItems as $cart) {
-                $cartProduct = Product::where('id', $cart->product_id)
-                    ->where('is_active', 1)
-                    ->first();
+        if (!$product) {
+            Log::warning('UpdateCart: Product not found', [
+                'vendor_id' => $vendor->id,
+                'product_id' => $product_id,
+            ]);
+            return response()->json([
+                'message' => 'Product Not Found!',
+                'status' => 201,
+                'data' => [],
+            ], 404);
+        }
 
-                if (!$cartProduct) {
-                    // Delete cart item if product is inactive
-                    Cart::where('vendor_id', $vendor->id)
-                        ->where('product_id', $cart->product_id)
-                        ->delete();
-                    Log::info('UpdateCart: Deleted cart item for inactive product', [
-                        'vendor_id' => $vendor->id,
-                        'product_id' => $cart->product_id,
-                        'cart_id' => $cart->id,
-                    ]);
-                    continue;
-                }
+        // Check inventory
+        if ($product->inventory < $qty) {
+            Log::warning('UpdateCart: Product out of stock', [
+                'vendor_id' => $vendor->id,
+                'product_id' => $product_id,
+                'inventory' => $product->inventory,
+                'requested_qty' => $qty,
+            ]);
+            return response()->json([
+                'message' => 'Product is out of Stock!',
+                'status' => 201,
+                'data' => [],
+            ], 200);
+        }
 
-                $total += $cartProduct->vendor_selling_price * $cart->qty;
-            }
-
-            Log::info('UpdateCart: Cart updated successfully', [
+        // Check minimum quantity
+        if ($product->vendor_min_qty && $qty > 0 && $qty < $product->vendor_min_qty) {
+            Log::warning('UpdateCart: Minimum quantity not met', [
                 'vendor_id' => $vendor->id,
                 'product_id' => $product_id,
                 'qty' => $qty,
-                'amount' => $amount,
-                'total' => $total,
+                'vendor_min_qty' => $product->vendor_min_qty,
             ]);
-
             return response()->json([
-                'message' => 'Success!',
-                'status' => 200,
-                'amount' => $amount,
-                'total' => $total,
+                'message' => "Minimum Quantity should be {$product->vendor_min_qty}",
+                'status' => 201,
+                'data' => [],
             ], 200);
-        } catch (\Illuminate\Database\QueryException $e) {
-            Log::error('UpdateCart: Database error', [
-                'vendor_id' => auth('vendor')->id() ?? null,
-                'product_id' => $product_id ?? null,
-                'qty' => $qty ?? null,
-                'error' => $e->getMessage(),
-                'sql' => $e->getSql(),
-                'bindings' => $e->getBindings(),
-            ]);
-            return response()->json([
-                'message' => 'Database error: ' . $e->getMessage(),
-                'status' => 500,
-            ], 500);
-        } catch (\Exception $e) {
-            Log::error('UpdateCart: General error', [
-                'vendor_id' => auth('vendor')->id() ?? null,
-                'product_id' => $product_id ?? null,
-                'qty' => $qty ?? null,
-                'error' => $e->getMessage(),
-            ]);
-            return response()->json([
-                'message' => 'Error processing request: ' . $e->getMessage(),
-                'status' => 500,
-            ], 500);
         }
+
+        // Update cart
+        $cartItem->qty = $qty;
+        $cartItem->date = Carbon::now('Asia/Kolkata');
+        $cartItem->save();
+
+        // Calculate amount and total
+        $amount = $product->vendor_selling_price * $qty;
+        $total = 0;
+
+        // Recalculate total for all cart items
+        $cartItems = Cart::where('vendor_id', $vendor->id)->get();
+        foreach ($cartItems as $cart) {
+            $cartProduct = Product::where('id', $cart->product_id)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$cartProduct) {
+                // Delete cart item if product is inactive
+                Cart::where('vendor_id', $vendor->id)
+                    ->where('product_id', $cart->product_id)
+                    ->delete();
+                Log::info('UpdateCart: Deleted cart item for inactive product', [
+                    'vendor_id' => $vendor->id,
+                    'product_id' => $cart->product_id,
+                    'cart_id' => $cart->id,
+                ]);
+                continue;
+            }
+
+            $total += $cartProduct->vendor_selling_price * $cart->qty;
+        }
+
+        Log::info('UpdateCart: Cart updated successfully', [
+            'vendor_id' => $vendor->id,
+            'product_id' => $product_id,
+            'qty' => $qty,
+            'amount' => $amount,
+            'total' => $total,
+        ]);
+
+        return response()->json([
+            'message' => 'Success!',
+            'status' => 200,
+            'amount' => $amount,
+            'total' => $total,
+        ], 200);
+    } catch (\Illuminate\Database\QueryException $e) {
+        Log::error('UpdateCart: Database error', [
+            'vendor_id' => $vendor->id ?? null,
+            'product_id' => $product_id ?? null,
+            'qty' => $qty ?? null,
+            'error' => $e->getMessage(),
+            'sql' => $e->getSql(),
+            'bindings' => $e->getBindings(),
+        ]);
+        return response()->json([
+            'message' => 'Database error: ' . $e->getMessage(),
+            'status' => 500,
+        ], 500);
+    } catch (\Exception $e) {
+        Log::error('UpdateCart: General error', [
+            'vendor_id' => $vendor->id ?? null,
+            'product_id' => $product_id ?? null,
+            'qty' => $qty ?? null,
+            'error' => $e->getMessage(),
+        ]);
+        return response()->json([
+            'message' => 'Error processing request: ' . $e->getMessage(),
+            'status' => 500,
+        ], 500);
     }
+}
+
 
     public function removeCart(Request $request)
     {
