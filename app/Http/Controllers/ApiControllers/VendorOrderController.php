@@ -197,178 +197,199 @@ class VendorOrderController extends Controller
 
 
     public function getCart(Request $request)
-    {
-        try {
-            // Validate X-Language header
-            $validator = Validator::make(['lang' => $request->header('X-Language')], [
-                'lang' => 'required|in:en,hi,pn',
-            ]);
+{
+    try {
+        // Validate X-Language header
+        $validator = Validator::make(['lang' => $request->header('X-Language')], [
+            'lang' => 'required|in:en,hi,pn',
+        ]);
 
-            if ($validator->fails()) {
-                Log::warning('GetCart: Validation failed for X-Language header', [
-                    'ip' => $request->ip(),
-                    'errors' => $validator->errors(),
-                    'url' => $request->fullUrl(),
-                    'header' => $request->header('X-Language'),
-                ]);
-                return response()->json([
-                    'message' => $validator->errors()->first(),
-                    'status' => 201,
-                ], 422);
-            }
-
-            $lang = $request->header('X-Language');
-
-            // Authenticate vendor
-            /** @var \App\Models\Vendor $vendor */
-            $vendor = auth('vendor')->user();
-            Log::info('GetCart: Auth attempt', [
-                'vendor_id' => $vendor ? $vendor->id : null,
-                'lang' => $lang,
+        if ($validator->fails()) {
+            Log::warning('GetCart: Validation failed for X-Language header', [
                 'ip' => $request->ip(),
-                'host' => $request->getHost(),
+                'errors' => $validator->errors(),
                 'url' => $request->fullUrl(),
-            ]);
-
-            if (!$vendor || !$vendor->is_active) {
-                Log::warning('GetCart: Authentication failed or vendor inactive', [
-                    'vendor_id' => $vendor ? $vendor->id : null,
-                    'lang' => $lang,
-                ]);
-                return response()->json([
-                    'message' => 'Permission Denied!',
-                    'status' => 201,
-                ], 403);
-            }
-
-            // Fetch cart items
-            $cartItems = Cart::where('vendor_id', $vendor->id)->get();
-
-            if ($cartItems->isEmpty()) {
-                $cartCount = Cart::where('vendor_id', $vendor->id)->count();
-                Log::info('GetCart: Cart is empty', [
-                    'vendor_id' => $vendor->id,
-                    'cart_count' => $cartCount,
-                ]);
-                return response()->json([
-                    'message' => 'Cart is empty!',
-                    'status' => 201,
-                    'data' => [],
-                    'count' => $cartCount,
-                ], 200);
-            }
-
-            $data = [];
-            $total = 0;
-
-            foreach ($cartItems as $cart) {
-                // Fetch product
-                $product = Product::where('id', $cart->product_id)
-                    ->where('is_active', 1)
-                    ->first();
-
-                if (!$product) {
-                    // Delete cart item if product is inactive
-                    Cart::where('vendor_id', $vendor->id)
-                        ->where('product_id', $cart->product_id)
-                        ->delete();
-                    Log::info('GetCart: Deleted cart item for inactive product', [
-                        'vendor_id' => $vendor->id,
-                        'product_id' => $cart->product_id,
-                        'cart_id' => $cart->id,
-                    ]);
-                    continue;
-                }
-
-                // Handle image
-                $image = '';
-                if ($product->image) {
-                    $imageArray = json_decode($product->image, true);
-                    if (is_array($imageArray) && !empty($imageArray)) {
-                        $image = url($imageArray[0]);
-                    } else {
-                        $image = url($product->image);
-                    }
-                }
-
-                // Check inventory
-                $stock = $product->inventory != 0 ? 'In Stock' : 'Out of Stock';
-
-                // Calculate total
-                $total += $product->vendor_selling_price * $cart->qty;
-
-                // Prepare cart item data based on language
-                $item = [
-                    'cart_id' => $cart->id,
-                    'pro_id' => $product->id,
-                    'image' => $image,
-                    'min_qty' => $product->vendor_min_qty ?? 1,
-                    'selling_price' => $product->vendor_selling_price * $cart->qty,
-                    'stock' => $stock,
-                    'vendor_id' => $product->added_by,
-                    'is_admin' => $cart->is_admin,
-                    'qty' => $cart->qty,
-                    'product_cod' => $product->cod,
-                    'is_cod' => $vendor->cod,
-                    'qty_discount' => $vendor->qty_discount ?? null,
-                ];
-
-                if ($lang === 'en') {
-                    $item['name'] = $product->name_english;
-                    $item['description'] = $product->description_english;
-                } elseif ($lang === 'hi') {
-                    $item['name'] = $product->name_hindi;
-                    $item['description'] = $product->description_hindi;
-                } elseif ($lang === 'pn') {
-                    $item['name'] = $product->name_punjabi;
-                    $item['description'] = $product->description_punjabi;
-                }
-
-                $data[] = $item;
-            }
-
-            // Count cart items
-            $cartCount = Cart::where('vendor_id', $vendor->id)->count();
-
-            Log::info('GetCart: Cart items retrieved', [
-                'vendor_id' => $vendor->id,
-                'lang' => $lang,
-                'cart_count' => $cartCount,
-                'item_count' => count($data),
-                'total' => $total,
-            ]);
-
-            return response()->json([
-                'message' => 'Success!',
-                'status' => 200,
-                'data' => $data,
-                'count' => $cartCount,
-                'total' => $total,
-            ], 200);
-        } catch (\Illuminate\Database\QueryException $e) {
-            Log::error('GetCart: Database error', [
-                'vendor_id' => auth('vendor')->id() ?? null,
-                'lang' => $request->header('X-Language') ?? null,
-                'error' => $e->getMessage(),
-                'sql' => $e->getSql(),
-                'bindings' => $e->getBindings(),
+                'header' => $request->header('X-Language'),
             ]);
             return response()->json([
-                'message' => 'Database error: ' . $e->getMessage(),
+                'message' => $validator->errors()->first(),
                 'status' => 201,
-            ], 500);
-        } catch (\Exception $e) {
-            Log::error('GetCart: General error', [
-                'vendor_id' => auth('vendor')->id() ?? null,
-                'lang' => $request->header('X-Language') ?? null,
-                'error' => $e->getMessage(),
-            ]);
-            return response()->json([
-                'message' => 'Error processing request: ' . $e->getMessage(),
-                'status' => 201,
-            ], 500);
+            ], 422);
         }
+
+        $lang = $request->header('X-Language');
+
+        // Authenticate vendor using header token
+        $token = $request->header('Authentication');
+        if (!$token) {
+            Log::warning('No bearer token provided');
+            return response()->json([
+                'message' => 'Token required!',
+                'status' => 201,
+            ], 401);
+        }
+
+        $vendor = Vendor::where('auth', $token)
+            ->where('is_active', 1)
+            ->first();
+
+        if (!$vendor) {
+            Log::warning('Invalid or inactive user for token', ['token' => $token]);
+            return response()->json([
+                'message' => 'Invalid token or inactive user!',
+                'status' => 201,
+            ], 403);
+        }
+
+        if (!$vendor || !$vendor->is_active || !$vendor->is_approved) {
+            Log::warning('GetCart: Authentication failed or vendor inactive/unapproved', [
+                'vendor_id' => $vendor ? $vendor->id : null,
+                'is_active' => $vendor ? $vendor->is_active : null,
+                'is_approved' => $vendor ? $vendor->is_approved : null,
+            ]);
+            return response()->json([
+                'message' => 'Permission Denied!',
+                'status' => 201,
+            ], 403);
+        }
+
+        Log::info('GetCart: Auth attempt', [
+            'vendor_id' => $vendor ? $vendor->id : null,
+            'lang' => $lang,
+            'ip' => $request->ip(),
+            'host' => $request->getHost(),
+            'url' => $request->fullUrl(),
+        ]);
+
+        // Fetch cart items
+        $cartItems = Cart::where('vendor_id', $vendor->id)->get();
+
+        if ($cartItems->isEmpty()) {
+            $cartCount = Cart::where('vendor_id', $vendor->id)->count();
+            Log::info('GetCart: Cart is empty', [
+                'vendor_id' => $vendor->id,
+                'cart_count' => $cartCount,
+            ]);
+            return response()->json([
+                'message' => 'Cart is empty!',
+                'status' => 201,
+                'data' => [],
+                'count' => $cartCount,
+            ], 200);
+        }
+
+        $data = [];
+        $total = 0;
+
+        foreach ($cartItems as $cart) {
+            // Fetch product
+            $product = Product::where('id', $cart->product_id)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$product) {
+                // Delete cart item if product is inactive
+                Cart::where('vendor_id', $vendor->id)
+                    ->where('product_id', $cart->product_id)
+                    ->delete();
+                Log::info('GetCart: Deleted cart item for inactive product', [
+                    'vendor_id' => $vendor->id,
+                    'product_id' => $cart->product_id,
+                    'cart_id' => $cart->id,
+                ]);
+                continue;
+            }
+
+            // Handle image
+            $image = '';
+            if ($product->image) {
+                $imageArray = json_decode($product->image, true);
+                if (is_array($imageArray) && !empty($imageArray)) {
+                    $image = url($imageArray[0]);
+                } else {
+                    $image = url($product->image);
+                }
+            }
+
+            // Check inventory
+            $stock = $product->inventory != 0 ? 'In Stock' : 'Out of Stock';
+
+            // Calculate total
+            $total += $product->vendor_selling_price * $cart->qty;
+
+            // Prepare cart item data based on language
+            $item = [
+                'cart_id' => $cart->id,
+                'pro_id' => $product->id,
+                'image' => $image,
+                'min_qty' => $product->vendor_min_qty ?? 1,
+                'selling_price' => $product->vendor_selling_price * $cart->qty,
+                'stock' => $stock,
+                'vendor_id' => $product->added_by,
+                'is_admin' => $cart->is_admin,
+                'qty' => $cart->qty,
+                'product_cod' => $product->cod,
+                'is_cod' => $vendor->cod,
+                'qty_discount' => $vendor->qty_discount ?? null,
+            ];
+
+            if ($lang === 'en') {
+                $item['name'] = $product->name_english;
+                $item['description'] = $product->description_english;
+            } elseif ($lang === 'hi') {
+                $item['name'] = $product->name_hindi;
+                $item['description'] = $product->description_hindi;
+            } elseif ($lang === 'pn') {
+                $item['name'] = $product->name_punjabi;
+                $item['description'] = $product->description_punjabi;
+            }
+
+            $data[] = $item;
+        }
+
+        // Count cart items
+        $cartCount = Cart::where('vendor_id', $vendor->id)->count();
+
+        Log::info('GetCart: Cart items retrieved', [
+            'vendor_id' => $vendor->id,
+            'lang' => $lang,
+            'cart_count' => $cartCount,
+            'item_count' => count($data),
+            'total' => $total,
+        ]);
+
+        return response()->json([
+            'message' => 'Success!',
+            'status' => 200,
+            'data' => $data,
+            'count' => $cartCount,
+            'total' => $total,
+        ], 200);
+    } catch (\Illuminate\Database\QueryException $e) {
+        Log::error('GetCart: Database error', [
+            'vendor_id' => $vendor->id ?? null,
+            'lang' => $request->header('X-Language') ?? null,
+            'error' => $e->getMessage(),
+            'sql' => $e->getSql(),
+            'bindings' => $e->getBindings(),
+        ]);
+        return response()->json([
+            'message' => 'Database error: ' . $e->getMessage(),
+            'status' => 201,
+        ], 500);
+    } catch (\Exception $e) {
+        Log::error('GetCart: General error', [
+            'vendor_id' => $vendor->id ?? null,
+            'lang' => $request->header('X-Language') ?? null,
+            'error' => $e->getMessage(),
+        ]);
+        return response()->json([
+            'message' => 'Error processing request: ' . $e->getMessage(),
+            'status' => 201,
+        ], 500);
     }
+}
+
 
    public function getProductDetails(Request $request)
 {
