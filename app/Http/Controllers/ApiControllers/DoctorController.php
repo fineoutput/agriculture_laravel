@@ -773,9 +773,9 @@ public function homeData(Request $request)
             ->first();
 
         Log::info('SemenTanks auth attempt', [
-            'doctor_id' => $doctor?->id,
-            'is_active' => $doctor?->is_active,
-            'is_approved' => $doctor?->is_approved,
+            'doctor_id' => $doctor->id,
+            'is_active' => $doctor->is_active,
+            'is_approved' => $doctor->is_approved,
             'request_token' => $token,
         ]);
 
@@ -963,79 +963,95 @@ public function homeData(Request $request)
     }
 }
 
-    public function updateCanister(Request $request, $canister_id)
-    {
-        try {
-            // /** @var \App\Models\Doctor $doctor */
-            $doctor = auth('doctor')->user();
-            Log::info('UpdateCanister auth attempt', [
-                'doctor_id' => $doctor ? $doctor->id : null,
-                'is_active' => $doctor ? ($doctor->is_active ?? 'missing') : null,
-                'is_approved' => $doctor ? ($doctor->is_approved ?? 'missing') : null,
-                'canister_id' => $canister_id,
-                'request_token' => $request->bearerToken(),
-                'ip_address' => $request->ip(),
-            ]);
+public function updateCanister(Request $request)
+{
+    try {
+        $token = $request->header('Authentication');
 
-            if (!$doctor || !$doctor->is_active || !$doctor->is_approved) {
-                return response()->json([
-                    'message' => 'Permission Denied!',
-                    'status' => 201,
-                ], 403);
-            }
-
-            $validator = Validator::make($request->all(), [
-                'bull_name' => 'nullable|string|max:255',
-                'company_name' => 'nullable|string|max:255',
-                'no_of_units' => 'nullable|numeric|min:0',
-                'milk_production_of_mother' => 'nullable|string|max:255',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'message' => $validator->errors()->first(),
-                    'status' => 201,
-                ], 422);
-            }
-
-            $canister = DoctorCanister::where('id', $canister_id)
-                ->where('doctor_id', $doctor->id)
-                ->first();
-
-            if (!$canister) {
-                return response()->json([
-                    'message' => 'Some error occurred!',
-                    'status' => 201,
-                ], 404);
-            }
-
-            $data = array_filter([
-                'bull_name' => $request->input('bull_name'),
-                'company_name' => $request->input('company_name'),
-                'no_of_units' => $request->input('no_of_units'),
-                'milk_production_of_mother' => $request->input('milk_production_of_mother'),
-                'date' => now(),
-            ], fn($value) => !is_null($value));
-
-            $canister->update($data);
-
+        if (!$token) {
             return response()->json([
-                'message' => 'Record Successfully Updated!',
-                'status' => 200,
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error in updateCanister', [
-                'doctor_id' => auth('doctor')->id() ?? null,
-                'canister_id' => $canister_id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'message' => 'Error updating canister: ' . $e->getMessage(),
-                'status' => 201,
-            ], 500);
+                'message' => 'Token missing!',
+                'status' => 401,
+            ], 401);
         }
+
+        $doctor = Doctor::where('auth', $token)
+            ->where('is_active', 1)
+            ->where('is_approved', 1)
+            ->first();
+
+        if (!$doctor) {
+            return response()->json([
+                'message' => 'Permission Denied!',
+                'status' => 403,
+            ], 403);
+        }
+
+        // ✅ Fetch canister_id BEFORE using it
+        $canister_id = $request->input('canister_id');
+
+        Log::info('UpdateCanister auth attempt', [
+            'doctor_id' => $doctor->id,
+            'canister_id' => $canister_id,
+            'request_token' => $token,
+            'ip_address' => $request->ip(),
+        ]);
+
+        // Validation
+        $validator = Validator::make(array_merge($request->all(), ['canister_id' => $canister_id]), [
+            'canister_id' => 'required|exists:tbl_doctor_canister,id',
+            'bull_name' => 'nullable|string|max:255',
+            'company_name' => 'nullable|string|max:255',
+            'no_of_units' => 'nullable|numeric|min:0',
+            'milk_production_of_mother' => 'nullable|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 422,
+            ], 422);
+        }
+
+        $canister = DoctorCanister::where('id', $canister_id)
+            ->where('doctor_id', $doctor->id)
+            ->first();
+
+        if (!$canister) {
+            return response()->json([
+                'message' => 'Canister not found!',
+                'status' => 404,
+            ], 404);
+        }
+
+        $canister->update(array_filter([
+            'bull_name' => $request->input('bull_name'),
+            'company_name' => $request->input('company_name'),
+            'no_of_units' => $request->input('no_of_units'),
+            'milk_production_of_mother' => $request->input('milk_production_of_mother'),
+            'date' => now(),
+        ], fn($v) => !is_null($v)));
+
+        return response()->json([
+            'message' => 'Record Successfully Updated!',
+            'status' => 200,
+        ], 200);
+
+    } catch (\Exception $e) {
+        Log::error('Error in updateCanister', [
+            'doctor_id' => $doctor->id ?? null,
+            'canister_id' => $request->input('canister_id'),
+            'error' => $e->getMessage(),
+        ]);
+
+        return response()->json([
+            'message' => 'Error updating canister: ' . $e->getMessage(),
+            'status' => 500,
+        ], 500);
     }
+}
+
+
 
     public function sellSemen(Request $request)
     {

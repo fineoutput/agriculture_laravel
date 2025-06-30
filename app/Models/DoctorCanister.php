@@ -8,6 +8,7 @@ class DoctorCanister extends Model
 {
     protected $table = 'tbl_doctor_canister';
     protected $fillable = [
+        'id',
         'doctor_id',
         'tank_id',
         'bull_name','company_name',	'no_of_units',	'milk_production_of_mother','date'	
