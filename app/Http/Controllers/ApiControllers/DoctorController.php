@@ -756,54 +756,66 @@ public function homeData(Request $request)
     }
 
     public function semenTanks(Request $request)
-    {
-        try {
-            // /** @var \App\Models\Doctor $doctor */
-            $doctor = auth('doctor')->user();
-            Log::info('SemenTanks auth attempt', [
-                'doctor_id' => $doctor ? $doctor->id : null,
-                'is_active' => $doctor ? ($doctor->is_active ?? 'missing') : null,
-                'is_approved' => $doctor ? ($doctor->is_approved ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
-            ]);
+{
+    try {
+        $token = $request->header('Authentication');
 
-            if (!$doctor || !$doctor->is_active || !$doctor->is_approved) {
-                return response()->json([
-                    'message' => 'Permission Denied!',
-                    'status' => 201,
-                ], 403);
-            }
-
-            $tanks = DoctorTank::where('doctor_id', $doctor->id)
-                ->with('canisters')
-                ->get();
-
-            $data = $tanks->map(function ($tank, $index) {
-                return [
-                    's_no' => $index + 1,
-                    'name' => $tank->name,
-                    'tank_id' => $tank->id,
-                    'canister' => $tank->canisters->toArray(),
-                ];
-            })->toArray();
-
+        if (!$token) {
             return response()->json([
-                'message' => 'Success!',
-                'status' => 200,
-                'data' => $data,
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error in semenTanks', [
-                'doctor_id' => auth('doctor')->id() ?? null,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'message' => 'Error fetching semen tanks: ' . $e->getMessage(),
-                'status' => 201,
-            ], 500);
+                'message' => 'Token missing!',
+                'status' => 401,
+            ], 401);
         }
+
+        $doctor = Doctor::where('auth', $token)
+            ->where('is_active', 1)
+            ->where('is_approved', 1)
+            ->first();
+
+        Log::info('SemenTanks auth attempt', [
+            'doctor_id' => $doctor?->id,
+            'is_active' => $doctor?->is_active,
+            'is_approved' => $doctor?->is_approved,
+            'request_token' => $token,
+        ]);
+
+        if (!$doctor) {
+            return response()->json([
+                'message' => 'Permission Denied!',
+                'status' => 403,
+            ], 403);
+        }
+
+        $tanks = DoctorTank::where('doctor_id', $doctor->id)
+            ->with('canisters')
+            ->get();
+
+        $data = $tanks->map(function ($tank, $index) {
+            return [
+                's_no' => $index + 1,
+                'name' => $tank->name,
+                'tank_id' => $tank->id,
+                'canister' => $tank->canisters->toArray(),
+            ];
+        })->toArray();
+
+        return response()->json([
+            'message' => 'Success!',
+            'status' => 200,
+            'data' => $data,
+        ], 200);
+    } catch (\Exception $e) {
+        Log::error('Error in semenTanks', [
+            'doctor_id' => $doctor->id ?? null,
+            'error' => $e->getMessage(),
+        ]);
+
+        return response()->json([
+            'message' => 'Error fetching semen tanks: ' . $e->getMessage(),
+            'status' => 500,
+        ], 500);
     }
+}
 
     public function deleteSemenTank(Request $request, $id)
     {
