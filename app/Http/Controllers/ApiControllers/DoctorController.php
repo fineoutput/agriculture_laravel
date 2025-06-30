@@ -861,89 +861,95 @@ public function homeData(Request $request)
         }
     }
 
-    public function addSemenTank(Request $request)
-    {
-        try {
-            if (!$request->has('name')) {
-                return response()->json([
-                    'message' => 'Please Insert Data',
-                    'status' => 201,
-                ], 422);
-            }
+   public function addSemenTank(Request $request)
+{
+    try {
+        $token = $request->header('Authentication');
 
-            // /** @var \App\Models\Doctor $doctor */
-            $doctor = auth('doctor')->user();
-            Log::info('AddSemenTank auth attempt', [
-                'doctor_id' => $doctor ? $doctor->id : null,
-                'is_active' => $doctor ? ($doctor->is_active ?? 'missing') : null,
-                'is_approved' => $doctor ? ($doctor->is_approved ?? 'missing') : null,
-                'name' => $request->input('name'),
-                'request_token' => $request->bearerToken(),
-                'ip_address' => $request->ip(),
-            ]);
+        if (!$token) {
+            return response()->json([
+                'message' => 'Token missing!',
+                'status' => 401,
+            ], 401);
+        }
 
-            if (!$doctor || !$doctor->is_active || !$doctor->is_approved) {
-                return response()->json([
-                    'message' => 'Permission Denied!',
-                    'status' => 201,
-                ], 403);
-            }
+        // Find doctor from token
+        $doctor = Doctor::where('auth', $token)
+            ->where('is_active', 1)
+            ->where('is_approved', 1)
+            ->first();
 
-            $validator = Validator::make($request->all(), [
-                'name' => 'required|string|max:255',
-            ]);
+        Log::info('AddSemenTank auth attempt', [
+            'doctor_id' => $doctor->id,
+            'is_active' => $doctor->is_active,
+            'is_approved' => $doctor->is_approved,
+            'name' => $request->input('name'),
+            'request_token' => $token,
+            'ip_address' => $request->ip(),
+        ]);
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'message' => $validator->errors()->first(),
-                    'status' => 201,
-                ], 422);
-            }
+        if (!$doctor) {
+            return response()->json([
+                'message' => 'Permission Denied!',
+                'status' => 403,
+            ], 403);
+        }
 
-            $name = $request->input('name');
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+        ]);
 
-            $existingTank = DoctorTank::where('doctor_id', $doctor->id)
-                ->where('name', $name)
-                ->first();
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 422,
+            ], 422);
+        }
 
-            if ($existingTank) {
-                return response()->json([
-                    'message' => 'Tank name already exist!',
-                    'status' => 201,
-                ], 422);
-            }
+        $name = $request->input('name');
 
-            $tank = DoctorTank::create([
+        $existingTank = DoctorTank::where('doctor_id', $doctor->id)
+            ->where('name', $name)
+            ->first();
+
+        if ($existingTank) {
+            return response()->json([
+                'message' => 'Tank name already exists!',
+                'status' => 409,
+            ], 409);
+        }
+
+        $tank = DoctorTank::create([
+            'doctor_id' => $doctor->id,
+            'name' => $name,
+            'date' => now(),
+        ]);
+
+        for ($i = 0; $i < 6; $i++) {
+            DoctorCanister::create([
                 'doctor_id' => $doctor->id,
-                'name' => $name,
+                'tank_id' => $tank->id,
                 'date' => now(),
             ]);
-
-            for ($i = 0; $i < 6; $i++) {
-                DoctorCanister::create([
-                    'doctor_id' => $doctor->id,
-                    'tank_id' => $tank->id,
-                    'date' => now(),
-                ]);
-            }
-
-            return response()->json([
-                'message' => 'Record Successfully Inserted!',
-                'status' => 200,
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error in addSemenTank', [
-                'doctor_id' => auth('doctor')->id() ?? null,
-                'name' => $request->input('name'),
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'message' => 'Error adding semen tank: ' . $e->getMessage(),
-                'status' => 201,
-            ], 500);
         }
+
+        return response()->json([
+            'message' => 'Record Successfully Inserted!',
+            'status' => 200,
+        ], 200);
+    } catch (\Exception $e) {
+        Log::error('Error in addSemenTank', [
+            'doctor_id' => $doctor->id ?? null,
+            'name' => $request->input('name'),
+            'error' => $e->getMessage(),
+        ]);
+
+        return response()->json([
+            'message' => 'Error adding semen tank: ' . $e->getMessage(),
+            'status' => 500,
+        ], 500);
     }
+}
 
     public function updateCanister(Request $request, $canister_id)
     {
