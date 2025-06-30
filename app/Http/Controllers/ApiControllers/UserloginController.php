@@ -642,9 +642,7 @@ class UserloginController extends Controller
 
         // Generate and store OTP
         $otp = rand(100000, 999999);
-        if ($phone) {
-            $otp = 123456;
-        }
+       
         $cur_date = now()->toDateTimeString();
 
         $otpRecord = Otp::create([
