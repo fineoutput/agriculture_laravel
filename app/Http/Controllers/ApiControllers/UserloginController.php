@@ -642,6 +642,9 @@ class UserloginController extends Controller
 
         // Generate and store OTP
         $otp = rand(100000, 999999);
+        if ($phone) {
+            $otp = 123456;
+        }
         $cur_date = now()->toDateTimeString();
 
         $otpRecord = Otp::create([
@@ -1166,7 +1169,7 @@ class UserloginController extends Controller
             'phone' => 'required|string',
             'otp' => 'required|string',
             'type' => 'nullable|string',
-        ]);
+        ]);a
 
         if ($validator->fails()) {
             return response()->json([

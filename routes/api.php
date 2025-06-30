@@ -397,3 +397,6 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
 
     
     Route::get('get/orders', [VendorOrderController::class, 'getOrders']);
+
+
+    Route::get('get/Expert', [DoctorController::class, 'getExpertCategories']);

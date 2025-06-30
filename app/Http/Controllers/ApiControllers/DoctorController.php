@@ -10,6 +10,7 @@ use App\Models\PaymentsReq;
 use App\Models\DoctorCanister;
 use App\Models\PaymentTransaction;
 use App\Models\DoctorRequest;
+use App\Models\ExpertiseCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -1034,4 +1035,21 @@ switch ($doc_type) {
         }
     }
     
+    public function getExpertCategories()
+{
+    $categories = ExpertiseCategory::where('is_active', 1)->get(['id', 'name']);
+
+    $data = $categories->map(function ($category) {
+        return [
+            'value' => $category->id,
+            'label' => $category->name,
+        ];
+    });
+
+    return response()->json([
+        'message' => 'Success',
+        'status' => 200,
+        'data' => $data,
+    ]);
+}
 }
