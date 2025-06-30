@@ -1169,7 +1169,7 @@ class UserloginController extends Controller
             'phone' => 'required|string',
             'otp' => 'required|string',
             'type' => 'nullable|string',
-        ]);a
+        ]);
 
         if ($validator->fails()) {
             return response()->json([
