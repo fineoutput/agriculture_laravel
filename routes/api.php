@@ -94,8 +94,6 @@ Route::middleware(['auth:farmer'])->group(function () {
 ///////////DoctorController
 
 Route::middleware(['auth:doctor'])->group(function () {
-Route::post('doctor/requests/{id}/complete', [DoctorController::class, 'reqMarkComplete']);
-Route::get('Profile', [DoctorController::class, 'getProfile']);
 Route::post('UpdateProf', [DoctorController::class, 'updateProfile']);
 Route::post('bank-info', [DoctorController::class, 'updateBankInfo']);
 Route::post('LocationUpd', [DoctorController::class, 'updateLocation']);
@@ -404,3 +402,9 @@ Route::post('paymentfailed', [FarmerController::class, 'paymentFailed'])->name('
 
     
 Route::get('GetRequests', [DoctorController::class, 'getRequests']);
+
+
+Route::post('doctor/requests/complete{id}', [DoctorController::class, 'reqMarkComplete']);
+
+
+Route::get('Profile', [DoctorController::class, 'getProfile']);

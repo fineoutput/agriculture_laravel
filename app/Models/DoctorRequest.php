@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
 use Tymon\JWTAuth\Contracts\JWTSubject; 
-class DoctorRequest extends Model implements Authenticatable, JWTSubject
+class DoctorRequest extends Model 
 
 {
 

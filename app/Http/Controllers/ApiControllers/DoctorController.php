@@ -125,122 +125,145 @@ class DoctorController extends Controller
 }
 
 
-    public function reqMarkComplete(Request $request, $id)
-    {
-        try {
-            // Authenticate doctor using 'doctor' guard
-            $doctor = auth('doctor')->user();
-            Log::info('ReqMarkComplete auth attempt', [
-                'doctor_id' => $doctor ? $doctor->id : null,
-                'is_active' => $doctor ? ($doctor->is_active ?? 'missing') : null,
-                'is_approved' => $doctor ? ($doctor->is_approved ?? 'missing') : null,
-                'request_id' => $id,
-                'request_token' => $request->bearerToken(),
-            ]);
-
-            if (!$doctor || !$doctor->is_active || !$doctor->is_approved) {
-                return response()->json([
-                    'message' => 'Permission Denied!',
-                    'status' => 201,
-                ], 403);
-            }
-
-            // Update request status
-            $updated = DoctorRequest::where('id', $id)
-                ->where('doctor_id', $doctor->id)
-                ->where('is_expert', $doctor->is_expert)
-                ->update(['status' => 1]);
-
-            if ($updated) {
-                return response()->json([
-                    'message' => 'Success!',
-                    'status' => 200,
-                ], 200);
-            } else {
-                return response()->json([
-                    'message' => 'Some error occurred!',
-                    'status' => 201,
-                ], 400);
-            }
-
-        } catch (\Exception $e) {
-            Log::error('Error in reqMarkComplete', [
-                'doctor_id' => auth('doctor')->id() ?? null,
-                'request_id' => $id,
-                'error' => $e->getMessage(),
-            ]);
-
+   public function reqMarkComplete(Request $request, $id)
+{
+    try {
+        // Token-based authentication
+        $token = $request->header('Authentication');
+        if (!$token) {
             return response()->json([
-                'message' => 'Error marking request as complete: ' . $e->getMessage(),
-                'status' => 201,
-            ], 500);
+                'message' => 'Token required!',
+                'status' => 401,
+            ], 401);
         }
-    }
 
-    public function getProfile(Request $request)
-    {
-        try {
-            $doctor = auth('doctor')->user();
-            Log::info('GetProfile auth attempt', [
-                'doctor_id' => $doctor ? $doctor->id : null,
-                'is_active' => $doctor ? ($doctor->is_active ?? 'missing') : null,
-                'is_approved' => $doctor ? ($doctor->is_approved ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
-            ]);
+        // Fetch doctor using the token
+        $doctor = Doctor::where('auth', $token)->first();
 
-            if (!$doctor || !$doctor->is_active || !$doctor->is_approved) {
-                return response()->json([
-                    'message' => 'Permission Denied!',
-                    'status' => 201,
-                ], 403);
-            }
+        Log::info('ReqMarkComplete auth attempt', [
+            'doctor_id' => $doctor ? $doctor->id : null,
+            'is_active' => $doctor ? ($doctor->is_active ?? 'missing') : null,
+            'is_approved' => $doctor ? ($doctor->is_approved ?? 'missing') : null,
+            'request_id' => $id,
+            'request_token' => $token,
+        ]);
 
-            $image = $doctor->image ? url('storage/' . $doctor->image) : '';
-            // $state = $doctor->state()->first()->state_name ?? '';
+        if (!$doctor || !$doctor->is_active || !$doctor->is_approved) {
+            return response()->json([
+                'message' => 'Permission Denied!',
+                'status' => 403,
+            ], 403);
+        }
 
-            $data = [
-                'name' => $doctor->name,
-                'district' => $doctor->district,
-                'city' => $doctor->city,
-                // 'state' => $state,
-                'state_id' => $doctor->state,
-                'phone' => $doctor->phone,
-                'email' => $doctor->email,
-                'type' => $doctor->type,
-                'pincode' => $doctor->pincode,
-                'degree' => $doctor->degree,
-                'experience' => $doctor->experience,
-                'qualification' => $doctor->qualification,
-                'commission' => $doctor->commission,
-                'aadhar_no' => $doctor->aadhar_no,
-                'image' => $image,
-                'is_expert' => $doctor->is_expert,
-                'expertise' => $doctor->expertise,
-                'bank_name' => $doctor->bank_name,
-                'bank_phone' => $doctor->bank_phone,
-                'bank_ac' => $doctor->bank_ac,
-                'ifsc' => $doctor->ifsc,
-                'upi' => $doctor->upi,
-            ];
+        // Update request status
+        $updated = DoctorRequest::where('id', $id)
+            ->where('doctor_id', $doctor->id)
+            ->where('is_expert', $doctor->is_expert)
+            ->update(['status' => 1]);
 
+        if ($updated) {
             return response()->json([
                 'message' => 'Success!',
                 'status' => 200,
-                'data' => $data,
             ], 200);
-
-        } catch (\Exception $e) {
-            Log::error('Error in getProfile', [
-                'doctor_id' => auth('doctor')->id() ?? null,
-                'error' => $e->getMessage(),
-            ]);
-
+        } else {
             return response()->json([
-                'message' => 'Error fetching profile: ' . $e->getMessage(),
-                'status' => 201,
-            ], 500);
+                'message' => 'Some error occurred!',
+                'status' => 400,
+            ], 400);
         }
+
+    } catch (\Exception $e) {
+        Log::error('Error in reqMarkComplete', [
+            'doctor_id' => $doctor->id ?? null,
+            'request_id' => $id,
+            'error' => $e->getMessage(),
+        ]);
+
+        return response()->json([
+            'message' => 'Error marking request as complete: ' . $e->getMessage(),
+            'status' => 500,
+        ], 500);
     }
+}
+
+
+  public function getProfile(Request $request)
+{
+    try {
+        // Token-based authentication
+        $token = $request->header('Authentication');
+        if (!$token) {
+            return response()->json([
+                'message' => 'Token required!',
+                'status' => 401,
+            ], 401);
+        }
+
+        // Fetch doctor by token
+        $doctor = Doctor::where('auth', $token)->first();
+
+        Log::info('GetProfile auth attempt', [
+            'doctor_id' => $doctor ? $doctor->id : null,
+            'is_active' => $doctor ? ($doctor->is_active ?? 'missing') : null,
+            'is_approved' => $doctor ? ($doctor->is_approved ?? 'missing') : null,
+            'request_token' => $token,
+        ]);
+
+        // Check permissions
+        if (!$doctor || !$doctor->is_active || !$doctor->is_approved) {
+            return response()->json([
+                'message' => 'Permission Denied!',
+                'status' => 403,
+            ], 403);
+        }
+
+        // Prepare doctor profile data
+        $image = $doctor->image ? url('storage/' . $doctor->image) : '';
+
+        $data = [
+            'name' => $doctor->name,
+            'district' => $doctor->district,
+            'city' => $doctor->city,
+            'state_id' => $doctor->state,
+            'phone' => $doctor->phone,
+            'email' => $doctor->email,
+            'type' => $doctor->type,
+            'pincode' => $doctor->pincode,
+            'degree' => $doctor->degree,
+            'experience' => $doctor->experience,
+            'qualification' => $doctor->qualification,
+            'commission' => $doctor->commission,
+            'aadhar_no' => $doctor->aadhar_no,
+            'image' => $image,
+            'is_expert' => $doctor->is_expert,
+            'expertise' => $doctor->expertise,
+            'bank_name' => $doctor->bank_name,
+            'bank_phone' => $doctor->bank_phone,
+            'bank_ac' => $doctor->bank_ac,
+            'ifsc' => $doctor->ifsc,
+            'upi' => $doctor->upi,
+        ];
+
+        return response()->json([
+            'message' => 'Success!',
+            'status' => 200,
+            'data' => $data,
+        ], 200);
+
+    } catch (\Exception $e) {
+        Log::error('Error in getProfile', [
+            'doctor_id' => $doctor->id ?? null,
+            'error' => $e->getMessage(),
+        ]);
+
+        return response()->json([
+            'message' => 'Error fetching profile: ' . $e->getMessage(),
+            'status' => 500,
+        ], 500);
+    }
+}
+
 
     public function updateProfile(Request $request)
     {
