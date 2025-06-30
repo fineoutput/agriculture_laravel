@@ -1066,113 +1066,122 @@ public function updateCanister(Request $request)
 
 
 
-    public function sellSemen(Request $request)
-    {
-        try {
-            if (!$request->hasAny(['tank_id', 'canister', 'quantity', 'farmer_name', 'farmer_phone', 'address'])) {
-                return response()->json([
-                    'message' => 'Please Insert Data',
-                    'status' => 201,
-                ], 422);
-            }
+   public function sellSemen(Request $request)
+{
+    try {
+        $token = $request->header('Authentication');
 
-            // /** @var \App\Models\Doctor $doctor */
-            $doctor = auth('doctor')->user();
-            Log::info('SellSemen auth attempt', [
-                'doctor_id' => $doctor ? $doctor->id : null,
-                'is_active' => $doctor ? ($doctor->is_active ?? 'missing') : null,
-                'is_approved' => $doctor ? ($doctor->is_approved ?? 'missing') : null,
-                'tank_id' => $request->input('tank_id'),
-                'canister' => $request->input('canister'),
-                'quantity' => $request->input('quantity'),
-                'request_token' => $request->bearerToken(),
-                'ip_address' => $request->ip(),
-            ]);
-
-            if (!$doctor || !$doctor->is_active || !$doctor->is_approved) {
-                return response()->json([
-                    'message' => 'Permission Denied!',
-                    'status' => 201,
-                ], 403);
-            }
-
-            $validator = Validator::make($request->all(), [
-                'tank_id' => 'required|numeric|exists:tbl_doctor_tank,id',
-                'canister' => 'required|numeric|exists:tbl_doctor_canister,id',
-                'quantity' => 'required|numeric|min:1',
-                'farmer_name' => 'required|string|max:255',
-                'farmer_phone' => 'required|string|max:15',
-                'address' => 'required|string|max:500',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'message' => $validator->errors()->first(),
-                    'status' => 201,
-                ], 422);
-            }
-
-            $tank_id = $request->input('tank_id');
-            $canister_id = $request->input('canister');
-            $quantity = $request->input('quantity');
-
-            $canister = DoctorCanister::where('id', $canister_id)
-                ->where('doctor_id', $doctor->id)
-                ->where('tank_id', $tank_id)
-                ->first();
-
-            if (!$canister) {
-                return response()->json([
-                    'message' => 'Some error occurred!',
-                    'status' => 201,
-                ], 404);
-            }
-
-            $available_units = $canister->no_of_units ?? 0;
-            if ($available_units < $quantity) {
-                return response()->json([
-                    'message' => "Available semen unit is {$available_units}",
-                    'status' => 201,
-                ], 422);
-            }
-
-            DoctorSemenTransaction::create([
-                'doctor_id' => $doctor->id,
-                'tank_id' => $tank_id,
-                'canister' => $canister_id,
-                'bull_name' => $canister->bull_name,
-                'company_name' => $canister->company_name,
-                'no_of_units' => $canister->no_of_units,
-                'sell_unit' => $quantity,
-                'milk_production_of_mother' => $canister->milk_production_of_mother,
-                'farmer_name' => $request->input('farmer_name'),
-                'farmer_phone' => $request->input('farmer_phone'),
-                'address' => $request->input('address'),
-                'date' => now(),
-            ]);
-
-            $canister->update([
-                'no_of_units' => $canister->no_of_units - $quantity,
-            ]);
-
+        if (!$token) {
             return response()->json([
-                'message' => 'Record Successfully saved!',
-                'status' => 200,
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error in sellSemen', [
-                'doctor_id' => auth('doctor')->id() ?? null,
-                'tank_id' => $request->input('tank_id'),
-                'canister' => $request->input('canister'),
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'message' => 'Error recording semen sale: ' . $e->getMessage(),
-                'status' => 201,
-            ], 500);
+                'message' => 'Token missing!',
+                'status' => 401,
+            ], 401);
         }
+
+        $doctor = Doctor::where('auth', $token)
+            ->where('is_active', 1)
+            ->where('is_approved', 1)
+            ->first();
+
+        Log::info('SellSemen auth attempt', [
+            'doctor_id' => $doctor->id ?? null,
+            'tank_id' => $request->input('tank_id'),
+            'canister' => $request->input('canister'),
+            'quantity' => $request->input('quantity'),
+            'request_token' => $token,
+            'ip_address' => $request->ip(),
+        ]);
+
+        if (!$doctor) {
+            return response()->json([
+                'message' => 'Permission Denied!',
+                'status' => 403,
+            ], 403);
+        }
+
+        // Validate request data
+        $validator = Validator::make($request->all(), [
+            'tank_id' => 'required|numeric|exists:tbl_doctor_tank,id',
+            'canister' => 'required|numeric|exists:tbl_doctor_canister,id',
+            'quantity' => 'required|numeric|min:1',
+            'farmer_name' => 'required|string|max:255',
+            'farmer_phone' => 'required|string|max:15',
+            'address' => 'required|string|max:500',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 422,
+            ], 422);
+        }
+
+        $tank_id = $request->input('tank_id');
+        $canister_id = $request->input('canister');
+        $quantity = $request->input('quantity');
+
+        $canister = DoctorCanister::where('id', $canister_id)
+            ->where('doctor_id', $doctor->id)
+            ->where('tank_id', $tank_id)
+            ->first();
+
+        if (!$canister) {
+            return response()->json([
+                'message' => 'Canister not found or unauthorized!',
+                'status' => 404,
+            ], 404);
+        }
+
+        $available_units = $canister->no_of_units ?? 0;
+
+        if ($available_units < $quantity) {
+            return response()->json([
+                'message' => "Only {$available_units} units available.",
+                'status' => 422,
+            ], 422);
+        }
+
+        // Create transaction
+        DoctorSemenTransaction::create([
+            'doctor_id' => $doctor->id,
+            'tank_id' => $tank_id,
+            'canister' => $canister_id,
+            'bull_name' => $canister->bull_name,
+            'company_name' => $canister->company_name,
+            'no_of_units' => $canister->no_of_units,
+            'sell_unit' => $quantity,
+            'milk_production_of_mother' => $canister->milk_production_of_mother,
+            'farmer_name' => $request->input('farmer_name'),
+            'farmer_phone' => $request->input('farmer_phone'),
+            'address' => $request->input('address'),
+            'date' => now(),
+        ]);
+
+        // Update canister units
+        $canister->update([
+            'no_of_units' => $available_units - $quantity,
+        ]);
+
+        return response()->json([
+            'message' => 'Record successfully saved!',
+            'status' => 200,
+        ], 200);
+
+    } catch (\Exception $e) {
+        Log::error('Error in sellSemen', [
+            'doctor_id' => $doctor->id ?? null,
+            'tank_id' => $request->input('tank_id'),
+            'canister' => $request->input('canister'),
+            'error' => $e->getMessage(),
+        ]);
+
+        return response()->json([
+            'message' => 'Error recording semen sale: ' . $e->getMessage(),
+            'status' => 500,
+        ], 500);
     }
+}
+
 
     public function getSemenTransactions(Request $request)
     {

@@ -98,7 +98,6 @@ Route::post('bank-info', [DoctorController::class, 'updateBankInfo']);
 Route::post('LocationUpd', [DoctorController::class, 'updateLocation']);
 Route::get('PaymentInfo', [DoctorController::class, 'paymentInfo']);
 Route::get('AdminPay', [DoctorController::class, 'adminPaymentInfo']);
-Route::post('SellSemen', [DoctorController::class, 'sellSemen']);
 Route::get('SemenTransaction', [DoctorController::class, 'getSemenTransactions']);
 });
 
@@ -423,3 +422,6 @@ Route::post('doctor/update-canister', [DoctorController::class, 'updateCanister'
 
 
 Route::post('doctor/delete-semen-tank', [DoctorController::class, 'deleteSemenTank']);
+
+
+Route::post('Sell_Semen', [DoctorController::class, 'sellSemen']);
