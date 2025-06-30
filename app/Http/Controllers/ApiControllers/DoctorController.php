@@ -8,9 +8,12 @@ use App\Models\DoctorTank;
 use App\Models\DoctorSemenTransaction;
 use App\Models\PaymentsReq;
 use App\Models\DoctorCanister;
+use App\Models\DoctorNotification;
 use App\Models\PaymentTransaction;
 use App\Models\DoctorRequest;
+use App\Models\DoctorSlider;
 use App\Models\ExpertiseCategory;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -376,6 +379,102 @@ class DoctorController extends Controller
     }
 }
 
+public function homeData(Request $request)
+{
+    try {
+        $token = $request->header('Authentication');
+
+        if (!$token) {
+            return response()->json([
+                'message' => 'Token required!',
+                'status' => 401
+            ], 401);
+        }
+
+        // Authenticate doctor using token
+        $doctor = Doctor::where('auth', $token)
+            ->where('is_active', 1)
+            ->where('is_approved', 1)
+            ->first();
+
+        if (!$doctor) {
+            return response()->json([
+                'message' => 'Permission Denied!',
+                'status' => 403
+            ], 403);
+        }
+
+        $doctorId = $doctor->id;
+        $today = Carbon::today()->toDateString();
+
+        // Today's request count
+        $todayReq = DoctorRequest::where('doctor_id', $doctorId)
+            ->whereDate('date', $today)
+            ->count();
+
+        // Total requests
+        $totalReq = DoctorRequest::where('doctor_id', $doctorId)->count();
+
+        // Today's income
+        $todayIncome = PaymentTransaction::where('doctor_id', $doctorId)
+            ->whereNotNull('req_id')
+            ->whereDate('date', $today)
+            ->sum('cr');
+
+        // Total income
+        $totalIncome = PaymentTransaction::where('doctor_id', $doctorId)
+            ->whereNotNull('req_id')
+            ->sum('cr');
+
+        // Doctor sliders
+        $doctorSlider = DoctorSlider::where('is_active', 1)
+            ->get()
+            ->map(function ($slider) {
+                return [
+                    'image' => $slider->image ? url($slider->image) : ''
+                ];
+            });
+
+        // Notifications
+        $notifications = DoctorNotification::where('doctor_id', $doctorId)
+            ->get()
+            ->map(function ($notification) {
+                return [
+                    'id' => $notification->id,
+                    'name' => $notification->name,
+                    'image' => $notification->image ? url($notification->image) : '',
+                    'description' => $notification->dsc,
+                    'date' => Carbon::parse($notification->date)->format('d-m-y, g:i a')
+                ];
+            });
+
+        $notificationCount = DoctorNotification::where('doctor_id', $doctorId)->count();
+
+        return response()->json([
+            'message' => 'Success!',
+            'status' => 200,
+            'data' => [
+                'today_req' => $todayReq,
+                'total_req' => $totalReq,
+                'today_income' => round($todayIncome, 2),
+                'total_income' => round($totalIncome, 2),
+                'is_expert' => $doctor->is_expert,
+                'doctor_slider' => $doctorSlider,
+                'notification_data' => $notifications,
+                'notification_count' => $notificationCount
+            ]
+        ], 200);
+
+    } catch (\Exception $e) {
+        Log::error('Error in homeData', [
+            'error' => $e->getMessage()
+        ]);
+        return response()->json([
+            'message' => 'Something went wrong: ' . $e->getMessage(),
+            'status' => 500
+        ], 500);
+    }
+}
 
     public function updateBankInfo(Request $request)
     {

@@ -410,3 +410,6 @@ Route::get('Profile', [DoctorController::class, 'getProfile']);
 
 
 Route::post('UpdateProf', [DoctorController::class, 'updateProfile']);
+
+
+Route::get('Doctor_homeData', [DoctorController::class, 'homeData']);
