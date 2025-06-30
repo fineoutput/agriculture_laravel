@@ -265,101 +265,117 @@ class DoctorController extends Controller
 }
 
 
-    public function updateProfile(Request $request)
-    {
-        try {
-            $doctor = auth('doctor')->user();
-            Log::info('UpdateProfile auth attempt', [
-                'doctor_id' => $doctor ? $doctor->id : null,
-                'is_active' => $doctor ? ($doctor->is_active ?? 'missing') : null,
-                'is_approved' => $doctor ? ($doctor->is_approved ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
-            ]);
+   public function updateProfile(Request $request){
+    try {
+        // Token-based authentication
+        $token = $request->header('Authentication');
+        if (!$token) {
+            return response()->json([
+                'message' => 'Token required!',
+                'status' => 401,
+            ], 401);
+        }
 
-            if (!$doctor || !$doctor->is_active || !$doctor->is_approved) {
-                return response()->json([
-                    'message' => 'Permission Denied!',
-                    'status' => 201,
-                ], 403);
-            }
+        // Get doctor from token
+        $doctor = Doctor::where('auth', $token)->first();
 
-            $validator = Validator::make($request->all(), [
-                'name' => 'required|string|max:255',
-                'email' => 'required|email|max:255',
-                'district' => 'required|string|max:255',
-                'city' => 'required|string|max:255',
-                'state' => 'required|string|max:255',
-                'doc_type' => 'required|in:1,2,3,123',
-                'qualification' => 'required|string|max:255',
-                'pincode' => 'required|string|max:10',
-                'experience' => 'nullable|string|max:255',
-                'aadhar_no' => 'nullable|string|max:12',
-                'expertise' => 'nullable|string|max:255',
-                'image' => 'nullable|image|mimes:jpg,jpeg,png|max:25000',
-            ]);
+        Log::info('UpdateProfile auth attempt', [
+            'doctor_id' => $doctor ? $doctor->id : null,
+            'is_active' => $doctor->is_active ?? 'missing',
+            'is_approved' => $doctor->is_approved ?? 'missing',
+            'request_token' => $token,
+        ]);
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'message' => $validator->errors()->first(),
-                    'status' => 201,
-                ], 422);
-            }
+        // Check permission
+        if (!$doctor || !$doctor->is_active || !$doctor->is_approved) {
+            return response()->json([
+                'message' => 'Permission Denied!',
+                'status' => 403,
+            ], 403);
+        }
 
-            $data = $request->only([
-                'name',
-                'email',
-                'district',
-                'city',
-                'state',
-                'qualification',
-                'experience',
-                'pincode',
-                'aadhar_no',
-                'expertise',
-            ]);
+        // Validate input
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'district' => 'required|string|max:255',
+            'city' => 'required|string|max:255',
+            'state' => 'required|string|max:255',
+            'doc_type' => 'required|in:1,2,3,123',
+            'qualification' => 'required|string|max:255',
+            'pincode' => 'required|string|max:10',
+            'experience' => 'nullable|string|max:255',
+            'aadhar_no' => 'nullable|string|max:12',
+            'expertise' => 'nullable|string|max:255',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:25000',
+        ]);
 
-            $doc_type = $request->input('doc_type');
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 422,
+            ], 422);
+        }
 
-switch ($doc_type) {
-    case '1':
-        $data['type'] = 'Vet';
-        break;
-    case '2':
-        $data['type'] = 'Livestock Assistant';
-        break;
-    default:
-        $data['type'] = 'Private Practitioner';
-        break;
+        // Get updatable fields
+        $data = $request->only([
+            'name',
+            'email',
+            'district',
+            'city',
+            'state',
+            'qualification',
+            'experience',
+            'pincode',
+            'aadhar_no',
+            'expertise',
+        ]);
+
+        // Map doc_type to type
+        $doc_type = $request->input('doc_type');
+        switch ($doc_type) {
+            case '1':
+                $data['type'] = 'Vet';
+                break;
+            case '2':
+                $data['type'] = 'Livestock Assistant';
+                break;
+            default:
+                $data['type'] = 'Private Practitioner';
+                break;
+        }
+
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $filename = 'image_' . now()->format('YmdHis') . '.' . $image->getClientOriginalExtension();
+            $path = $image->storeAs('uploads/doctor', $filename, 'public');
+            $data['image'] = $path;
+        } else {
+            $data['image'] = $doctor->image;
+        }
+
+        // Update doctor profile
+        $doctor->update($data);
+
+        return response()->json([
+            'message' => 'Success',
+            'status' => 200,
+        ], 200);
+
+    } catch (\Exception $e) {
+        Log::error('Error in updateProfile', [
+            'doctor_id' => $doctor->id ?? null,
+            'error' => $e->getMessage(),
+        ]);
+
+        return response()->json([
+            'message' => 'Error updating profile: ' . $e->getMessage(),
+            'status' => 500,
+        ], 500);
+    }
 }
 
-            if ($request->hasFile('image')) {
-                $image = $request->file('image');
-                $filename = 'image_' . now()->format('YmdHis') . '.' . $image->getClientOriginalExtension();
-                $path = $image->storeAs('uploads/doctor', $filename, 'public');
-                $data['image'] = $path;
-            } else {
-                $data['image'] = $doctor->image;
-            }
-
-            $doctor->update($data);
-
-            return response()->json([
-                'message' => 'Success',
-                'status' => 200,
-            ], 200);
-
-        } catch (\Exception $e) {
-            Log::error('Error in updateProfile', [
-                'doctor_id' => auth('doctor')->id() ?? null,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'message' => 'Error updating profile: ' . $e->getMessage(),
-                'status' => 201,
-            ], 500);
-        }
-    }
 
     public function updateBankInfo(Request $request)
     {
