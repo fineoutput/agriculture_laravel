@@ -817,61 +817,74 @@ public function homeData(Request $request)
     }
 }
 
-    public function deleteSemenTank(Request $request, $id)
-    {
-        try {
-            // /** @var \App\Models\Doctor $doctor */
-            $doctor = auth('doctor')->user();
-            Log::info('DeleteSemenTank auth attempt', [
-                'doctor_id' => $doctor ? $doctor->id : null,
-                'is_active' => $doctor ? ($doctor->is_active ?? 'missing') : null,
-                'is_approved' => $doctor ? ($doctor->is_approved ?? 'missing') : null,
-                'tank_id' => $id,
-                'request_token' => $request->bearerToken(),
-                'ip_address' => $request->ip(),
-            ]);
+public function deleteSemenTank(Request $request)
+{
+    try {
+        $token = $request->header('Authentication');
 
-            if (!$doctor || !$doctor->is_active || !$doctor->is_approved) {
-                return response()->json([
-                    'message' => 'Permission Denied!',
-                    'status' => 201,
-                ], 403);
-            }
-
-            $tank = DoctorTank::where('doctor_id', $doctor->id)
-                ->where('id', $id)
-                ->first();
-
-            if (!$tank) {
-                return response()->json([
-                    'message' => 'Some error occurred!',
-                    'status' => 201,
-                ], 404);
-            }
-
-            DoctorCanister::where('doctor_id', $doctor->id)
-                ->where('tank_id', $id)
-                ->delete();
-
-            $tank->delete();
-
+        if (!$token) {
             return response()->json([
-                'message' => 'Tank Successfully Deleted!',
-                'status' => 200,
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error in deleteSemenTank', [
-                'doctor_id' => auth('doctor')->id() ?? null,
-                'tank_id' => $id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'message' => 'Error deleting semen tank: ' . $e->getMessage(),
-                'status' => 201,
-            ], 500);
+                'message' => 'Token missing!',
+                'status' => 401,
+            ], 401);
         }
+
+        $doctor = Doctor::where('auth', $token)
+            ->where('is_active', 1)
+            ->where('is_approved', 1)
+            ->first();
+
+        if (!$doctor) {
+            return response()->json([
+                'message' => 'Permission Denied!',
+                'status' => 403,
+            ], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:tbl_doctor_tank,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 422,
+            ], 422);
+        }
+
+        $id = $request->input('id');
+
+        $tank = DoctorTank::where('doctor_id', $doctor->id)
+            ->where('id', $id)
+            ->first();
+
+        if (!$tank) {
+            return response()->json([
+                'message' => 'Tank not found!',
+                'status' => 404,
+            ], 404);
+        }
+
+        DoctorCanister::where('doctor_id', $doctor->id)
+            ->where('tank_id', $id)
+            ->delete();
+
+        $tank->delete();
+
+        return response()->json([
+            'message' => 'Tank Successfully Deleted!',
+            'status' => 200,
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Error deleting semen tank: ' . $e->getMessage(),
+            'status' => 500,
+        ], 500);
     }
+}
+
+
 
    public function addSemenTank(Request $request)
 {
