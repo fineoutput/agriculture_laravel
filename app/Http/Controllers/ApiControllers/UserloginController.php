@@ -865,7 +865,7 @@ class UserloginController extends Controller
 
             $last_id = DB::table('tbl_doctor')->insertGetId($data_insert);
 
-            $this->sendWelcomeSms($phone, $tempRecord->name, 'doctor', '649e7f1bd6fc0504df28fcc3');
+            // $this->sendWelcomeSms($phone, $tempRecord->name, 'doctor', '649e7f1bd6fc0504df28fcc3');
             $this->sendAdminEmail($tempRecord->toArray(), $last_id, 'doctor');
 
             $data = [
