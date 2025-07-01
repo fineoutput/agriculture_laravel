@@ -1118,7 +1118,7 @@ public function updateCanister(Request $request)
         $canister_id = $request->input('canister');
         $quantity = $request->input('quantity');
 
-        $canister = DoctorCanister::where('id', $canister_id)
+        $canister = DoctorCanister::where('id')
             ->where('doctor_id', $doctor->id)
             ->where('tank_id', $tank_id)
             ->first();
