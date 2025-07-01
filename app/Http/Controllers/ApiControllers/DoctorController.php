@@ -1118,11 +1118,11 @@ public function updateCanister(Request $request)
         $canister_id = $request->input('canister');
         $quantity = $request->input('quantity');
 
-        $canister = DoctorCanister::where('id')
-            ->where('doctor_id', $doctor->id)
-            ->where('tank_id', $tank_id)
-            ->first();
-
+$canister = DoctorCanister::where('canister', $canister_id) // not `id`
+    ->where('doctor_id', $doctor->id)
+    ->where('tank_id', $tank_id)
+    ->first();
+    
         if (!$canister) {
             return response()->json([
                 'message' => 'Canister not found or unauthorized!',
