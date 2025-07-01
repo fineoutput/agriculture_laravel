@@ -34,6 +34,10 @@ class DoctorRequest extends Model
         'payment_status' => 'integer'
     ];
 
+     public function farmer()
+    {
+        return $this->belongsTo(Farmer::class, 'farmer_id', 'id');
+    }
     public function doctor()
     {
         return $this->belongsTo(Doctor::class, 'doctor_id');
