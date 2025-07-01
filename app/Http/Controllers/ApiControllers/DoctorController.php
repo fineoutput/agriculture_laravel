@@ -686,87 +686,90 @@ public function homeData(Request $request)
 }
 
 
-    public function adminPaymentInfo(Request $request)
-    {
-        try {
-            // /** @var \App\Models\Doctor $doctor */
-            $doctor = auth('doctor')->user();
-            Log::info('AdminPaymentInfo auth attempt', [
-                'doctor_id' => $doctor ? $doctor->id : null,
-                'is_active' => $doctor ? ($doctor->is_active ?? 'missing') : null,
-                'is_approved' => $doctor ? ($doctor->is_approved ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
-            ]);
+   public function adminPaymentInfo(Request $request)
+{
+    try {
+        // Get token from request header
+        $token = $request->header('Authentication');
 
-            if (!$doctor || !$doctor->is_active || !$doctor->is_approved) {
-                return response()->json([
-                    'message' => 'Permission Denied!',
-                    'status' => 201,
-                ], 403);
+        if (!$token) {
+            return response()->json([
+                'message' => 'Token missing!',
+                'status' => 401,
+            ], 401);
+        }
+
+        // Find doctor based on token
+        $doctor = Doctor::where('auth', $token)
+            ->where('is_active', 1)
+            ->where('is_approved', 1)
+            ->first();
+
+        Log::info('AdminPaymentInfo auth attempt', [
+            'doctor_id' => $doctor->id ?? null,
+            'is_active' => $doctor->is_active ?? null,
+            'is_approved' => $doctor->is_approved ?? null,
+            'request_token' => $token,
+        ]);
+
+        if (!$doctor) {
+            return response()->json([
+                'message' => 'Permission Denied!',
+                'status' => 403,
+            ], 403);
+        }
+
+        // Fetch latest 20 payment requests
+        $paymentRequests = PaymentsReq::where('doctor_id', $doctor->id)
+            ->orderBy('id', 'desc')
+            ->take(20)
+            ->get();
+
+        $data = $paymentRequests->map(function ($req) {
+            switch ($req->status) {
+                case 0:
+                    $status = 'Pending';
+                    $bgColor = '#65bcd7';
+                    break;
+                case 1:
+                    $status = 'Completed';
+                    $bgColor = '#139c49';
+                    break;
+                case 2:
+                    $status = 'Rejected';
+                    $bgColor = '#dc4c64';
+                    break;
+                default:
+                    $status = 'Unknown';
+                    $bgColor = '#000000';
             }
 
-            $paymentRequests = PaymentsReq::where('doctor_id', $doctor->id)
-                ->orderBy('id', 'desc')
-                ->take(20)
-                ->get();
+            return [
+                'req_id' => $req->id,
+                'amount' => $req->amount,
+                'status' => $status,
+                'bg_color' => $bgColor,
+                'date' => (new \DateTime($req->date))->format('d/m/Y'),
+            ];
+        })->toArray();
 
-            $data = $paymentRequests->map(function ($req) {
-                switch ($req->status) {
-                    case 0:
-                        $status = 'Pending';
-                        break;
-                    case 1:
-                        $status = 'Completed';
-                        break;
-                    case 2:
-                        $status = 'Rejected';
-                        break;
-                    default:
-                        $status = 'Unknown';
-                }
-                
+        return response()->json([
+            'message' => 'Success!',
+            'status' => 200,
+            'data' => $data,
+        ], 200);
+    } catch (\Exception $e) {
+        Log::error('Error in adminPaymentInfo', [
+            'error' => $e->getMessage(),
+        ]);
 
-                switch ($req->status) {
-                    case 0:
-                        $bgColor = '#65bcd7';
-                        break;
-                    case 1:
-                        $bgColor = '#139c49';
-                        break;
-                    case 2:
-                        $bgColor = '#dc4c64';
-                        break;
-                    default:
-                        $bgColor = '#000000';
-                }
-                
-
-                return [
-                    'req_id' => $req->id,
-                    'amount' => $req->amount,
-                    'status' => $status,
-                    'bg_color' => $bgColor,
-                    'date' => (new \DateTime($req->date))->format('d/m/Y'),
-                ];
-            })->toArray();
-
-            return response()->json([
-                'message' => 'Success!',
-                'status' => 200,
-                'data' => $data,
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error in adminPaymentInfo', [
-                'doctor_id' => auth('doctor')->id() ?? null,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'message' => 'Error fetching admin payment info: ' . $e->getMessage(),
-                'status' => 201,
-            ], 500);
-        }
+        return response()->json([
+            'message' => 'Error fetching admin payment info: ' . $e->getMessage(),
+            'status' => 500,
+        ], 500);
     }
+}
+
 
     public function semenTanks(Request $request)
 {
