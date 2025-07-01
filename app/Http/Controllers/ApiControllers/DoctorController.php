@@ -1101,8 +1101,8 @@ public function updateCanister(Request $request)
 
         // Validate request data
         $validator = Validator::make($request->all(), [
-            'tank_id' => 'required|numeric|exists:tbl_doctor_tank,id',
-            'canister' => 'required|numeric|exists:tbl_doctor_canister,id',
+            'tank_id' => 'required|numeric',
+            'canister' => 'required|numeric',
             'quantity' => 'required|numeric|min:1',
             'farmer_name' => 'required|string|max:255',
             'farmer_phone' => 'required|string|max:15',
