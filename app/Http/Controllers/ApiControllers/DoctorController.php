@@ -620,56 +620,71 @@ public function homeData(Request $request)
 
 
     public function paymentInfo(Request $request)
-    {
-        try {
-            // /** @var \App\Models\Doctor $doctor */
-            $doctor = auth('doctor')->user();
-            Log::info('PaymentInfo auth attempt', [
-                'doctor_id' => $doctor ? $doctor->id : null,
-                'is_active' => $doctor ? ($doctor->is_active ?? 'missing') : null,
-                'is_approved' => $doctor ? ($doctor->is_approved ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
-            ]);
+{
+    try {
+        // Get token from header
+        $token = $request->header('Authentication');
 
-            if (!$doctor || !$doctor->is_active || !$doctor->is_approved) {
-                return response()->json([
-                    'message' => 'Permission Denied!',
-                    'status' => 201,
-                ], 403);
-            }
-
-            $transactions = PaymentTransaction::where('doctor_id', $doctor->id)
-                ->whereNotNull('req_id')
-                ->orderBy('id', 'desc')
-                ->take(20)
-                ->get();
-
-            $data = $transactions->map(function ($txn) {
-                return [
-                    'req_id' => $txn->req_id,
-                    'cr' => $txn->cr,
-                    'date' => (new \DateTime($txn->date))->format('d/m/Y'),
-                ];
-            })->toArray();
-
+        if (!$token) {
             return response()->json([
-                'message' => 'Success!',
-                'status' => 200,
-                'data' => $data,
-                'account' => $doctor->account,
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error in paymentInfo', [
-                'doctor_id' => auth('doctor')->id() ?? null,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'message' => 'Error fetching payment info: ' . $e->getMessage(),
-                'status' => 201,
-            ], 500);
+                'message' => 'Token missing!',
+                'status' => 401,
+            ], 401);
         }
+
+        // Authenticate doctor using the token
+        $doctor = Doctor::where('auth', $token)
+            ->where('is_active', 1)
+            ->where('is_approved', 1)
+            ->first();
+
+        Log::info('PaymentInfo auth attempt', [
+            'doctor_id' => $doctor->id ?? null,
+            'is_active' => $doctor->is_active ?? null,
+            'is_approved' => $doctor->is_approved ?? null,
+            'request_token' => $token,
+        ]);
+
+        if (!$doctor) {
+            return response()->json([
+                'message' => 'Permission Denied!',
+                'status' => 403,
+            ], 403);
+        }
+
+        // Fetch last 20 transactions with req_id
+        $transactions = PaymentTransaction::where('doctor_id', $doctor->id)
+            ->whereNotNull('req_id')
+            ->orderBy('id', 'desc')
+            ->take(20)
+            ->get();
+
+        $data = $transactions->map(function ($txn) {
+            return [
+                'req_id' => $txn->req_id,
+                'cr' => $txn->cr,
+                'date' => (new \DateTime($txn->date))->format('d/m/Y'),
+            ];
+        })->toArray();
+
+        return response()->json([
+            'message' => 'Success!',
+            'status' => 200,
+            'data' => $data,
+            'account' => $doctor->account,
+        ], 200);
+    } catch (\Exception $e) {
+        Log::error('Error in paymentInfo', [
+            'error' => $e->getMessage(),
+        ]);
+
+        return response()->json([
+            'message' => 'Error fetching payment info: ' . $e->getMessage(),
+            'status' => 500,
+        ], 500);
     }
+}
+
 
     public function adminPaymentInfo(Request $request)
     {
