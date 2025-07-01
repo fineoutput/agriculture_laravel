@@ -94,7 +94,6 @@ Route::middleware(['auth:farmer'])->group(function () {
 ///////////DoctorController
 
 Route::middleware(['auth:doctor'])->group(function () {
-Route::post('bank-info', [DoctorController::class, 'updateBankInfo']);
 });
 
 
@@ -434,3 +433,6 @@ Route::get('Doctor_PaymentInfo', [DoctorController::class, 'paymentInfo']);
 
 
 Route::get('Doctor_AdminPay', [DoctorController::class, 'adminPaymentInfo']);
+
+
+Route::post('doctor_bank-info', [DoctorController::class, 'updateBankInfo']);

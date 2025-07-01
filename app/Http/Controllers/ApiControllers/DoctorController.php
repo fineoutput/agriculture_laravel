@@ -476,84 +476,100 @@ public function homeData(Request $request)
     }
 }
 
-    public function updateBankInfo(Request $request)
-    {
-        try {
-            if (!$request->hasAny(['bank_name', 'bank_phone', 'bank_ac', 'ifsc', 'upi'])) {
-                return response()->json([
-                    'message' => 'Please Insert Data',
-                    'status' => 201,
-                ], 422);
-            }
-
-            $doctor = auth('doctor')->user();
-            Log::info('UpdateBankInfo auth attempt', [
-                'doctor_id' => $doctor ? $doctor->id : null,
-                'is_active' => $doctor ? ($doctor->is_active ?? 'missing') : null,
-                'is_approved' => $doctor ? ($doctor->is_approved ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
-            ]);
-
-            if (!$doctor || !$doctor->is_active || !$doctor->is_approved) {
-                return response()->json([
-                    'message' => 'Permission Denied!',
-                    'status' => 201,
-                ], 403);
-            }
-
-            $validator = Validator::make($request->all(), [
-                'bank_name' => 'required|string|max:255',
-                'bank_phone' => 'required|string|max:15',
-                'bank_ac' => 'required|string|max:50',
-                'ifsc' => 'required|string|max:11',
-                'upi' => 'nullable|string|max:255',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'message' => $validator->errors()->first(),
-                    'status' => 201,
-                ], 422);
-            }
-
-            $data = $request->only([
-                'bank_name',
-                'bank_phone',
-                'bank_ac',
-                'ifsc',
-                'upi',
-            ]);
-
-        
-
-                $updated = $doctor->update($data);
-            
-
-            if ($updated) { 
-                return response()->json([
-                    'message' => 'Success',
-                    'status' => 200,
-                    'data' => [$data],
-                ], 200);
-            } else {
-                return response()->json([
-                    'message' => 'Some error occurred!',
-                    'status' => 201,
-                ], 400);
-            }
-
-        } catch (\Exception $e) {
-            Log::error('Error in updateBankInfo', [
-                'doctor_id' => auth('doctor')->id() ?? null,
-                'error' => $e->getMessage(),
-            ]);
-
+  public function updateBankInfo(Request $request)
+{
+    try {
+        // Check for required fields
+        if (!$request->hasAny(['bank_name', 'bank_phone', 'bank_ac', 'ifsc', 'upi'])) {
             return response()->json([
-                'message' => 'Error updating bank info: ' . $e->getMessage(),
-                'status' => 201,
-            ], 500);
+                'message' => 'Please Insert Data',
+                'status' => 422,
+            ], 422);
         }
+
+        // Get token from request header
+        $token = $request->header('Authentication');
+
+        if (!$token) {
+            return response()->json([
+                'message' => 'Token missing!',
+                'status' => 401,
+            ], 401);
+        }
+
+        // Fetch doctor using the token
+        $doctor = Doctor::where('auth', $token)
+            ->where('is_active', 1)
+            ->where('is_approved', 1)
+            ->first();
+
+        Log::info('UpdateBankInfo auth attempt', [
+            'doctor_id' => $doctor->id ?? null,
+            'is_active' => $doctor->is_active ?? null,
+            'is_approved' => $doctor->is_approved ?? null,
+            'request_token' => $token,
+        ]);
+
+        // Permission check
+        if (!$doctor) {
+            return response()->json([
+                'message' => 'Permission Denied!',
+                'status' => 403,
+            ], 403);
+        }
+
+        // Validate input
+        $validator = Validator::make($request->all(), [
+            'bank_name' => 'required|string|max:255',
+            'bank_phone' => 'required|string|max:15',
+            'bank_ac' => 'required|string|max:50',
+            'ifsc' => 'required|string|max:11',
+            'upi' => 'nullable|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 422,
+            ], 422);
+        }
+
+        $data = $request->only([
+            'bank_name',
+            'bank_phone',
+            'bank_ac',
+            'ifsc',
+            'upi',
+        ]);
+
+        $updated = $doctor->update($data);
+
+        if ($updated) {
+            return response()->json([
+                'message' => 'Success',
+                'status' => 200,
+                'data' => [$data],
+            ], 200);
+        } else {
+            return response()->json([
+                'message' => 'Some error occurred!',
+                'status' => 400,
+            ], 400);
+        }
+
+    } catch (\Exception $e) {
+        Log::error('Error in updateBankInfo', [
+            'doctor_id' => $doctor->id ?? null,
+            'error' => $e->getMessage(),
+        ]);
+
+        return response()->json([
+            'message' => 'Error updating bank info: ' . $e->getMessage(),
+            'status' => 500,
+        ], 500);
     }
+}
+
 
     public function updateLocation(Request $request)
 {
