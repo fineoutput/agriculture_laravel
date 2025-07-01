@@ -1184,61 +1184,78 @@ if ($available_units < $quantity) {
 }
 
 
-    public function getSemenTransactions(Request $request)
-    {
-        try {
-            // /** @var \App\Models\Doctor $doctor */
-            $doctor = auth('doctor')->user();
-            Log::info('GetSemenTransactions auth attempt', [
-                'doctor_id' => $doctor ? $doctor->id : null,
-                'is_active' => $doctor ? ($doctor->is_active ?? 'missing') : null,
-                'is_approved' => $doctor ? ($doctor->is_approved ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
-                'ip_address' => $request->ip(),
-            ]);
+   public function getSemenTransactions(Request $request)
+{
+    try {
+        // Get token from header
+        $token = $request->header('Authentication');
 
-            if (!$doctor || !$doctor->is_active || !$doctor->is_approved) {
-                return response()->json([
-                    'message' => 'Permission Denied!',
-                    'status' => 201,
-                ], 403);
-            }
-
-            $transactions = DoctorSemenTransaction::where('doctor_id', $doctor->id)
-                ->orderBy('id', 'desc')
-                ->with('tank')
-                ->get();
-
-            $data = $transactions->map(function ($transaction, $index) {
-                return [
-                    's_no' => $index + 1,
-                    'tank' => $transaction->tank ? $transaction->tank->name : 'Unknown Tank',
-                    'canister' => 'Canister ' . $transaction->canister,
-                    'sell_unit' => $transaction->sell_unit,
-                    'farmer_name' => $transaction->farmer_name,
-                    'farmer_phone' => $transaction->farmer_phone,
-                    'address' => $transaction->address,
-                    'date' => (new \DateTime($transaction->date))->format('d/m/Y'),
-                ];
-            })->toArray();
-
+        if (!$token) {
             return response()->json([
-                'message' => 'Success!',
-                'status' => 200,
-                'data' => $data,
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error in getSemenTransactions', [
-                'doctor_id' => auth('doctor')->id() ?? null,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'message' => 'Error fetching semen transactions: ' . $e->getMessage(),
-                'status' => 201,
-            ], 500);
+                'message' => 'Token missing!',
+                'status' => 401,
+            ], 401);
         }
+
+        // Find doctor using token
+        $doctor = Doctor::where('auth', $token)
+            ->where('is_active', 1)
+            ->where('is_approved', 1)
+            ->first();
+
+        Log::info('GetSemenTransactions auth attempt', [
+            'doctor_id' => $doctor->id ?? null,
+            'is_active' => $doctor->is_active ?? null,
+            'is_approved' => $doctor->is_approved ?? null,
+            'request_token' => $token,
+            'ip_address' => $request->ip(),
+        ]);
+
+        if (!$doctor) {
+            return response()->json([
+                'message' => 'Permission Denied!',
+                'status' => 403,
+            ], 403);
+        }
+
+        // Fetch transactions
+        $transactions = DoctorSemenTransaction::where('doctor_id', $doctor->id)
+            ->orderBy('id', 'desc')
+            ->with('tank')
+            ->get();
+
+        // Format result
+        $data = $transactions->map(function ($transaction, $index) {
+            return [
+                's_no' => $index + 1,
+                'tank' => $transaction->tank ? $transaction->tank->name : 'Unknown Tank',
+                'canister' => 'Canister ' . $transaction->canister,
+                'sell_unit' => $transaction->sell_unit,
+                'farmer_name' => $transaction->farmer_name,
+                'farmer_phone' => $transaction->farmer_phone,
+                'address' => $transaction->address,
+                'date' => (new \DateTime($transaction->date))->format('d/m/Y'),
+            ];
+        })->toArray();
+
+        return response()->json([
+            'message' => 'Success!',
+            'status' => 200,
+            'data' => $data,
+        ], 200);
+
+    } catch (\Exception $e) {
+        Log::error('Error in getSemenTransactions', [
+            'error' => $e->getMessage(),
+        ]);
+
+        return response()->json([
+            'message' => 'Error fetching semen transactions: ' . $e->getMessage(),
+            'status' => 500,
+        ], 500);
     }
+}
+
     
     public function getExpertCategories()
 {
