@@ -556,70 +556,68 @@ public function homeData(Request $request)
     }
 
     public function updateLocation(Request $request)
-    {
-        try {
-            if (!$request->hasAny(['latitude', 'longitude', 'fcm_token'])) {
-                return response()->json([
-                    'message' => 'Please Insert Data',
-                    'status' => 201,
-                ], 422);
-            }
+{
+    try {
+        $token = $request->header('Authentication');
 
-            // /** @var \App\Models\Doctor $doctor */
-            $doctor = auth('doctor')->user();
-            Log::info('UpdateLocation auth attempt', [
-                'doctor_id' => $doctor ? $doctor->id : null,
-                'is_active' => $doctor ? ($doctor->is_active ?? 'missing') : null,
-                'is_approved' => $doctor ? ($doctor->is_approved ?? 'missing') : null,
-                'request_token' => $request->bearerToken(),
-            ]);
-
-            if (!$doctor || !$doctor->is_active || !$doctor->is_approved) {
-                return response()->json([
-                    'message' => 'Permission Denied!',
-                    'status' => 201,
-                ], 403);
-            }
-
-            $validator = Validator::make($request->all(), [
-                'latitude' => 'required|numeric',
-                'longitude' => 'required|numeric',
-                'fcm_token' => 'required|string|max:255',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'message' => $validator->errors()->first(),
-                    'status' => 201,
-                ], 422);
-            }
-
-            $data = $request->only([
-                'latitude',
-                'longitude',
-                'fcm_token',
-            ]);
-
-            $data['updated_at'] = now();
-
-            $doctor->update($data);
-
+        if (!$token) {
             return response()->json([
-                'message' => 'Success',
-                'status' => 200,
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error in updateLocation', [
-                'doctor_id' => auth('doctor')->id() ?? null,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'message' => 'Error updating location: ' . $e->getMessage(),
-                'status' => 201,
-            ], 500);
+                'message' => 'Token missing!',
+                'status' => 401,
+            ], 401);
         }
+
+        $doctor = Doctor::where('auth', $token)
+            ->where('is_active', 1)
+            ->where('is_approved', 1)
+            ->first();
+
+        Log::info('UpdateLocation auth attempt', [
+            'doctor_id' => $doctor->id ?? null,
+            'request_token' => $token,
+        ]);
+
+        if (!$doctor) {
+            return response()->json([
+                'message' => 'Permission Denied!',
+                'status' => 403,
+            ], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+            'fcm_token' => 'required|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'status' => 422,
+            ], 422);
+        }
+
+        $data = $request->only(['latitude', 'longitude', 'fcm_token']);
+        $data['updated_at'] = now();
+
+        $doctor->update($data);
+
+        return response()->json([
+            'message' => 'Success',
+            'status' => 200,
+        ], 200);
+    } catch (\Exception $e) {
+        Log::error('Error in updateLocation', [
+            'error' => $e->getMessage(),
+        ]);
+
+        return response()->json([
+            'message' => 'Error updating location: ' . $e->getMessage(),
+            'status' => 500,
+        ], 500);
     }
+}
+
 
     public function paymentInfo(Request $request)
     {
