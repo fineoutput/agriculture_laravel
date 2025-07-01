@@ -1113,31 +1113,34 @@ public function updateCanister(Request $request)
                 'status' => 422,
             ], 422);
         }
+$tank_id = $request->input('tank_id');
+$canister_id = $request->input('canister'); // This is index-based (1-based)
+$quantity = $request->input('quantity');
 
-        $tank_id = $request->input('tank_id');
-        $canister_id = $request->input('canister');
-        $quantity = $request->input('quantity');
-
-$canister = DoctorCanister::where('canister', $canister_id) // not `id`
-    ->where('doctor_id', $doctor->id)
+$canisterList = DoctorCanister::where('doctor_id', $doctor->id)
     ->where('tank_id', $tank_id)
-    ->first();
-    
-        if (!$canister) {
-            return response()->json([
-                'message' => 'Canister not found or unauthorized!',
-                'status' => 404,
-            ], 404);
-        }
+    ->get()
+    ->values();
 
-        $available_units = $canister->no_of_units ?? 0;
+$index = $canister_id - 1;
 
-        if ($available_units < $quantity) {
-            return response()->json([
-                'message' => "Only {$available_units} units available.",
-                'status' => 422,
-            ], 422);
-        }
+if (!isset($canisterList[$index])) {
+    return response()->json([
+        'message' => 'Canister not found at index: ' . $canister_id,
+        'status' => 404,
+    ], 404);
+}
+
+$canister = $canisterList[$index];
+
+$available_units = $canister->no_of_units ?? 0;
+
+if ($available_units < $quantity) {
+    return response()->json([
+        'message' => "Only {$available_units} units available.",
+        'status' => 422,
+    ], 422);
+}
 
         // Create transaction
         DoctorSemenTransaction::create([
