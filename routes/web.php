@@ -35,6 +35,7 @@ use App\Http\Controllers\Admin\Admin_orders;
 use App\Http\Controllers\Admin\PopupImageController;
 use App\Http\Controllers\Admin\VendorOrderController;
 use App\Http\Controllers\Admin\PushNotificationsController;
+use App\Http\Controllers\Admin\GoogleFormController;
 
 
 /*
@@ -332,6 +333,9 @@ Route::post('/pushnotifications/add', [PushNotificationsController::class, 'addP
 
     Route::get('/popup_images', [PopupImageController::class, 'index'])->name('admin.popup_images.index');
     Route::post('/popup_images', [PopupImageController::class, 'store'])->name('admin.popup_images.store');
+
+    Route::get('googleform', [GoogleFormController::class, 'users'])->name('admin.googleform.users');
+
 });             
 
 });

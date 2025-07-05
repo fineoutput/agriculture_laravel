@@ -314,6 +314,9 @@
                          <li>
                             <a href="{{route('admin.popup_images.index')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>PopUP </span></a>
                         </li>
+                         <li>
+                            <a href="{{route('admin.googleform.users')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Google Form </span></a>
+                        </li>
                         <?php
                         $admin_services = Session::get('services');
                         $ser = json_decode($admin_services);
