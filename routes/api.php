@@ -12,6 +12,8 @@ use App\Http\Controllers\ApiControllers\VendorOrderController;
 use App\Http\Controllers\ApiControllers\HomeController;
 use App\Http\Controllers\ApiControllers\ManagementController;
 use App\Http\Controllers\ApiControllers\VendorController;
+use App\Http\Controllers\ApiControllers\SmsController;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -436,3 +438,7 @@ Route::get('Doctor_AdminPay', [DoctorController::class, 'adminPaymentInfo']);
 
 
 Route::post('doctor_bank-info', [DoctorController::class, 'updateBankInfo']);
+
+Route::get('/sms-test', [UserloginController::class, 'testSMS']);
+
+Route::get('Test_Message', [SmsController::class, 'sendTestSMS']);
