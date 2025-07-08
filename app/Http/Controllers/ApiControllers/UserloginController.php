@@ -17,6 +17,7 @@ use App\Http\Controllers\Controller;
 use App\Models\GiftCard;
 use App\Models\RegisterTemp;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 class UserloginController extends Controller
 {
@@ -26,7 +27,7 @@ class UserloginController extends Controller
     public function msgtest()
     {
         $msg = 'आदरणीय डॉक्टर जी, आपका पंजीकरण सफल हुआ, DAIRY MUNEEM में आपका स्वागत है। कुछ देर में आप की आईडी एक्टिव हो जाएगी। व्हाट्सएप द्वारा हमसे जुड़ने के लिए क्लिक करें bit.ly/dairy_muneem। अधिक जानकारी के लिए 7891029090 पर कॉल करें। धन्यवाद! – DAIRY MUNEEM';
-        $phone = '8387039990';
+        $phone = '9461937396';
         $dlt = env('DLT_CODE', 'DEFAULT_DLT_CODE');
 
         $response = $this->sendSmsMsg91($phone, $msg, $dlt);
@@ -41,6 +42,16 @@ class UserloginController extends Controller
     /**
      * Farmer Registration Process
      */
+ public function testSMS(SmsService $smsService)
+    {
+        $mobile = '9461937396'; // or test number
+        $message = "Your OTP is 123456. Valid for 5 mins. OQDN0bWIEBF";
+        $dlt = '1407172223704961719';
+
+        $response = $smsService->sendSMS($mobile, $message, $dlt);
+
+        return response()->json($response);
+    }
     public function farmer_register_process(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -324,6 +335,34 @@ class UserloginController extends Controller
             ], 500);
         }
     }
+
+
+  public function sendSmsMsg91($phone, $msg, $dlt)
+{
+    $message = urlencode($msg);
+
+    $url = "http://api.msg91.com/api/sendhttp.php";
+    $queryParams = [
+        'authkey' => env('SMSAUTH'),
+        'mobiles' => '91' . $phone,
+        'message' => $message,
+        'sender' => env('SMSID', 'AGRIDM'),
+        'route' => 4,
+        'DLT_TE_ID' => $dlt,
+    ];
+
+    $response = Http::withHeaders([
+        'Accept' => 'application/json',
+    ])->get($url, $queryParams);
+
+    Log::info('MSG91 SMS Response', [
+        'to' => $phone,
+        'response' => $response->body(),
+    ]);
+
+    return $response->body();
+}
+ 
     private function farmerLoginWithOtp($phone, $ip)
     {
         $cur_date = now()->toDateTimeString();
@@ -335,13 +374,14 @@ class UserloginController extends Controller
         if ($phone) {
             $otp = 123456;
         }
-        $expiresAt = now()->addMinutes(5); // CI uses 5 minutes
+        $expiresAt = now()->addMinutes(5);
 
-        // Check if user exists for registration prompt
         $user = Farmer::where('phone', $phone)->first();
         $userExists = !is_null($user);
+        $dlt = '1407172223704961719';
+         $message = "Dear User, your OTP for login on Dairy Muneem is $otp and is valid for 5 minutes OQDN0bWIEBF";
 
-        // Store OTP
+        $this->sendSmsMsg91($phone,$message,$dlt);
         $otpRecord = Otp::create([
             'phone' => $phone,
             'otp' => $otp,
@@ -364,9 +404,9 @@ class UserloginController extends Controller
         }
 
         // Send OTP
-        $message = "Dear User, your OTP for login on Dairy Muneem is $otp and is valid for 5 minutes OQDN0bWIEBF";
-        $dlt = '1407172223704961719';
-        $this->sendSmsMsg91($phone, $message, $dlt);
+       $dlt = '1407172223704961719';
+    $message = "Dear User, your OTP for login on Dairy Muneem is $otp and is valid for 5 minutes OQDN0bWIEBF";
+    $this->sendSmsMsg91($phone, $message, $dlt);
 
         Log::info('OTP stored and sent for farmer login', [
             'phone' => $phone,
@@ -1359,33 +1399,5 @@ class UserloginController extends Controller
     /**
      * Send SMS using Msg91
      */
-    private function sendSmsMsg91($phone, $message, $dlt)
-    {
-        try {
-            Log::info('Mock SMS sent', [
-                'phone' => $phone,
-                'message' => $message,
-                'dlt' => $dlt,
-            ]);
-
-            preg_match('/is: (\d{6})/', $message, $matches);
-            $otp = isset($matches[1]) ? $matches[1] : 'Unknown';
-
-            Log::info('Stored OTP for testing', [
-                'phone' => $phone,
-                'otp' => $otp,
-            ]);
-
-            return [
-                'type' => 'success',
-                'message' => 'Mock SMS sent successfully',
-            ];
-        } catch (\Exception $e) {
-            Log::error('Mock SMS sending failed', [
-                'phone' => $phone,
-                'error' => $e->getMessage(),
-            ]);
-            throw $e;
-        }
-    }
+   
 }
