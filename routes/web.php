@@ -36,6 +36,7 @@ use App\Http\Controllers\Admin\PopupImageController;
 use App\Http\Controllers\Admin\VendorOrderController;
 use App\Http\Controllers\Admin\PushNotificationsController;
 use App\Http\Controllers\Admin\GoogleFormController;
+use App\Http\Controllers\Admin\AdminImageController;
 
 
 /*
@@ -335,6 +336,13 @@ Route::post('/pushnotifications/add', [PushNotificationsController::class, 'addP
     Route::post('/popup_images', [PopupImageController::class, 'store'])->name('admin.popup_images.store');
 
     Route::get('googleform', [GoogleFormController::class, 'users'])->name('admin.googleform.users');
+
+    Route::get('images', [AdminImageController::class, 'index'])->name('admin.reg_image.index');
+    Route::get('images/create', [AdminImageController::class, 'create'])->name('admin.reg_image.create');
+    Route::post('images', [AdminImageController::class, 'store'])->name('admin.reg_image.store');
+    Route::delete('images/{id}', [AdminImageController::class, 'destroy'])->name('admin.reg_image.destroy');
+    Route::post('images/toggle/{id}', [AdminImageController::class, 'toggleStatus'])->name('admin.reg_image.toggle');
+
 
 });             
 
