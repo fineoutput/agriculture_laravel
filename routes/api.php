@@ -27,16 +27,17 @@ use App\Http\Controllers\ApiControllers\RegImageController;
 */
 Route::post('/msgtest', [UserloginController::class, 'msgtest']);
 
+////farmer Registration and login
 Route::post('register-farmer', [UserloginController::class, 'farmer_register_process']);
 
 Route::post('registerotpverify', [UserloginController::class, 'farmer_register_otp_verify']);
 
-////
+
 Route::post('Login_process', [UserloginController::class, 'farmer_login_process']);
-////
+
 
 Route::post('loginVerify_otp', [UserloginController::class, 'farmer_login_otp_verify']);
-
+////
 ////////////vendor register and login start
 
 Route::post('register', [UserloginController::class, 'registerWithOtp']);
@@ -436,6 +437,9 @@ Route::get('Doctor_PaymentInfo', [DoctorController::class, 'paymentInfo']);
 
 
 Route::get('Doctor_AdminPay', [DoctorController::class, 'adminPaymentInfo']);
+
+
+Route::post('submit-google-form', [HomeController::class, 'submitGoogleform']);
 
 
 Route::post('doctor_bank-info', [DoctorController::class, 'updateBankInfo']);

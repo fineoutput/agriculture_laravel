@@ -22,6 +22,7 @@ use App\Models\FarmerNotification;
 use App\Models\CheckMyFeedBuy;
 use App\Models\SubscriptionBuy;
 use App\Models\Canister;
+use App\Models\GoogleForm;
 use App\Models\HealthInfo;
 use App\Models\MilkRecord;
 use App\Models\SalePurchaseSlider;
@@ -1312,7 +1313,7 @@ class HomeController extends Controller
     {
         try {
             // Get headers
-            // $fcmToken = $request->header('Fcm-Token', '');
+            // $fcmToken = $request->header('Fcm-Token', '');   
             $lang = $request->header('Lang', 'en');
             $authToken = $request->header('Authentication');
 
@@ -1395,12 +1396,19 @@ class HomeController extends Controller
                     ->get();
 
                 $subCategoryData = $subcategories->map(function ($subcategory) use ($lang) {
-                    $subImage = match ($lang) {
-                        'hi' => $subcategory->image_hindi,
-                        'mr' => $subcategory->image_marathi,
-                        'pu' => $subcategory->image_punjabi,
-                        default => $subcategory->image,
-                    };
+switch ($lang) {
+    case 'hi':
+        $subImage = $subcategory->image_hindi;
+        break;
+    case 'mr':
+        $subImage = $subcategory->image_marathi;
+        break;
+    case 'pu':
+        $subImage = $subcategory->image_punjabi;
+        break;
+    default:
+        $subImage = $subcategory->image;
+}
 
                     return [
                         'id' => $subcategory->id,
@@ -1409,12 +1417,20 @@ class HomeController extends Controller
                     ];
                 })->toArray();
 
-                $catImage = match ($lang) {
-                    'hi' => $category->image_hindi,
-                    'mr' => $category->image_marathi,
-                    'pu' => $category->image_punjabi,
-                    default => $category->image,
-                };
+               switch ($lang) {
+    case 'hi':
+        $catImage = $category->image_hindi;
+        break;
+    case 'mr':
+        $catImage = $category->image_marathi;
+        break;
+    case 'pu':
+        $catImage = $category->image_punjabi;
+        break;
+    default:
+        $catImage = $category->image;
+}
+
 
                 $categoryData[] = [
                     'id' => $category->id,
@@ -1448,24 +1464,28 @@ class HomeController extends Controller
                 $discount = (int)$product->mrp - (int)$product->selling_price;
                 $percent = $discount > 0 ? round($discount / $product->mrp * 100) : 0;
 
-                $productDetails = match ($lang) {
-                    'hi' => [
-                        'name' => $product->name_hindi,
-                        'description' => $product->description_hindi,
-                    ],
-                    'mr' => [
-                        'name' => $product->name_marathi,
-                        'description' => $product->description_marathi,
-                    ],
-                    'pu' => [
-                        'name' => $product->name_punjabi,
-                        'description' => $product->description_punjabi,
-                    ],
-                    default => [
-                        'name' => $product->name_english,
-                        'description' => $product->description_english,
-                    ],
-                };
+                if ($lang === 'hi') {
+    $productDetails = [
+        'name' => $product->name_hindi,
+        'description' => $product->description_hindi,
+    ];
+} elseif ($lang === 'mr') {
+    $productDetails = [
+        'name' => $product->name_marathi,
+        'description' => $product->description_marathi,
+    ];
+} elseif ($lang === 'pu') {
+    $productDetails = [
+        'name' => $product->name_punjabi,
+        'description' => $product->description_punjabi,
+    ];
+} else {
+    $productDetails = [
+        'name' => $product->name_english,
+        'description' => $product->description_english,
+    ];
+}
+
                 return [
                     'pro_id' => $product->id,
                     'name' => $productDetails['name'],
@@ -2913,5 +2933,88 @@ class HomeController extends Controller
                 'status' => 201,
             ], 500);
         }
+    }
+
+     public function submitGoogleform(Request $request)
+    {
+        $authentication = $request->header('Authentication');
+
+        $farmer = Farmer::where('auth', $authentication)->where('is_active', 1)->first();
+
+        if (!$farmer) {
+            return response()->json(['status' => 201, 'message' => 'Permission Denied!']);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'Email' => 'nullable|email',
+            'farmer_name' => 'required|string',
+            'mobile_number' => 'required|string',
+            'village_Town' => 'nullable|string',
+            'district' => 'nullable|string',
+            'state' => 'nullable|string',
+            'animal_ID' => 'nullable|string',
+            'breed' => 'nullable|string',
+            'lactation_no' => 'nullable|string',
+            'date_of_calving' => 'nullable|date',
+            'milk_yield' => 'nullable|string',
+            'aadhar_number' => 'nullable|string',
+            'farmer_photo_upload' => 'nullable|file|mimes:jpg,jpeg,png|max:25000',
+            'animal_photo_upload.*' => 'nullable|file|mimes:jpg,jpeg,png|max:25000',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => 201, 'message' => $validator->errors()->first()]);
+        }
+
+        $uploadPath = public_path('assets/uploads/form');
+        if (!file_exists($uploadPath)) {
+            mkdir($uploadPath, 0777, true);
+        }
+
+        // 👨 Upload single farmer photo
+        $farmerPhotoPath = '';
+        if ($request->hasFile('farmer_photo_upload')) {
+            $file = $request->file('farmer_photo_upload');
+            $name = 'farmer_' . time() . '.' . $file->getClientOriginalExtension();
+            $file->move($uploadPath, $name);
+            $farmerPhotoPath = 'assets/uploads/form/' . $name;
+        }
+
+        // 🐮 Upload multiple animal photos
+        $animalPhotoPaths = [];
+        if ($request->hasFile('animal_photo_upload')) {
+            foreach ($request->file('animal_photo_upload') as $index => $animalFile) {
+                if ($animalFile->isValid()) {
+                    $name = 'animal_' . time() . '_' . $index . '.' . $animalFile->getClientOriginalExtension();
+                    $animalFile->move($uploadPath, $name);
+                    $animalPhotoPaths[] = 'assets/uploads/form/' . $name;
+                }
+            }
+        }
+
+        // 📝 Save form data
+        $form = new GoogleForm();
+        $form->farmer_id = $farmer->id;
+        $form->Email = $request->input('Email');
+        $form->farmer_name = $request->input('farmer_name');
+        $form->mobile_number = $request->input('mobile_number');
+        $form->village_Town = $request->input('village_Town');
+        $form->district = $request->input('district');
+        $form->state = $request->input('state');
+        $form->animal_ID = $request->input('animal_ID');
+        $form->breed = $request->input('breed');
+        $form->lactation_no = $request->input('lactation_no');
+        $form->date_of_calving = $request->input('date_of_calving');
+        $form->milk_yield = $request->input('milk_yield');
+        $form->aadhar_number = $request->input('aadhar_number');
+        $form->animal_photo_upload = json_encode($animalPhotoPaths);
+        $form->farmer_photo_upload = $farmerPhotoPath;
+        $form->save();
+
+        return response()->json([
+            'status' => 200,
+            'message' => 'Form submitted successfully!',
+            'data' => ['insert_id' => $form->id]
+        ]);
     }
 }
