@@ -30,6 +30,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use App\Models\RegImage;
 
 class HomeController extends Controller
 {
@@ -1511,6 +1512,10 @@ class HomeController extends Controller
             // Define feed amount
             $feedAmount = config('app.feed_amount', 100.00);
 
+            // Get the registration image
+            $latestRegImage = RegImage::where('is_enabled', true)->latest()->first();
+            $regImageUrl = $latestRegImage ? asset($latestRegImage->image_path) : '';            
+            
             $data = [
                 'slider' => $sliderData,
                 'Farmer_slider' => $farmerSliderData,
@@ -1521,6 +1526,7 @@ class HomeController extends Controller
                 'CartCount' => $cartCount,
                 'feedBuy' => $feedBuy,
                 'feedAmount' => $feedAmount,
+                'registration_image' => $regImageUrl,
             ];
 
             Log::info('HomeData: Home data retrieved successfully', [
