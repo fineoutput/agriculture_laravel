@@ -371,7 +371,7 @@ class UserloginController extends Controller
 
         // Generate OTP
         $otp = rand(100000, 999999);
-        if ($phone) {
+        if ($phone == 0000000000) {
             $otp = 123456;
         }
         $expiresAt = now()->addMinutes(5);
