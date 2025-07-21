@@ -61,6 +61,18 @@ use App\Http\Controllers\Admin\AdminImageController;
 
 Route::group(['prefix' => '/'], function () {
     Route::get('/', [HomeController::class, 'index'])->name('/');
+    Route::get('about', [HomeController::class, 'about'])->name('about');
+    Route::get('contact', [HomeController::class, 'contact'])->name('contact');
+    Route::get('doctor', [HomeController::class, 'doctor'])->name('doctor');
+    Route::get('farmer', [HomeController::class, 'farmer'])->name('farmer');
+    Route::get('gallery', [HomeController::class, 'gallery'])->name('gallery');
+    Route::get('privacy_policy', [HomeController::class, 'privacy_policy'])->name('privacy_policy');
+    Route::get('privacy', [HomeController::class, 'privacy'])->name('privacy');
+    Route::get('refund', [HomeController::class, 'refund'])->name('refund');
+    Route::get('services', [HomeController::class, 'services'])->name('services');
+    Route::get('shipping_delivery', [HomeController::class, 'shipping_delivery'])->name('shipping_delivery');
+    Route::get('terms_and_conditions', [HomeController::class, 'terms_and_conditions'])->name('terms_and_conditions');
+    Route::get('vendor', [HomeController::class, 'vendor'])->name('vendor');
 });
 
 //======================================= ADMIN ===================================================
