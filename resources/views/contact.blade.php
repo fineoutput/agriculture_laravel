@@ -76,7 +76,7 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-12">
-                                        <form action="{{ route('newsletter.subscribe') }}" method="POST">
+                                        <form action="#" method="POST">
                                             @csrf
                                             <div class="bd-contact__input mb-15">
                                                 <input type="text" name="name" placeholder="Enter name" required>
