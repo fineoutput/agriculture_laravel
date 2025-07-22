@@ -9,9 +9,9 @@
 
 <div class="content-wrapper">
     <section class="content-header">
-        <h1>Milking Competition Users</h1>
+        <h1>Rejected Milking Competition Users</h1>
         <ol class="breadcrumb">
-            <li class="active">Milking Competition Users</li>
+            <li class="active">Accepted Users</li>
         </ol>
     </section>
 
@@ -20,22 +20,8 @@
             <div class="col-lg-12">
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        <h3 class="panel-title"><i class="fa fa-users"></i> Users List</h3>
+                        <h3 class="panel-title"><i class="fa fa-users"></i> Accepted Users List</h3>
                     </div>
-
-                    @if (session('smessage'))
-                        <div class="alert alert-success alert-dismissible">
-                            <button type="button" class="close" data-dismiss="alert">×</button>
-                            <strong><i class="fa fa-check"></i></strong> {{ session('smessage') }}
-                        </div>
-                    @endif
-                    @if (session('emessage'))
-                        <div class="alert alert-danger alert-dismissible">
-                            <button type="button" class="close" data-dismiss="alert">×</button>
-                            <strong><i class="fa fa-ban"></i></strong> {{ session('emessage') }}
-                        </div>
-                    @endif
-
                     <div class="panel-body">
                         <div class="box-body table-responsive no-padding">
                             <table class="table table-bordered table-hover table-striped" id="dataTable">
@@ -44,8 +30,7 @@
                                         <th>ID</th><th>Farmer Name</th><th>Email</th><th>Mobile</th><th>Village</th>
                                         <th>District</th><th>State</th><th>Animal ID</th><th>Breed</th>
                                         <th>Lactation No</th><th>Date Of Calving</th><th>Milk Yield</th>
-                                        <th>Aadhar Number</th><th>Animal Photo</th><th>Farmer Photo</th>
-                                        <th>Created At</th><th>Status</th><th>Action</th>
+                                        <th>Aadhar Number</th><th>Animal Photo</th><th>Farmer Photo</th><th>Created At</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -78,32 +63,6 @@
                                                 @else N/A @endif
                                             </td>
                                             <td>{{ $row->created_at }}</td>
-                                            <td>
-                                                @php
-                                                    $statusLabels = [
-                                                        0 => ['label' => 'Pending', 'class' => 'badge bg-warning'],
-                                                        1 => ['label' => 'Accepted', 'class' => 'badge bg-success'],
-                                                        2 => ['label' => 'Rejected', 'class' => 'badge bg-danger'],
-                                                    ];
-                                                @endphp
-                                                <span class="{{ $statusLabels[$row->status]['class'] }}">
-                                                    {{ $statusLabels[$row->status]['label'] }}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                @if ($row->status == 0)
-                                                    <form method="POST" action="{{ route('admin.googleform.accept', $row->id) }}" style="display:inline-block;">
-                                                        @csrf
-                                                        <button type="submit" class="btn btn-success btn-sm">Accept</button>
-                                                    </form>
-                                                    <form method="POST" action="{{ route('admin.googleform.reject', $row->id) }}" style="display:inline-block;">
-                                                        @csrf
-                                                        <button type="submit" class="btn btn-danger btn-sm">Reject</button>
-                                                    </form>
-                                                @else
-                                                    <em>N/A</em>
-                                                @endif
-                                            </td>
                                         </tr>
                                     @endforeach
                                 </tbody>

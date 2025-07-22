@@ -25,4 +25,22 @@ class GoogleFormController extends Controller
 
     // }
 }
+
+public function accept($id)
+{
+    $form = GoogleForm::findOrFail($id);
+    $form->status = 1;
+    $form->save();
+
+    return redirect()->back()->with('message', 'Form accepted successfully.');
+}
+
+public function reject($id)
+{
+    $form = GoogleForm::findOrFail($id);
+    $form->status = 2;
+    $form->save();
+
+    return redirect()->back()->with('message', 'Form rejected successfully.');
+}
 }
