@@ -370,9 +370,12 @@ class UserloginController extends Controller
         $model = Farmer::class;
 
         // Generate OTP
-        $otp = rand(100000, 999999);
+        
         if ($phone == 0000000000) {
             $otp = 123456;
+        }
+        else{
+$otp = rand(100000, 999999);
         }
         $expiresAt = now()->addMinutes(5);
 
@@ -1051,9 +1054,11 @@ class UserloginController extends Controller
         }
 
         // Generate OTP
-        $otp = rand(100000, 999999);
-        if ($phone) {
+       if ($phone == 0000000000) {
             $otp = 123456;
+        }
+        else{
+$otp = rand(100000, 999999);
         }
         $expiresAt = now()->addMinutes(10);
 
