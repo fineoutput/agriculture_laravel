@@ -37,6 +37,7 @@ use App\Http\Controllers\Admin\VendorOrderController;
 use App\Http\Controllers\Admin\PushNotificationsController;
 use App\Http\Controllers\Admin\GoogleFormController;
 use App\Http\Controllers\Admin\AdminImageController;
+use App\Http\Controllers\Admin\CompetitionController;
 
 
 /*
@@ -356,6 +357,17 @@ Route::post('/pushnotifications/add', [PushNotificationsController::class, 'addP
     Route::post('images/toggle/{id}', [AdminImageController::class, 'toggleStatus'])->name('admin.reg_image.toggle');
 
 
+
+
+
+    Route::get('competition', [CompetitionController::class, 'index'])->name('admin.competition.index');
+    Route::get('competition-cities/{stateid}', [CompetitionController::class, 'filtercity'])->name('compition_cities');
+    Route::get('competition/create', [CompetitionController::class, 'create'])->name('admin.competition.create');
+    Route::post('competition/store', [CompetitionController::class, 'store'])->name('admin.competition.store');
+    Route::get('competition/edit/{id}', [CompetitionController::class, 'edit'])->name('admin.competition.edit');
+    Route::post('competition/update/{id}', [CompetitionController::class, 'update'])->name('admin.competition.update');
+    Route::delete('competition/delete/{id}', [CompetitionController::class, 'destroy'])->name('admin.competition.destroy');
+    Route::post('competition/get-cities', [CompetitionController::class, 'getCitiesByState'])->name('admin.competition.getCities');
 });             
 
 });

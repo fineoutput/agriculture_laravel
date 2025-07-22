@@ -314,11 +314,23 @@
                          <li>
                             <a href="{{route('admin.popup_images.index')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>PopUP </span></a>
                         </li>
-                         <li>
+                        
+                        <li>
+                            <a href="javascript:void(0);" class="waves-effect"><i class="bi bi-sliders"></i><span>Milking Competition <span class="float-right menu-arrow"><i class="mdi mdi-plus"></i></span> </span></a>
+                            <ul class="submenu">
+                                <li>
+                            <a href="{{route('admin.competition.index')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Competition Entry</span></a>
+                        </li>
+                                <li>
                             <a href="{{route('admin.googleform.users')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Google Form </span></a>
                         </li>
                          <li>
                             <a href="{{route('admin.reg_image.index')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Images </span></a>
+                        </li>
+                                <!-- {{-- <li><a href="{{ route('admin.vendorapporders.dispatched') }}">Dispatched Orders</a></li> --}}
+                                <li><a href="{{ route('admin.animal_sale_purchase.completed') }}">Completed Sale Purchase</a></li>
+                                <li><a href="{{ route('admin.animal_sale_purchase.rejected') }}">Rejected Sale Purchase</a></li> -->
+                            </ul>
                         </li>
                         <?php
                         $admin_services = Session::get('services');
