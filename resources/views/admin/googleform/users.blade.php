@@ -119,6 +119,7 @@
                                                 @if($row->status == 1)
     <a href="{{ route('admin.googleform.disqualify', $row->id) }}" class="btn btn-warning btn-sm">Disqualify</a>
 @endif
+N/A
                                                 @endif
                                             </td>
                                         </tr>
