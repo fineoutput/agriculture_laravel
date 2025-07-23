@@ -1275,7 +1275,7 @@ class ToolsController extends Controller
                     'stock' => $stock,
                     'percent' => $percent,
                     'vendor_id' => $pro->added_by,
-                    'is_admin' => (int)$pro->is_admin,
+                    'is_admin' => (int) $pro->is_admin,
                     'offer' => $pro->offer,
                     'product_cod' => $pro->cod,
                     'is_cod' => $farmer->cod,
