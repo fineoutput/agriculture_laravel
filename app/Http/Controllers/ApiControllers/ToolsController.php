@@ -1196,7 +1196,7 @@ class ToolsController extends Controller
 
             // Validate inputs
             $validator = Validator::make($request->all(), [
-                'is_admin' => 'required|string',
+                'is_admin' => 'required',
                 'vendor_id' => 'nullable|integer',
                 'search' => 'nullable|string',
             ]);
@@ -1222,7 +1222,7 @@ class ToolsController extends Controller
             // Build product query
             $query = Product::query()->where('is_active', 1);
 
-            if ($is_admin === 'admin') {
+            if ($is_admin == 'admin') {
                 $query->where('is_admin', 1);
             } else {
                 $query->where('is_admin', 0)
@@ -1275,7 +1275,7 @@ class ToolsController extends Controller
                     'stock' => $stock,
                     'percent' => $percent,
                     'vendor_id' => $pro->added_by,
-                    'is_admin' => $pro->is_admin,
+                    'is_admin' => (int)$pro->is_admin,
                     'offer' => $pro->offer,
                     'product_cod' => $pro->cod,
                     'is_cod' => $farmer->cod,
