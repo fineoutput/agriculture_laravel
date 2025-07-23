@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Redirect;
 use App\Models\State;
 use App\Models\City;
 use Carbon\Carbon;
+use App\Models\Doctor;
 
 class CompetitionController extends Controller
 {
@@ -45,7 +46,9 @@ class CompetitionController extends Controller
 
         return view('admin.competition.create', [
             'states' => State::all(),
-            'user_name' => session('user_name')
+            'user_name' => session('user_name'),
+            'doctors' => Doctor::all(['id', 'name']),
+            'city' => City::all(['id', 'city_name']),
         ]);
     }
 
@@ -58,38 +61,41 @@ public function filtercity($stateid)
 
 public function store(Request $request)
 {
+    // return $request;
     $request->validate([
         'start_date' => 'required|date',
         'end_date' => 'required|date',
         'competition_date' => 'required|date',
         'state' => 'required|integer',
-        'city' => 'required|string',
-        'time_slot' => 'required|array',
-        'time_slot.*' => 'in:Morning,Afternoon,Evening,Night',
-        'slot_time' => 'required|array',
-        'slot_time.*' => 'required|date_format:H:i',
+        // 'city' => 'required|string',
+        // 'time_slot' => 'required|array',
+        // 'time_slot.*' => 'in:Morning,Afternoon,Evening,Night',
+        // 'slot_time' => 'required|array',
+        // 'slot_time.*' => 'required|date_format:H:i',
         'entry_fees' => 'required|numeric',
+        // 'judge' => 'required|exists:tbl_doctor,id',
     ]);
 
-    $slots = $request->time_slot;
-    $times = $request->slot_time;
-    $slotData = [];
+    // $slots = $request->time_slot;
+    // $times = $request->slot_time;
+    // $slotData = [];
 
-    foreach ($slots as $index => $slotName) {
-        $slotData[$slotName] = $times[$index];
-    }
+    // foreach ($slots as $index => $slotName) {
+    //     $slotData[$slotName] = $times[$index];
+    // }
 
     CompetitionEntry::create([
         'start_date' => $request->start_date,
         'end_date' => $request->end_date,
         'competition_date' => $request->competition_date,
         'state' => $request->state,
-        'city' => $request->city,
+        'city' => !empty($request->city) ? implode(',', $request->city) : null,
         'entry_fees' => $request->entry_fees,
         'status' => 1,
-        'time_slot' => json_encode($slotData),
-        'created_at' => now(),
-        'updated_at' => now(),
+        'judge' =>!empty($request->judge) ? implode(',', $request->judge) : null,
+        // 'time_slot' => json_encode($slotData),
+        // 'created_at' => now(),
+        // 'updated_at' => now(),
     ]);
 
     Session::flash('message', 'Competition entry added successfully.');
@@ -108,43 +114,49 @@ public function store(Request $request)
             'competition' => $competition,
             'states' => State::all(),
             'cities' => City::where('state_id', $competition->state)->get(),
-            'user_name' => session('user_name')
+            'user_name' => session('user_name'),
+            'doctors' => Doctor::all(['id', 'name']),
         ]);
     }
 
    public function update(Request $request, $id)
 {
+    $id = base64_decode($id);
+    // return $request;
     $request->validate([
-        'start_date' => 'required|date',
-        'end_date' => 'required|date',
-        'competition_date' => 'required|date',
-        'state' => 'required|integer',
-        'city' => 'required|string',
-        'time_slot' => 'required|array',
-        'time_slot.*' => 'in:Morning,Afternoon,Evening,Night',
-        'slot_time' => 'required|array',
-        'slot_time.*' => 'required|date_format:H:i',
-        'entry_fees' => 'required|numeric',
+        // 'start_date' => 'required|date',
+        // 'end_date' => 'required|date',
+        // 'competition_date' => 'required|date',
+        // 'state' => 'required|integer',
+        // 'city' => 'required|string',
+        // 'time_slot' => 'required|array',
+        // 'time_slot.*' => 'in:Morning,Afternoon,Evening,Night',
+        // 'slot_time' => 'required|array',
+        // 'slot_time.*' => 'required|date_format:H:i',
+        // 'entry_fees' => 'required|numeric',
+        // 'judge' => 'required|exists:tbl_doctor,id',
     ]);
 
-    $slots = $request->time_slot;
-    $times = $request->slot_time;
-    $slotData = [];
+    // $slots = $request->time_slot;
+    // $times = $request->slot_time;
+    // $slotData = [];
 
-    foreach ($slots as $index => $slotName) {
-        $slotData[$slotName] = $times[$index];
-    }
+    // foreach ($slots as $index => $slotName) {
+    //     $slotData[$slotName] = $times[$index];
+    // }
+    $cmp = CompetitionEntry::find($id);
+    $cmp->update([
+    'entry_fees' => $request->entry_fees,
+    'start_date' => $request->start_date,
+    'end_date' => $request->end_date,
+    'competition_date' => $request->competition_date,
+    'state' => $request->state,
+    'city' => !empty($request->city) ? implode(',', $request->city) : null,
+    'judge' =>!empty($request->judge) ? implode(',', $request->judge) : null,
+    // 'time_slot' => json_encode($slotData),
+]);
 
-    CompetitionEntry::where('id', $id)->update([
-        'start_date' => $request->start_date,
-        'end_date' => $request->end_date,
-        'competition_date' => $request->competition_date,
-        'state' => $request->state,
-        'city' => $request->city,
-        'entry_fees' => $request->entry_fees,
-        'time_slots' => json_encode($slotData),
-        'updated_at' => now(),
-    ]);
+
 
     Session::flash('message', 'Competition updated successfully.');
     return redirect()->route('admin.competition.index');

@@ -38,6 +38,7 @@ use App\Http\Controllers\Admin\PushNotificationsController;
 use App\Http\Controllers\Admin\GoogleFormController;
 use App\Http\Controllers\Admin\AdminImageController;
 use App\Http\Controllers\Admin\CompetitionController;
+use App\Http\Controllers\Admin\TimeSlotController;
 
 
 /*
@@ -370,6 +371,13 @@ Route::post('/pushnotifications/add', [PushNotificationsController::class, 'addP
     Route::post('competition/update/{id}', [CompetitionController::class, 'update'])->name('admin.competition.update');
     Route::delete('competition/delete/{id}', [CompetitionController::class, 'destroy'])->name('admin.competition.destroy');
     Route::post('competition/get-cities', [CompetitionController::class, 'getCitiesByState'])->name('admin.competition.getCities');
+
+
+
+
+    
+    Route::post('time-slot/update/{id}', [TimeSlotController::class, 'update'])->name('admin.time-slot.update');
+    Route::get('time-slot/edit/{id}', [TimeSlotController::class, 'edit'])->name('admin.time-slot.edit');
 });             
 
 });

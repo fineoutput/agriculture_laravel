@@ -48,7 +48,8 @@
                     <th>State</th>
                     <th>City</th>
                     <th>Period</th>
-                    <th>Slot Time</th>
+                    <!-- <th>Slot Time</th> -->
+                    <th>Judge</th>
                     <th>Entry Fees</th>
                     <th>Action</th>
                   </tr>
@@ -61,12 +62,35 @@
                       <td>{{ $row->end_date ?? '' }}</td>
                       <td>{{ $row->competition_date ?? '' }}</td>
                       <td>{{ $row->state_name ?? 'N/A' }}</td>
-                      <td>{{ $row->city ?? '' }}</td>
+                      <td>{{ implode(', ', $row->city_names) }}</td>
                       <td>{{ $row->time_slot ?? '' }}</td>
-                      <td>{{ $row->slot_time ?? '' }}</td>
+                      <!-- <td>{{ $row->slot_time ?? '' }}</td> -->
+                      <!-- <td>{{ $row->doctor->name ?? '' }}</td> -->
+                       
+                        @php
+                              $judges = explode(',', $row->judge);  // Exploding the comma-separated meal plans
+                          @endphp
+<td>
+                           @foreach ($judges as $propertyId)
+                        @php
+                           $property = \App\Models\Doctor::find($propertyId);  
+                        @endphp
+                  
+                        @if ($property)
+                          
+                          {{ $property->name }},
+
+                          @else
+                            Judge not found
+                          @endif
+                      @endforeach
+
+</td>
+
                       <td>{{ $row->entry_fees ?? '' }}</td>
                       <td>
                         <a href="{{ route('admin.competition.edit', base64_encode($row->id)) }}" class="btn btn-primary btn-sm">Edit</a>
+                        <a href="{{ route('admin.time-slot.edit', base64_encode($row->id)) }}" class="btn btn-primary btn-sm">Add Time Slot</a>
                         <form action="{{ route('admin.competition.destroy', base64_encode($row->id)) }}" method="POST" style="display:inline-block" onsubmit="return confirm('Are you sure you want to delete this entry?');">
                           @csrf
                           @method('DELETE')

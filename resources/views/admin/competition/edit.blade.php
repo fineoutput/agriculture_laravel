@@ -71,15 +71,19 @@
                     <tr>
                       <td><strong>City</strong> <span style="color:red;">*</span></td>
                       <td>
-                        <select name="city" id="city" class="form-control" required>
-                          <option value="">-- Select City --</option>
-                          @foreach($cities as $city)
-                            <option value="{{ $city->id }}" {{ $competition->city == $city->id ? 'selected' : '' }}>{{ $city->city_name }}</option>
-                          @endforeach
-                        </select>
+                        <select name="city[]" id="city" class="form-control" multiple required>
+    @foreach($cities as $city)
+        <option value="{{ $city->id }}" 
+            {{ in_array($city->id, explode(',', $competition->city)) ? 'selected' : '' }}>
+            {{ $city->city_name }}
+        </option>
+    @endforeach
+</select>
                       </td>
                     </tr>
-                    <div id="slot-wrapper">
+
+                       
+                    <!-- <div id="slot-wrapper">
     @if($isEdit && count($timeSlots))
         @foreach($timeSlots as $slot => $time)
             <div class="slot-block form-row align-items-end mt-2">
@@ -123,8 +127,44 @@
             </div>
         </div>
     @endif
-</div>
+</div> -->
 
+
+<tr>
+
+@php
+    $selectedJudges = isset($competition->judge) ? explode(',', $competition->judge) : [];
+@endphp
+
+<td>
+    <label class="form-label" style="margin-left: 10px" for="power">Select Judge (Doctor)</label>
+    <div id="output"></div>
+    <select data-placeholder="" name="judge[]" multiple class="chosen-select">
+        @foreach($doctors as $doctor)
+            <option value="{{ $doctor->id }}" 
+                @if(in_array($doctor->id, $selectedJudges)) selected @endif>
+                {{ $doctor->name }}
+            </option>
+        @endforeach
+    </select>
+    @error('judge')
+        <div style="color:red;">{{ $message }}</div>
+    @enderror
+</td>
+
+
+  <!-- <td><strong>Select Judge (Doctor)</strong> <span style="color:red;">*</span></td>
+  <td>
+    <select name="judge" class="form-control" required>
+      <option value="">-- Select Judge --</option>
+      @foreach($doctors as $doctor)
+        <option value="{{ $doctor->id }}" {{ $competition->judge == $doctor->id ? 'selected' : '' }}>
+          {{ $doctor->name }}
+        </option>
+      @endforeach
+    </select>
+  </td> -->
+</tr>
                     <tr>
                       <td><strong>Entry Fees (₹)</strong> <span style="color:red;">*</span></td>
                       <td><input type="number" step="0.01" name="entry_fees" class="form-control" value="{{ $competition->entry_fees }}" required></td>
@@ -143,31 +183,67 @@
   </section>
 </div>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-$(document).ready(function () {
-    $('#state').on('change', function () {
-        var state_id = $(this).val();
 
-        if (state_id !== '') {
-            $.ajax({
-                url: '/competition-cities/' + state_id,
-                method: 'GET',
-                success: function (response) {
-                    var citySelect = $('#city');
-                    citySelect.empty();
-                    citySelect.append('<option value="">-- Select City --</option>');
-                    $.each(response.cities, function (key, city) {
-                        citySelect.append('<option value="' + city.id + '">' + city.city_name + '</option>');
-                    });
-                },
-                error: function () {
-                    alert('Error loading cities.');
-                }
-            });
-        } else {
-            $('#city').html('<option value="">-- Select City --</option>');
-        }
-    });
-});
+<!-- Then Chosen -->
+<link rel="stylesheet" href="https://harvesthq.github.io/chosen/chosen.css" />
+<script src="https://harvesthq.github.io/chosen/chosen.jquery.js"></script>
+
+<script>
+  document.getElementById("output").innerHTML = location.search;
+  $(".chosen-select").chosen();
 </script>
+
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css">
+    <!-- Select2 CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <!-- Select2 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+    <script>
+     
+      $("#city").select2({
+          placeholder: "Select a programming language",
+          allowClear: true
+      });
+    </script>
+
+<!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
+  <script>
+  $(document).ready(function () {
+      // $(".chosen-select, .chosen-city").chosen();
+
+      $("#state").on("change", function () {
+          var state_id = $(this).val();
+          console.log("State changed:", state_id);
+
+          if (state_id !== "") {
+              $.ajax({
+                  url: "/competition-cities/" + state_id,
+                  method: "GET",
+                  success: function (response) {
+                      console.log("Cities loaded:", response.cities);
+
+                      $("#city").each(function () {
+                          var citySelect = $(this);
+                          console.log('nbhagvfuyasvhjfgfvasfasjhgvfhasfiu',response.cities);
+                          citySelect.empty().append('<option value="">-- Select City --</option>');
+
+                          $.each(response.cities, function (key, city) {
+                              citySelect.append('<option value="' + city.id + '">' + city.city_name + '</option>');
+                          });
+
+                          citySelect.trigger("chosen:updated");
+                      });
+                  },
+                  error: function () {
+                      alert("City load karne me error aaya.");
+                  }
+              });
+          } else {
+              $(".chosen-city").html('<option value="">-- Select City --</option>').trigger("chosen:updated");
+          }
+      });
+  });
+  </script>
 @endsection

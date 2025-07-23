@@ -20,6 +20,22 @@ class CompetitionEntry extends Model
     'entry_fees',
     'status',
     'time_slot',
+    'judge',
     'slot_time'
-];  
+];
+
+
+public function doctor()
+{
+    return $this->belongsTo(Doctor::class, 'judge');
+}
+
+
+public function getCityNamesAttribute()
+{
+    if (!$this->city) return [];
+
+    $ids = explode(',', $this->city);
+    return City::whereIn('id', $ids)->pluck('city_name')->toArray();
+}
 }
