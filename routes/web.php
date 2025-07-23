@@ -39,6 +39,7 @@ use App\Http\Controllers\Admin\GoogleFormController;
 use App\Http\Controllers\Admin\AdminImageController;
 use App\Http\Controllers\Admin\CompetitionController;
 use App\Http\Controllers\Admin\TimeSlotController;
+use App\Http\Controllers\Admin\MilkRankingController;
 
 
 /*
@@ -380,6 +381,13 @@ Route::post('/pushnotifications/add', [PushNotificationsController::class, 'addP
     
     Route::post('time-slot/update/{id}', [TimeSlotController::class, 'update'])->name('admin.time-slot.update');
     Route::get('time-slot/edit/{id}', [TimeSlotController::class, 'edit'])->name('admin.time-slot.edit');
+
+
+
+
+
+
+      Route::get('milk-ranking', [MilkRankingController::class, 'index'])->name('admin.milk_ranking.index');
 });             
 
 });

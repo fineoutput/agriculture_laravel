@@ -327,6 +327,9 @@
                          <li>
                             <a href="{{route('admin.reg_image.index')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Images </span></a>
                         </li>
+                         <li>
+                            <a href="{{route('admin.milk_ranking.index')}}" class="waves-effect"><i class="bi bi-sliders"></i><span>Milk Ranking </span></a>
+                        </li>
                                 <!-- {{-- <li><a href="{{ route('admin.vendorapporders.dispatched') }}">Dispatched Orders</a></li> --}}
                                 <li><a href="{{ route('admin.animal_sale_purchase.completed') }}">Completed Sale Purchase</a></li>
                                 <li><a href="{{ route('admin.animal_sale_purchase.rejected') }}">Rejected Sale Purchase</a></li> -->
