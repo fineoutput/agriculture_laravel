@@ -14,6 +14,7 @@ use App\Http\Controllers\ApiControllers\ManagementController;
 use App\Http\Controllers\ApiControllers\VendorController;
 use App\Http\Controllers\ApiControllers\SmsController;
 use App\Http\Controllers\ApiControllers\RegImageController;
+use App\Http\Controllers\ApiControllers\RankingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -451,3 +452,6 @@ Route::get('Test_Message', [SmsController::class, 'sendTestSMS']);
 
 
 Route::get('reg-image', [RegImageController::class, 'getLatestEnabledImage']);
+
+
+Route::post('ranking-compitition', [RankingController::class, 'store']);

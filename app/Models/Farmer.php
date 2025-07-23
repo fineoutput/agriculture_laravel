@@ -17,6 +17,11 @@ class Farmer extends Model implements Authenticatable, JWTSubject
         'no_animals', 'phone','doc_type', 'date', 'is_active', 'giftcard_id',
         'cod', 'qty_discount'
     ];
+
+    public function farmer()
+{
+    return $this->belongsTo(Farmer::class, 'farmer_id', 'id');
+}
     public function getJWTIdentifier()
     {
         return $this->getKey();

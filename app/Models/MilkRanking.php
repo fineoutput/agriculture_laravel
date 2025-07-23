@@ -11,7 +11,7 @@ class MilkRanking extends Model
 
     protected $table = 'tbl_ranking';
 
-    protected $fillables = [
+    protected $fillable = [
         'id',
         'farmer_id',
         'image',

@@ -10,9 +10,9 @@ use Illuminate\Support\Facades\Storage;
 
 class MilkRankingController extends Controller
 {
-    public function index()
+     public function index()
     {
-        $rankings = MilkRanking::with('farmer')->orderByDesc('weight')->get();
+        $rankings = MilkRanking::with('farmer')->orderByDesc('id')->get();
         return view('admin.milk_ranking.index', compact('rankings'));
     }
 
@@ -25,18 +25,17 @@ class MilkRankingController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'farmer_id' => 'required|exists:google_form,farmer_id',
-            'weight' => 'required|numeric|min:0.01',
-            'image' => 'required|image',
-            'score' => 'nullable|integer',
+            'farmer_id' => 'required',
+            'weight' => 'required',
+            'image' => 'required',
+            'authentication_header' => $request->header('Authentication'),
         ]);
-
+        $token = $request->header('Authentication');
         $path = $request->file('image')->store('ranking_images', 'public');
 
         MilkRanking::create([
             'farmer_id' => $request->farmer_id,
             'weight' => $request->weight,
-            'score' => $request->score,
             'image' => $path,
         ]);
 
