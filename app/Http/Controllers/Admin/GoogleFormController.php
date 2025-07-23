@@ -43,4 +43,19 @@ public function reject($id)
 
     return redirect()->back()->with('message', 'Form rejected successfully.');
 }
+
+public function disqualify($id)
+{
+    $form = GoogleForm::findOrFail($id);
+
+    if ($form->status != 1) {
+        return redirect()->back()->with('emessage', 'Only accepted users can be disqualified.');
+    }
+
+    $form->status = 3;
+    $form->save();
+
+    return redirect()->back()->with('message', 'User disqualified successfully.');
+}
+
 }

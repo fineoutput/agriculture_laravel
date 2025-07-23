@@ -352,6 +352,8 @@ Route::post('/pushnotifications/add', [PushNotificationsController::class, 'addP
     Route::get('googleform', [GoogleFormController::class, 'users'])->name('admin.googleform.users');
     Route::post('google-form/accept/{id}', [GoogleFormController::class, 'accept'])->name('admin.googleform.accept');
     Route::post('google-form/reject/{id}', [GoogleFormController::class, 'reject'])->name('admin.googleform.reject');
+    Route::get('/admin/google-form/disqualify/{id}', [GoogleFormController::class, 'disqualify'])->name('admin.googleform.disqualify');
+
 
     Route::get('images', [AdminImageController::class, 'index'])->name('admin.reg_image.index');
     Route::get('images/create', [AdminImageController::class, 'create'])->name('admin.reg_image.create');

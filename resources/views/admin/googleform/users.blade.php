@@ -41,11 +41,24 @@
                             <table class="table table-bordered table-hover table-striped" id="dataTable">
                                 <thead>
                                     <tr>
-                                        <th>ID</th><th>Farmer Name</th><th>Email</th><th>Mobile</th><th>Village</th>
-                                        <th>District</th><th>State</th><th>Animal ID</th><th>Breed</th>
-                                        <th>Lactation No</th><th>Date Of Calving</th><th>Milk Yield</th>
-                                        <th>Aadhar Number</th><th>Animal Photo</th><th>Farmer Photo</th>
-                                        <th>Created At</th><th>Status</th><th>Action</th>
+                                        <th>ID</th>
+                                        <th>Farmer Name</th>
+                                        <th>Email</th>
+                                        <th>Mobile</th>
+                                        <th>Village</th>
+                                        <th>District</th>
+                                        <th>State</th>
+                                        <th>Animal ID</th>
+                                        <th>Breed</th>
+                                        <th>Lactation No</th>
+                                        <th>Date Of Calving</th>
+                                        <th>Milk Yield</th>
+                                        <th>Aadhar Number</th>
+                                        <th>Animal Photo</th>
+                                        <th>Farmer Photo</th>
+                                        <th>Created At</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -84,6 +97,7 @@
                                                         0 => ['label' => 'Pending', 'class' => 'badge bg-warning'],
                                                         1 => ['label' => 'Accepted', 'class' => 'badge bg-success'],
                                                         2 => ['label' => 'Rejected', 'class' => 'badge bg-danger'],
+                                                        3 => ['label' => 'Rejected', 'class' => 'badge bg-danger'],
                                                     ];
                                                 @endphp
                                                 <span class="{{ $statusLabels[$row->status]['class'] }}">
@@ -101,7 +115,10 @@
                                                         <button type="submit" class="btn btn-danger btn-sm">Reject</button>
                                                     </form>
                                                 @else
-                                                    <em>N/A</em>
+
+                                                @if($row->status == 1)
+    <a href="{{ route('admin.googleform.disqualify', $row->id) }}" class="btn btn-warning btn-sm">Disqualify</a>
+@endif
                                                 @endif
                                             </td>
                                         </tr>
