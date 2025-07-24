@@ -30,9 +30,22 @@ public function getCompetition(Request $request)
             ], 403);
         }
 
-        $date = Carbon::now()->format('Y-m-d');
+        $today = Carbon::now()->format('Y-m-d');
 
-        $competition = CompetitionEntry::whereDate('competition_date', $date)->first();
+        // 🔁 Loop through all entries and match today's date inside time_slot
+        $competition = CompetitionEntry::all()->first(function ($entry) use ($today) {
+            $timeSlots = json_decode($entry->time_slot, true);
+
+            if (is_array($timeSlots)) {
+                foreach ($timeSlots as $slotData) {
+                    if (!empty($slotData['date']) && in_array($today, $slotData['date'])) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        });
 
         if (!$competition) {
             return response()->json([
@@ -48,17 +61,14 @@ public function getCompetition(Request $request)
             'endDate' => $competition->end_date,
             'competitionDate' => $competition->competition_date,
             'state_name' => optional($competition->state)->state_name,
-            // 'cityIds' => array_map('intval', explode(',', $competition->city)),
             'cityNames' => $competition->city_names,
             'judgeName' => $competition->judge_name,
-            'timeSlot' => $competition->time_slot,
-            // 'slotTime' => $competition->slot_time,
+            'timeSlot' => json_decode($competition->time_slot, true),
             'entryFees' => (int) $competition->entry_fees,
             'status' => (int) $competition->status,
             'createdAt' => $competition->created_at->toDateTimeString(),
             'updatedAt' => $competition->updated_at->toDateTimeString(),
         ];
-
 
         return response()->json([
             'message' => 'Competition fetched successfully.',
@@ -77,6 +87,7 @@ public function getCompetition(Request $request)
         ], 500);
     }
 }
+
 
 
 }

@@ -70,6 +70,7 @@ $imageUrl = url('milk_images/' . $filename);
             return response()->json([
                 'message' => 'Milk entry created successfully',
                 'data' => $entry,
+                'status' => 200,
             ], 201);
             } catch (\Exception $e) {
                 Log::error('Error in storing milk entry', ['error' => $e->getMessage()]);

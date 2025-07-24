@@ -55,64 +55,71 @@
                   <table class="table table-hover">
                     
                     <div id="slot-wrapper">
-@if($isEdit && count($timeSlots))
-    @foreach($timeSlots as $slot => $data)
-        <div class="slot-block form-row align-items-end mt-2">
-            <div class="form-group col-md-4">
+    @if($isEdit && count($timeSlots))
+        @foreach($timeSlots as $slot => $entries)
+            @foreach($entries as $entry)
+                <div class="slot-block form-row align-items-end mt-2">
+                    <div class="form-group col-md-3">
+                        <label>Time Slot</label>
+                        <select name="time_slot[]" class="form-control time-slot-select" required>
+                            <option value="">Select Slot</option>
+                            @foreach(['Morning', 'Afternoon', 'Evening', 'Night'] as $option)
+                                <option value="{{ $option }}" {{ $option === $slot ? 'selected' : '' }}>{{ $option }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="form-group col-md-2">
+                        <label>Start Time</label>
+                        <input type="time" name="start_time[]" class="form-control" value="{{ $entry['start_time'] }}" required>
+                    </div>
+
+                    <div class="form-group col-md-2">
+                        <label>End Time</label>
+                        <input type="time" name="end_time[]" class="form-control" value="{{ $entry['end_time'] }}" required>
+                    </div>
+
+                    <div class="form-group col-md-3">
+                        <label>Date</label>
+                        <input type="date" name="slot_date[]" class="form-control" value="{{ $entry['date'] }}" required>
+                    </div>
+
+                    <div class="form-group col-md-2">
+                        <button type="button" class="btn btn-danger remove-slot">Remove</button>
+                    </div>
+                </div>
+            @endforeach
+        @endforeach
+    @else
+        <div class="slot-block form-row align-items-end">
+            <div class="form-group col-md-3">
                 <label>Time Slot</label>
                 <select name="time_slot[]" class="form-control time-slot-select" required>
                     <option value="">Select Slot</option>
-                    @foreach(['Morning', 'Afternoon', 'Evening', 'Night'] as $option)
-                        <option value="{{ $option }}" 
-                            {{ trim(strtolower($option)) == trim(strtolower($slot)) ? 'selected' : '' }}>
-                            {{ $option }}
-                        </option>
+                    @foreach(['Morning', 'Afternoon', 'Evening', 'Night'] as $slot)
+                        <option value="{{ $slot }}">{{ $slot }}</option>
                     @endforeach
                 </select>
             </div>
 
-            <div class="form-group col-md-3">
-                <label>Slot Time</label>
-                <input type="time" name="slot_time[]" class="form-control" 
-                       value="{{ $data['time'] ?? '' }}" required>
-            </div>
-
-            <div class="form-group col-md-3">
-                <label>Slot Date</label>
-               <input type="date" name="slot_date[]" class="form-control" value="{{ $data['date'][0] ?? '' }}" required>
-
+            <div class="form-group col-md-2">
+                <label>Start Time</label>
+                <input type="time" name="start_time[]" class="form-control" required>
             </div>
 
             <div class="form-group col-md-2">
-                <button type="button" class="btn btn-danger remove-slot">Remove</button>
+                <label>End Time</label>
+                <input type="time" name="end_time[]" class="form-control" required>
+            </div>
+
+            <div class="form-group col-md-3">
+                <label>Date</label>
+                <input type="date" name="slot_date[]" class="form-control" required>
             </div>
         </div>
-    @endforeach
-@else
-    <div class="slot-block form-row align-items-end">
-        <div class="form-group col-md-4">
-            <label>Time Slot</label>
-            <select name="time_slot[]" class="form-control time-slot-select" required>
-                <option value="">Select Slot</option>
-                @foreach (['Morning', 'Afternoon', 'Evening', 'Night'] as $slot)
-                    <option value="{{ $slot }}">{{ $slot }}</option>
-                @endforeach
-            </select>
-        </div>
-
-        <div class="form-group col-md-3">
-            <label>Slot Time</label>
-            <input type="time" name="slot_time[]" class="form-control" required>
-        </div>
-
-        <div class="form-group col-md-3">
-            <label>Slot Date</label>
-            <input type="date" name="slot_date[]" class="form-control" value="{{ $data['date'][0] ?? '' }}" required>
-
-        </div>
-    </div>
-@endif
+    @endif
 </div>
+
 
 
                     <div class="form-group col-md-2">
@@ -136,14 +143,12 @@
     const slotOptions = ['Morning', 'Afternoon', 'Evening', 'Night'];
 
     $(document).on('click', '.add-more-slot', function () {
-        // Get already selected slots
         const selectedSlots = [];
         $('.time-slot-select').each(function () {
             const val = $(this).val();
             if (val) selectedSlots.push(val);
         });
 
-        // Filter options
         const availableSlots = slotOptions.filter(slot => !selectedSlots.includes(slot));
 
         if (availableSlots.length === 0) {
@@ -151,38 +156,38 @@
             return;
         }
 
-        // Create new block
-        const newBlock = $('<div class="slot-block form-row align-items-end mt-2">');
+       const newBlock = $('<div class="slot-block form-row align-items-end mt-2">');
 
-        let selectHtml = '<select name="slot_date[]" class="form-control time-slot-select" required>';
-        selectHtml += '<option value="">Select Slot</option>';
-        availableSlots.forEach(slot => {
-            selectHtml += '<option value="' + slot + '">' + slot + '</option>';
-        });
-        selectHtml += '</select>';
+newBlock.append(`
+    <div class="form-group col-md-3">
+        <label>Time Slot</label>
+        <select name="time_slot[]" class="form-control time-slot-select" required>
+            <option value="">Select Slot</option>
+            ${slotOptions.map(slot => `<option value="${slot}">${slot}</option>`).join('')}
+        </select>
+    </div>
+    <div class="form-group col-md-2">
+        <label>Start Time</label>
+        <input type="time" name="start_time[]" class="form-control" required>
+    </div>
+    <div class="form-group col-md-2">
+        <label>End Time</label>
+        <input type="time" name="end_time[]" class="form-control" required>
+    </div>
+    <div class="form-group col-md-3">
+        <label>Date</label>
+        <input type="date" name="slot_date[]" class="form-control" required>
+    </div>
+    <div class="form-group col-md-2">
+        <button type="button" class="btn btn-danger remove-slot">Remove</button>
+    </div>
+`);
 
-        newBlock.append(`
-            <div class="form-group col-md-5">
-                <label>Time Slot</label>
-                ${selectHtml}
-            </div>
-            <div class="form-group col-md-5">
-                <label>Slot Time</label>
-                <input type="time" name="slot_time[]" class="form-control" required>
-            </div>
-            <div class="form-group col-md-5">
-                <label>Slot Date</label>
-                <input type="date" name="slot_time[]" class="form-control" required>
-            </div>
-            <div class="form-group col-md-2">
-                <button type="button" class="btn btn-danger remove-slot">Remove</button>
-            </div>
-        `);
+$('#slot-wrapper').append(newBlock);
 
-        $('#slot-wrapper').append(newBlock);
     });
 
-    // Remove block
+    // Remove slot block
     $(document).on('click', '.remove-slot', function () {
         $(this).closest('.slot-block').remove();
     });

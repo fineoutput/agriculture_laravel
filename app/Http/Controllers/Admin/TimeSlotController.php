@@ -12,38 +12,39 @@ use Carbon\Carbon;
 
 class TimeSlotController extends Controller
 {
-       public function update(Request $request, $id)
+public function update(Request $request, $id)
 {
     $id = base64_decode($id);
-    // return $request;
-    $request->validate([
-        // 'time_slot' => 'required|array',
-        // 'time_slot.*' => 'in:Morning,Afternoon,Evening,Night'
+
+    $slots      = $request->time_slot;
+    $dates      = $request->slot_date;
+    $startTimes = $request->start_time;
+    $endTimes   = $request->end_time;
+
+    $slotData = [];
+
+    foreach ($slots as $index => $slotName) {
+        if (!isset($slotData[$slotName])) {
+            $slotData[$slotName] = [];
+        }
+
+        $slotData[$slotName][] = [
+            'start_time' => $startTimes[$index],
+            'end_time'   => $endTimes[$index],
+            'date'       => $dates[$index],
+        ];
+    }
+
+    $cmp = CompetitionEntry::find($id);
+
+    $cmp->update([
+        'time_slot' => json_encode($slotData),
     ]);
-
-  $date = $request->slot_date;
-$slots = $request->time_slot;
-$times = $request->slot_time;
-
-$slotData = [];
-   
-foreach ($slots as $index => $slotName) {
-    $slotData[$slotName] = [
-        'time' => $times[$index],
-        'date' => $date // assuming same date for all slots
-    ];
-}
-
-$cmp = CompetitionEntry::find($id);
-
-$cmp->update([
-    'time_slot' => json_encode($slotData),
-]);
-
 
     Session::flash('message', 'Competition updated successfully.');
     return redirect()->route('admin.competition.index');
 }
+
 
  public function edit($id)
     {
