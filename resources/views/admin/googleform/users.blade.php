@@ -92,16 +92,9 @@
                                             </td>
                                             <td>{{ $row->created_at }}</td>
                                             <td>
-                                                @php
-                                                    $statusLabels = [
-                                                        0 => ['label' => 'Pending', 'class' => 'badge bg-warning'],
-                                                        1 => ['label' => 'Accepted', 'class' => 'badge bg-success'],
-                                                        2 => ['label' => 'Rejected', 'class' => 'badge bg-danger'],
-                                                        3 => ['label' => 'Rejected', 'class' => 'badge bg-danger'],
-                                                    ];
-                                                @endphp
-                                                <span class="{{ $statusLabels[$row->status]['class'] }}">
-                                                    {{ $statusLabels[$row->status]['label'] }}
+                                               
+                                                <span class="">
+                                                    {{$row->status}}
                                                 </span>
                                             </td>
                                             <td>

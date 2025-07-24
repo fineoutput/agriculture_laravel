@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Farmer;
 use App\Models\LiveStream;
+use App\Models\GoogleForm;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 
@@ -25,6 +26,19 @@ class GoLiveController extends Controller
             if (!$farmer) {
                 return response()->json([
                     'message' => 'Invalid token or inactive user!',
+                    'status' => 403,
+                    'data' => null
+                ], 403);
+            }
+
+            // ✅ Check if the farmer is present in GoogleForm table with status 1
+            $googleFormEntry = GoogleForm::where('farmer_id', $farmer->id)
+                                         ->where('status', 1)
+                                         ->first();
+
+            if (!$googleFormEntry) {
+                return response()->json([
+                    'message' => 'User not approved yet!',
                     'status' => 403,
                     'data' => null
                 ], 403);
