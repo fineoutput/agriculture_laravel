@@ -222,7 +222,7 @@
 
           if (state_id !== "") {
               $.ajax({
-                  url: "/competition-cities/" + state_id,
+                  url: "/agriculture_laravel/public/competition-cities/" + state_id,
                   method: "GET",
                   success: function (response) {
                       console.log("Cities loaded:", response.cities);
