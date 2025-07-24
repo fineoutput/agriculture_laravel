@@ -10,7 +10,7 @@ use App\Models\CompResult;
 
 class CompetitionResultController extends Controller
 {
-   public function storeCompResult(Request $request)
+  public function storeCompResult(Request $request)
 {
     try {
         $token = $request->header('Authorization');
@@ -31,16 +31,25 @@ class CompetitionResultController extends Controller
         // Validate request
         $validated = $request->validate([
             'comp_id' => 'required',
-            'img' => 'required',
             'weight' => 'required',
-            'slot' => 'required'
+            'slot' => 'required',
+            'image' => 'required'
         ]);
 
-        // Create the comp result
+        // Handle image upload
+        $image = $request->file('image');
+        $filename = time() . '_' . $image->getClientOriginalName();
+        $destinationPath = public_path('milk_images');
+        $image->move($destinationPath, $filename);
+
+        $imageUrl = url('milk_images/' . $filename);
+
+        // Save result
         $compResult = CompResult::create([
             'comp_id' => $validated['comp_id'],
             'farmer_id' => $farmer->id,
-            'img' => $validated['img'],
+            'farmer_name' => $farmer->name,
+            'img' => $imageUrl,
             'weight' => $validated['weight'],
             'slot' => $validated['slot'],
         ]);

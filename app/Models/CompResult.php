@@ -14,6 +14,7 @@ class CompResult extends Model
     protected $fillable = [
     'comp_id',
     'farmer_id',
+    'farmer_name',
     'img',
     'weight',
     'slot',
