@@ -15,10 +15,8 @@ class GoLiveController extends Controller
     public function goLive(Request $request)
     {
         try {
-            // Get token from header
             $token = $request->header('Authentication');
 
-            // Check if farmer exists and is active
             $farmer = Farmer::where('auth', $token)
                             ->where('is_active', 1)
                             ->first();
@@ -76,4 +74,43 @@ class GoLiveController extends Controller
             ], 500);
         }
     }
+
+
+    public function updateLiveStatus(Request $request)
+{
+    try {
+        $liveId = $request->input('live_id'); // Get live_id from form data
+
+        // Find the live stream by live_id
+        $liveStream = LiveStream::where('live_id', $liveId)->first();
+
+        if (!$liveStream) {
+            return response()->json([
+                'message' => 'Live stream not found!',
+                'status' => 404,
+                'data' => null
+            ], 404);
+        }
+
+        // Update the status (you can also allow this to be dynamic)
+        $liveStream->status = 2; // or any new status you need
+        $liveStream->save();
+
+        return response()->json([
+            'message' => 'Live stream status updated successfully.',
+            'status' => 200,
+            'data' => $liveStream
+        ], 200);
+
+    } catch (\Exception $e) {
+        Log::error('Live stream status update failed', ['error' => $e->getMessage()]);
+        return response()->json([
+            'message' => 'Server Error',
+            'status' => 500,
+            'data' => null,
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
 }
