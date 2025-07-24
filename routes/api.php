@@ -460,7 +460,7 @@ Route::get('reg-image', [RegImageController::class, 'getLatestEnabledImage']);
 Route::post('ranking-compitition', [RankingController::class, 'store']);
 
 
-Route::get('/go-live-stream', [GoLiveController::class, 'goLive']);
+Route::post('go-live-stream', [GoLiveController::class, 'goLive']);
 
 
 Route::post('update-live-status', [GoLiveController::class, 'updateLiveStatus']);

@@ -9,71 +9,164 @@ use App\Models\LiveStream;
 use App\Models\GoogleForm;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
+use App\Models\CompetitionEntry;
 
 class GoLiveController extends Controller
 {
+    // public function goLive(Request $request)
+    // {
+    //     try {
+    //         $token = $request->header('Authentication');
+
+    //         $farmer = Farmer::where('auth', $token)
+    //                         ->where('is_active', 1)
+    //                         ->first();
+
+    //         if (!$farmer) {
+    //             return response()->json([
+    //                 'message' => 'Invalid token or inactive user!',
+    //                 'status' => 403,
+    //                 'data' => null
+    //             ], 403);
+    //         }
+
+    //         // ✅ Check if the farmer is present in GoogleForm table with status 1
+    //         $googleFormEntry = GoogleForm::where('farmer_id', $farmer->id)
+    //                                      ->where('status', 1)
+    //                                      ->first();
+
+    //         if (!$googleFormEntry) {
+    //             return response()->json([
+    //                 'message' => 'User not approved yet!',
+    //                 'status' => 403,
+    //                 'data' => null
+    //             ], 403);
+    //         }
+
+    //         // Generate unique live ID
+    //         $liveId = 'LIVE-' . Str::uuid();
+
+    //         // Store the live session in the DB
+    //         LiveStream::create([
+    //             'live_id' => $liveId,
+    //             'user_id' => $farmer->id,
+    //             'user_name' => $farmer->name,
+    //             'status' => 1
+    //         ]);
+
+    //         return response()->json([
+    //             'status' => 200,
+    //             'message' => 'Live streaming started successfully.',
+    //             'data' => [
+    //                 'live_id' => $liveId,
+    //                 'user_id' => $farmer->id,
+    //                 'user_name' => $farmer->name,
+    //                 'status' => 1
+    //             ]
+    //         ], 200);
+
+    //     } catch (\Exception $e) {
+    //         Log::error('Live streaming failed', ['error' => $e->getMessage()]);
+    //         return response()->json([
+    //             'message' => 'Server Error',
+    //             'status' => 500,
+    //             'data' => null,
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
+
     public function goLive(Request $request)
-    {
-        try {
-            $token = $request->header('Authentication');
+{
+    try {
+        $token = $request->header('Authentication'); // Note: ensure header name matches frontend
 
-            $farmer = Farmer::where('auth', $token)
-                            ->where('is_active', 1)
-                            ->first();
+        $farmer = Farmer::where('auth', $token)
+                        ->where('is_active', 1)
+                        ->first();
 
-            if (!$farmer) {
-                return response()->json([
-                    'message' => 'Invalid token or inactive user!',
-                    'status' => 403,
-                    'data' => null
-                ], 403);
+        if (!$farmer) {
+            return response()->json([
+                'message' => 'Invalid token or inactive user!',
+                'status' => 403,
+                'data' => null
+            ], 403);
+        }
+
+        // ✅ Get slot from form-data
+        $slotRequested = $request->input('slot');
+
+        // ✅ Normalize and validate slot
+        $validSlots = ['Morning', 'Afternoon', 'Evening', 'Night'];
+        if (!$slotRequested || !in_array($slotRequested, $validSlots)) {
+            return response()->json([
+                'message' => 'Invalid or missing slot. Allowed values: Morning, Afternoon, Evening, Night',
+                'status' => 422,
+                'data' => null
+            ], 422);
+        }
+
+        $today = Carbon::now()->format('Y-m-d');
+
+        // ✅ Find a matching competition for the given slot and today's date
+        $competition = CompetitionEntry::all()->first(function ($entry) use ($today, $slotRequested) {
+            $timeSlots = json_decode($entry->time_slot, true);
+
+            if (is_array($timeSlots) && isset($timeSlots[$slotRequested])) {
+                foreach ($timeSlots[$slotRequested] as $slotData) {
+                    if (!empty($slotData['date']) && $slotData['date'] === $today) {
+                        return true;
+                    }
+                }
             }
 
-            // ✅ Check if the farmer is present in GoogleForm table with status 1
-            $googleFormEntry = GoogleForm::where('farmer_id', $farmer->id)
-                                         ->where('status', 1)
-                                         ->first();
+            return false;
+        });
 
-            if (!$googleFormEntry) {
-                return response()->json([
-                    'message' => 'User not approved yet!',
-                    'status' => 403,
-                    'data' => null
-                ], 403);
-            }
+        if (!$competition) {
+            return response()->json([
+                'message' => 'No competition found for this slot today.',
+                'status' => 404,
+                'data' => null
+            ], 404);
+        }
 
-            // Generate unique live ID
-            $liveId = 'LIVE-' . Str::uuid();
+        // ✅ Generate unique live ID
+        $liveId = 'LIVE-' . Str::uuid();
 
-            // Store the live session in the DB
-            LiveStream::create([
+        // ✅ Store the live session in the DB
+        LiveStream::create([
+            'live_id' => $liveId,
+            'user_id' => $farmer->id,
+            'user_name' => $farmer->name,
+            'status' => 1
+        ]);
+
+        return response()->json([
+            'status' => 200,
+            'message' => 'Live streaming started successfully.',
+            'data' => [
                 'live_id' => $liveId,
                 'user_id' => $farmer->id,
                 'user_name' => $farmer->name,
-                'status' => 1
-            ]);
+                'slot' => $slotRequested,
+                'competition_id' => $competition->id,
+                'competition_date' => $competition->competition_date
+            ]
+        ], 200);
 
-            return response()->json([
-                'status' => 200,
-                'message' => 'Live streaming started successfully.',
-                'data' => [
-                    'live_id' => $liveId,
-                    'user_id' => $farmer->id,
-                    'user_name' => $farmer->name,
-                    'status' => 1
-                ]
-            ], 200);
-
-        } catch (\Exception $e) {
-            Log::error('Live streaming failed', ['error' => $e->getMessage()]);
-            return response()->json([
-                'message' => 'Server Error',
-                'status' => 500,
-                'data' => null,
-                'error' => $e->getMessage()
-            ], 500);
-        }
+    } catch (\Exception $e) {
+        Log::error('Live streaming failed', ['error' => $e->getMessage()]);
+        return response()->json([
+            'message' => 'Server Error',
+            'status' => 500,
+            'data' => null,
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 
 public function updateLiveStatus(Request $request)
 {
