@@ -15,7 +15,7 @@ class CompetitionEntry extends Model
     'start_date',
     'end_date',
     'competition_date',
-    'state',
+    'state_id',
     'city',
     'entry_fees',
     'status',
@@ -29,6 +29,11 @@ public function doctor()
 {
     return $this->belongsTo(Doctor::class, 'judge');
 }
+public function state()
+{
+    return $this->belongsTo(State::class, 'state_id');
+}
+
 
 
 public function getCityNamesAttribute()

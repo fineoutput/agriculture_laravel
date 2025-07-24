@@ -16,6 +16,7 @@ use App\Http\Controllers\ApiControllers\SmsController;
 use App\Http\Controllers\ApiControllers\RegImageController;
 use App\Http\Controllers\ApiControllers\RankingController;
 use App\Http\Controllers\ApiControllers\GoLiveController;
+use App\Http\Controllers\ApiControllers\GetCompetitionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -459,3 +460,5 @@ Route::post('ranking-compitition', [RankingController::class, 'store']);
 
 
 Route::get('/go-live-stream', [GoLiveController::class, 'goLive']);
+
+Route::get('get-competiton', [GetCompetitionController::class, 'getCompetition']);
