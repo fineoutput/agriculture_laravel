@@ -33,19 +33,22 @@ public function getCompetition(Request $request)
         $today = Carbon::now()->format('Y-m-d');
 
         // 🔁 Loop through all entries and match today's date inside time_slot
-        $competition = CompetitionEntry::all()->first(function ($entry) use ($today) {
-            $timeSlots = json_decode($entry->time_slot, true);
+       $competition = CompetitionEntry::all()->first(function ($entry) use ($today) {
+    $timeSlots = json_decode($entry->time_slot, true);
 
-            if (is_array($timeSlots)) {
-                foreach ($timeSlots as $slotData) {
-                    if (!empty($slotData['date']) && in_array($today, $slotData['date'])) {
-                        return true;
-                    }
+    if (is_array($timeSlots)) {
+        foreach ($timeSlots as $slotEntries) {
+            foreach ($slotEntries as $item) {
+                if (!empty($item['date']) && $item['date'] === $today) {
+                    return true;
                 }
             }
+        }
+    }
 
-            return false;
-        });
+    return false;
+});
+
 
         if (!$competition) {
             return response()->json([
