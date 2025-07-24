@@ -75,11 +75,11 @@ class GoLiveController extends Controller
         }
     }
 
-
-    public function updateLiveStatus(Request $request)
+public function updateLiveStatus(Request $request)
 {
     try {
         $liveId = $request->input('live_id'); // Get live_id from form data
+        $type = $request->input('type');      // Get 'type' from form data: 'start' or 'end'
 
         // Find the live stream by live_id
         $liveStream = LiveStream::where('live_id', $liveId)->first();
@@ -92,8 +92,19 @@ class GoLiveController extends Controller
             ], 404);
         }
 
-        // Update the status (you can also allow this to be dynamic)
-        $liveStream->status = 2; // or any new status you need
+        // Update the status based on type
+        if ($type === 'start') {
+            $liveStream->status = 2;
+        } elseif ($type === 'end') {
+            $liveStream->status = 3;
+        } else {
+            return response()->json([
+                'message' => 'Invalid type. Allowed values: start, end',
+                'status' => 400,
+                'data' => null
+            ], 400);
+        }
+
         $liveStream->save();
 
         return response()->json([
@@ -112,5 +123,6 @@ class GoLiveController extends Controller
         ], 500);
     }
 }
+
 
 }
