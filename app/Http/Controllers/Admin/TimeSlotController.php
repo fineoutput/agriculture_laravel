@@ -29,8 +29,13 @@ class TimeSlotController extends Controller
         $slotData[$slotName] = $times[$index];
     }
     $cmp = CompetitionEntry::find($id);
+    $formattedSlots = collect($slotData)
+    ->map(function ($time, $slot) {
+        return "$slot:$time";
+    })
+    ->implode(',');
     $cmp->update([
-    'time_slot' => json_encode($slotData),
+    'time_slot' =>  $formattedSlots,
 ]);
 
 
