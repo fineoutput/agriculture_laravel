@@ -43,4 +43,9 @@ public function getCityNamesAttribute()
     $ids = explode(',', $this->city);
     return City::whereIn('id', $ids)->pluck('city_name')->toArray();
 }
+
+public function getJudgeNameAttribute()
+{
+    return optional($this->doctor)->name; // replace 'name' with actual column if different
+}
 }
