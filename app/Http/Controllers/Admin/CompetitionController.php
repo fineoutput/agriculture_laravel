@@ -21,7 +21,7 @@ class CompetitionController extends Controller
         
 
         $entries = CompetitionEntry::select('tbl_competition_entry.*', 'all_states.state_name')
-            ->leftJoin('all_states', 'tbl_competition_entry.state', '=', 'all_states.id')
+            ->leftJoin('all_states', 'tbl_competition_entry.state_id', '=', 'all_states.id')
             ->orderBy('tbl_competition_entry.id', 'DESC')
             ->get();
 

@@ -63,7 +63,7 @@
                         <select name="state" id="state" class="form-control" required>
                           <option value="">-- Select State --</option>
                           @foreach($states as $state)
-                            <option value="{{ $state->id }}" {{ $competition->state == $state->id ? 'selected' : '' }}>{{ $state->state_name }}</option>
+                            <option value="{{ $state->id }}" {{ $competition->state_id == $state->id ? 'selected' : '' }}>{{ $state->state_name }}</option>
                           @endforeach
                         </select>
                       </td>
@@ -203,9 +203,12 @@
     <script>
      
       $("#city").select2({
-          placeholder: "Select a programming language",
+          placeholder: "Select City",
           allowClear: true
       });
+
+
+      
     </script>
 
 <!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
