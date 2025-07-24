@@ -465,7 +465,7 @@ Route::get('/go-live-stream', [GoLiveController::class, 'goLive']);
 
 Route::post('update-live-status', [GoLiveController::class, 'updateLiveStatus']);
 
-Route::post('get-competiton', [GetCompetitionController::class, 'getCompetition']);
+Route::get('get-competiton', [GetCompetitionController::class, 'getCompetition']);
 
 
 Route::post('comp-result', [CompetitionResultController::class, 'storeCompResult']);
