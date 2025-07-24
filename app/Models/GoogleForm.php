@@ -29,7 +29,8 @@ class GoogleForm extends Model
     'animal_photo_upload',
     'aadhar_number',
     'farmer_photo_upload',
-    'created_at'
+    'created_at',
+    'status'
      ];
 
 }

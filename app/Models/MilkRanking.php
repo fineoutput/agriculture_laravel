@@ -23,8 +23,8 @@ class MilkRanking extends Model
     ];
 
     public function farmer()
-    {
-        return $this->belongsTo(GoogleForm::class, 'farmer_id', 'farmer_id');
-    }
+{
+    return $this->belongsTo(Farmer::class, 'farmer_id', 'id'); // or 'farmer_id' if different
+}
 }
     

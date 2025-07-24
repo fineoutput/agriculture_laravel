@@ -10,7 +10,7 @@
         <table class="table table-bordered">
             <thead>
                 <tr>
-                    <th>#</th>
+                    <th>#</th>  
                     <th>Farmer Name</th>
                     <th>Weight</th>
                     <th>Image</th>

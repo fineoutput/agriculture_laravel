@@ -71,13 +71,13 @@ $imageUrl = url('milk_images/' . $filename);
                 'message' => 'Milk entry created successfully',
                 'data' => $entry,
             ], 201);
-        } catch (\Exception $e) {
-            Log::error('Error in storing milk entry', ['error' => $e->getMessage()]);
-            return response()->json([
-                'message' => 'Server Error',
-                'status' => 500,
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+            } catch (\Exception $e) {
+                Log::error('Error in storing milk entry', ['error' => $e->getMessage()]);
+                return response()->json([
+                    'message' => 'Server Error',
+                    'status' => 500,
+                    'error' => $e->getMessage(),
+                ], 500);
+            }
     }
 }
