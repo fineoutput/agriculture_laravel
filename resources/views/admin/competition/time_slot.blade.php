@@ -4,7 +4,14 @@
 
 @php
     $isEdit = isset($competition);
-    $timeSlots = $isEdit && !empty($competition->time_slot) ? json_decode($competition->time_slot, true) : [];
+    $timeSlots = [];
+
+    if ($isEdit && !empty($competition->time_slot)) {
+        $decoded = json_decode($competition->time_slot, true);
+        if (is_array($decoded)) {
+            $timeSlots = $decoded;
+        }
+    }
 @endphp
 <div class="content-wrapper">
   <section class="content-header">
@@ -48,50 +55,63 @@
                   <table class="table table-hover">
                     
                     <div id="slot-wrapper">
-    @if($isEdit && count($timeSlots))
-        @foreach($timeSlots as $slot => $time)
-            <div class="slot-block form-row align-items-end mt-2">
-                <div class="form-group col-md-5">
-                    <label>Time Slot</label>
-                    <select name="time_slot[]" class="form-control time-slot-select" required>
-                        <option value="">Select Slot</option>
-                        @foreach(['Morning', 'Afternoon', 'Evening', 'Night'] as $option)
-                            <option value="{{ $option }}" {{ $option == $slot ? 'selected' : '' }}>{{ $option }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="form-group col-md-5">
-                    <label>Slot Time</label>
-                    <input type="time" name="slot_time[]" class="form-control" value="{{ $time }}" required>
-                </div>
-                
-                <div class="form-group col-md-2">
-                    <button type="button" class="btn btn-danger remove-slot">Remove</button>
-                </div>
-                
-            </div>
-            
-        @endforeach
-    @else
-        <div class="slot-block form-row align-items-end">
-            <div class="form-group col-md-5">
+@if($isEdit && count($timeSlots))
+    @foreach($timeSlots as $slot => $data)
+        <div class="slot-block form-row align-items-end mt-2">
+            <div class="form-group col-md-4">
                 <label>Time Slot</label>
                 <select name="time_slot[]" class="form-control time-slot-select" required>
                     <option value="">Select Slot</option>
-                    @foreach (['Morning', 'Afternoon', 'Evening', 'Night'] as $slot)
-                        <option value="{{ $slot }}">{{ $slot }}</option>
+                    @foreach(['Morning', 'Afternoon', 'Evening', 'Night'] as $option)
+                        <option value="{{ $option }}" 
+                            {{ trim(strtolower($option)) == trim(strtolower($slot)) ? 'selected' : '' }}>
+                            {{ $option }}
+                        </option>
                     @endforeach
                 </select>
             </div>
 
-            <div class="form-group col-md-5">
+            <div class="form-group col-md-3">
                 <label>Slot Time</label>
-                <input type="time" name="slot_time[]" class="form-control" required>
+                <input type="time" name="slot_time[]" class="form-control" 
+                       value="{{ $data['time'] ?? '' }}" required>
             </div>
 
-            
+            <div class="form-group col-md-3">
+                <label>Slot Date</label>
+               <input type="date" name="slot_date[]" class="form-control" value="{{ $data['date'][0] ?? '' }}" required>
+
+            </div>
+
+            <div class="form-group col-md-2">
+                <button type="button" class="btn btn-danger remove-slot">Remove</button>
+            </div>
         </div>
-    @endif
+    @endforeach
+@else
+    <div class="slot-block form-row align-items-end">
+        <div class="form-group col-md-4">
+            <label>Time Slot</label>
+            <select name="time_slot[]" class="form-control time-slot-select" required>
+                <option value="">Select Slot</option>
+                @foreach (['Morning', 'Afternoon', 'Evening', 'Night'] as $slot)
+                    <option value="{{ $slot }}">{{ $slot }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <div class="form-group col-md-3">
+            <label>Slot Time</label>
+            <input type="time" name="slot_time[]" class="form-control" required>
+        </div>
+
+        <div class="form-group col-md-3">
+            <label>Slot Date</label>
+            <input type="date" name="slot_date[]" class="form-control" value="{{ $data['date'][0] ?? '' }}" required>
+
+        </div>
+    </div>
+@endif
 </div>
 
 
@@ -134,7 +154,7 @@
         // Create new block
         const newBlock = $('<div class="slot-block form-row align-items-end mt-2">');
 
-        let selectHtml = '<select name="time_slot[]" class="form-control time-slot-select" required>';
+        let selectHtml = '<select name="slot_date[]" class="form-control time-slot-select" required>';
         selectHtml += '<option value="">Select Slot</option>';
         availableSlots.forEach(slot => {
             selectHtml += '<option value="' + slot + '">' + slot + '</option>';
@@ -149,6 +169,10 @@
             <div class="form-group col-md-5">
                 <label>Slot Time</label>
                 <input type="time" name="slot_time[]" class="form-control" required>
+            </div>
+            <div class="form-group col-md-5">
+                <label>Slot Date</label>
+                <input type="date" name="slot_time[]" class="form-control" required>
             </div>
             <div class="form-group col-md-2">
                 <button type="button" class="btn btn-danger remove-slot">Remove</button>

@@ -21,23 +21,24 @@ class TimeSlotController extends Controller
         // 'time_slot.*' => 'in:Morning,Afternoon,Evening,Night'
     ]);
 
-    $slots = $request->time_slot;
-    $times = $request->slot_time;
-    $slotData = [];
+  $date = $request->slot_date;
+$slots = $request->time_slot;
+$times = $request->slot_time;
 
-    foreach ($slots as $index => $slotName) {
-        $slotData[$slotName] = $times[$index];
-    }
-    $cmp = CompetitionEntry::find($id);
-    $formattedSlots = collect($slotData)
-    ->map(function ($time, $slot) {
-        return "$slot:$time";
-    })
-    ->implode(',');
-    $cmp->update([
-    'time_slot' =>  $formattedSlots,
+$slotData = [];
+   
+foreach ($slots as $index => $slotName) {
+    $slotData[$slotName] = [
+        'time' => $times[$index],
+        'date' => $date // assuming same date for all slots
+    ];
+}
+
+$cmp = CompetitionEntry::find($id);
+
+$cmp->update([
+    'time_slot' => json_encode($slotData),
 ]);
-
 
 
     Session::flash('message', 'Competition updated successfully.');
