@@ -89,9 +89,7 @@
                 <input type="time" name="slot_time[]" class="form-control" required>
             </div>
 
-            <div class="form-group col-md-2">
-                <button type="button" class="btn btn-success add-more-slot">Add More</button>
-            </div>
+            
         </div>
     @endif
 </div>
