@@ -2946,7 +2946,7 @@ switch ($lang) {
         }
 
         $validator = Validator::make($request->all(), [
-            'Email' => 'nullable|email',
+            'Email' => 'nullable',
             'farmer_name' => 'required|string',
             'mobile_number' => 'required|string',
             'village_Town' => 'nullable|string',
