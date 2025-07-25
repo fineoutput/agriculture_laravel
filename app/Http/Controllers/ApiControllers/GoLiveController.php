@@ -220,11 +220,20 @@ public function updateLiveStatus(Request $request)
 
         $liveStream->save();
 
+        if($liveStream->status == 3) {
+            return response()->json([
+                            'message' => 'end',
+                            'status' => 201,
+                            'data' => $liveStream
+                        ], 201);
+        }else{
+
         return response()->json([
             'message' => 'Live stream status updated successfully.',
             'status' => 200,
             'data' => $liveStream
         ], 200);
+        }
 
     } catch (\Exception $e) {
         Log::error('Live stream status update failed', ['error' => $e->getMessage()]);

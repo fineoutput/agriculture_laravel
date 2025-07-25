@@ -73,6 +73,7 @@ Route::group(['prefix' => '/'], function () {
     Route::get('privacy', [HomeController::class, 'privacy'])->name('privacy');
     Route::get('refund', [HomeController::class, 'refund'])->name('refund');
     Route::get('services', [HomeController::class, 'services'])->name('services');
+    Route::get('transfer-database', [HomeController::class, 'transfer_database'])->name('transfer-database');
     Route::get('shipping_delivery', [HomeController::class, 'shipping_delivery'])->name('shipping_delivery');
     Route::get('terms_and_conditions', [HomeController::class, 'terms_and_conditions'])->name('terms_and_conditions');
     Route::get('vendor', [HomeController::class, 'vendor'])->name('vendor');
