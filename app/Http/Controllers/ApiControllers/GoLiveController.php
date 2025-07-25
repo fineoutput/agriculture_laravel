@@ -132,25 +132,24 @@ public function goLive(Request $request)
         }
 
         // ✅ Validate that the competition includes the given slot and today's date
-        $timeSlots = json_decode($competition->time_slot, true);
+       $timeSlots = json_decode($competition->time_slot, true);
 
-        $slotValid = false;
-        if (is_array($timeSlots) && isset($timeSlots[$slotRequested])) {
-            foreach ($timeSlots[$slotRequested] as $slotData) {
-                if (!empty($slotData['date']) && $slotData['date'] === $today) {
-                    $slotValid = true;
-                    break;
-                }
-            }
-        }
+$slotValid = false;
+if (is_array($timeSlots) && isset($timeSlots[$slotRequested])) {
+    $slotData = $timeSlots[$slotRequested];
+    if (!empty($slotData['date']) && $slotData['date'] === $today) {
+        $slotValid = true;
+    }
+}
 
-        if (!$slotValid) {
-            return response()->json([
-                'message' => 'The selected competition does not have this slot available today.',
-                'status' => 201,
-                'data' => null
-            ], 201);
-        }
+if (!$slotValid) {
+    return response()->json([
+        'message' => 'The selected competition does not have this slot available today.',
+        'status' => 201,
+        'data' => null
+    ], 201);
+}
+
 
         // ✅ Generate unique live ID
         $liveId = 'LIVE-' . Str::uuid();
