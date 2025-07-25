@@ -53,34 +53,29 @@
                       <td><strong>Competition Date</strong> <span style="color:red;">*</span></td>
                       <td><input type="date" name="competition_date" class="form-control" value="{{ $competition->competition_date }}" required></td>
                     </tr>
+
                     <tr>
-                      <td><strong>State</strong> <span style="color:red;">*</span></td>
-                      <td>
-                        <select name="state" id="state" class="form-control" required>
-                          <option value="">-- Select State --</option>
-                          @foreach($states as $state)
-                            <option value="{{ $state->id }}" {{ $competition->state_id == $state->id ? 'selected' : '' }}>{{ $state->state_name }}</option>
-                          @endforeach
-                        </select>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td><strong>City</strong> <span style="color:red;">*</span></td>
-                      <td>
-                        <select name="city[]" id="city" class="form-control" multiple required>
-    @foreach($cities as $city)
-        <option value="{{ $city->id }}" 
-            {{ in_array($city->id, explode(',', $competition->city)) ? 'selected' : '' }}>
-            {{ $city->city_name }}
-        </option>
-    @endforeach
-</select>
-                      </td>
+                        <td><strong>State</strong> <span style="color:red;">*</span></td>
+                        <td>
+                            <select name="state" id="state" class="form-control" required>
+                                <option value="">-- Select State --</option>
+                                @foreach($states as $state)
+                                    <option value="{{ $state->id }}" {{ $competition->state_id == $state->id ? 'selected' : '' }}>
+                                        {{ $state->state_name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </td>
                     </tr>
 
-                       
-
-
+                    <tr>
+                        <td><strong>City</strong> <span style="color:red;">*</span></td>
+                        <td>
+                            <select name="city[]" id="city" class="form-control" multiple required>
+                                {{-- Cities will be populated by JS --}}
+                            </select>
+                        </td>
+                    </tr>
 
 <tr>
 
@@ -150,43 +145,57 @@
 
       
     </script>
+    
+    <script>
+    $(".form-control[multiple]").chosen({width: "100%"});
+</script>
+ <script>
+    // Get selected city IDs from competition model
+    let selectedCities = {!! json_encode(explode(',', $competition->city)) !!};
+</script>
 
 <!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
-  <script>
-  $(document).ready(function () {
-      // $(".chosen-select, .chosen-city").chosen();
+<script>
+    $(document).ready(function () {
+        function loadCities(state_id, preselect = true) {
+            if (state_id) {
+                $.ajax({
+                    url: "/competition-cities/" + state_id,
+                    method: "GET",
+                    success: function (response) {
+                        let citySelect = $("#city");
+                        citySelect.empty(); // clear old cities
 
-      $("#state").on("change", function () {
-          var state_id = $(this).val();
-          console.log("State changed:", state_id);
+                        $.each(response.cities, function (index, city) {
+                            // Mark city as selected if it exists in selectedCities
+                            let isSelected = selectedCities.includes(city.id.toString()) ? 'selected' : '';
+                            citySelect.append(
+                                '<option value="' + city.id + '" ' + isSelected + '>' + city.city_name + '</option>'
+                            );
+                        });
 
-          if (state_id !== "") {
-              $.ajax({
-                  url: "/agriculture_laravel/public/competition-cities/" + state_id,
-                  method: "GET",
-                  success: function (response) {
-                      console.log("Cities loaded:", response.cities);
+                        citySelect.trigger("chosen:updated"); // if using Chosen
+                    },
+                    error: function () {
+                        alert("Error loading cities.");
+                    }
+                });
+            } else {
+                $("#city").empty().append('<option value="">-- Select City --</option>').trigger("chosen:updated");
+            }
+        }
 
-                      $("#city").each(function () {
-                          var citySelect = $(this);
-                          console.log('nbhagvfuyasvhjfgfvasfasjhgvfhasfiu',response.cities);
-                          citySelect.empty().append('<option value="">-- Select City --</option>');
+        // Initial load (on page load if state is pre-selected)
+        let initialStateId = $("#state").val();
+        if (initialStateId) {
+            loadCities(initialStateId);
+        }
 
-                          $.each(response.cities, function (key, city) {
-                              citySelect.append('<option value="' + city.id + '">' + city.city_name + '</option>');
-                          });
-
-                          citySelect.trigger("chosen:updated");
-                      });
-                  },
-                  error: function () {
-                      alert("City load karne me error aaya.");
-                  }
-              });
-          } else {
-              $(".chosen-city").html('<option value="">-- Select City --</option>').trigger("chosen:updated");
-          }
-      });
-  });
-  </script>
+        // On state change
+        $("#state").on("change", function () {
+            selectedCities = []; // Clear selected cities on state change
+            loadCities($(this).val(), false);
+        });
+    });
+</script>
 @endsection

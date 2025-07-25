@@ -90,9 +90,9 @@ public function goLive(Request $request)
         if (!$farmer) {
             return response()->json([
                 'message' => 'Invalid token or inactive user!',
-                'status' => 403,
+                'status' => 200,
                 'data' => null
-            ], 403);
+            ], 200);
         }
 
         // ✅ Get slot and competition_id from form-data
@@ -104,18 +104,18 @@ public function goLive(Request $request)
         if (!$slotRequested || !in_array($slotRequested, $validSlots)) {
             return response()->json([
                 'message' => 'Invalid or missing slot. Allowed values: Morning, Afternoon, Evening, Night',
-                'status' => 422,
+                'status' => 200,
                 'data' => null
-            ], 422);
+            ], 200);
         }
 
         // ✅ Validate competition ID
         if (!$competitionId || !is_numeric($competitionId)) {
             return response()->json([
                 'message' => 'Invalid or missing competition_id.',
-                'status' => 422,
+                'status' => 201,
                 'data' => null
-            ], 422);
+            ], 201);
         }
 
         $today = Carbon::now()->format('Y-m-d');
@@ -126,9 +126,9 @@ public function goLive(Request $request)
         if (!$competition) {
             return response()->json([
                 'message' => 'Competition not found.',
-                'status' => 404,
+                'status' => 201,
                 'data' => null
-            ], 404);
+            ], 201);
         }
 
         // ✅ Validate that the competition includes the given slot and today's date
@@ -147,9 +147,9 @@ public function goLive(Request $request)
         if (!$slotValid) {
             return response()->json([
                 'message' => 'The selected competition does not have this slot available today.',
-                'status' => 422,
+                'status' => 201,
                 'data' => null
-            ], 422);
+            ], 201);
         }
 
         // ✅ Generate unique live ID
@@ -182,10 +182,10 @@ public function goLive(Request $request)
         Log::error('Live streaming failed', ['error' => $e->getMessage()]);
         return response()->json([
             'message' => 'Server Error',
-            'status' => 500,
+            'status' => 201,
             'data' => null,
             'error' => $e->getMessage()
-        ], 500);
+        ], 201);
     }
 }
 
@@ -202,9 +202,9 @@ public function updateLiveStatus(Request $request)
         if (!$liveStream) {
             return response()->json([
                 'message' => 'Live stream not found!',
-                'status' => 404,
+                'status' => 201,
                 'data' => null
-            ], 404);
+            ], 201);
         }
 
         // Update the status based on type
@@ -215,9 +215,9 @@ public function updateLiveStatus(Request $request)
         } else {
             return response()->json([
                 'message' => 'Invalid type. Allowed values: start, end',
-                'status' => 400,
+                'status' => 201,
                 'data' => null
-            ], 400);
+            ], 201);
         }
 
         $liveStream->save();
@@ -232,10 +232,10 @@ public function updateLiveStatus(Request $request)
         Log::error('Live stream status update failed', ['error' => $e->getMessage()]);
         return response()->json([
             'message' => 'Server Error',
-            'status' => 500,
+            'status' => 201,
             'data' => null,
             'error' => $e->getMessage()
-        ], 500);
+        ], 201);
     }
 }
 
