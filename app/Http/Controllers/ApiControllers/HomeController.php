@@ -2955,7 +2955,7 @@ switch ($lang) {
             'animal_ID' => 'nullable|string',
             'breed' => 'nullable|string',
             'lactation_no' => 'nullable|string',
-            'date_of_calving' => 'nullable|date',
+            'date_of_calving' => 'nullable',
             'milk_yield' => 'nullable|string',
             'aadhar_number' => 'nullable|string',
             'farmer_photo_upload' => 'nullable|file|mimes:jpg,jpeg,png|max:25000',
