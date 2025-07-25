@@ -237,7 +237,8 @@ public function updateLiveStatus(Request $request)
     }
 }
 
-public function liveUser(Request $request){
+public function liveUser(Request $request)
+{
     try {
         $token = $request->header('Authentication');
 
@@ -253,42 +254,69 @@ public function liveUser(Request $request){
             ], 403);
         }
 
-        // ✅ Get competition_id from request
-        $competitionId = $request->input('competition_id');
+        $today = Carbon::now()->format('Y-m-d');
 
-        if (!$competitionId || !is_numeric($competitionId)) {
+        $competition = CompetitionEntry::all()->first(function ($entry) use ($today) {
+            $timeSlots = json_decode($entry->time_slot, true);
+
+            if (is_array($timeSlots)) {
+                foreach ($timeSlots as $slot => $slotData) {
+                    if (isset($slotData['date']) && $slotData['date'] === $today) {
+                        return true;
+                    }
+
+                    if (is_array($slotData) && isset($slotData[0]['date']) && $slotData[0]['date'] === $today) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        });
+
+        if (!$competition) {
             return response()->json([
-                'message' => 'Invalid or missing competition_id.',
-                'status' => 422,
-                'data' => null
-            ], 422);
-        }
-
-        // ✅ Get the user's live stream with status = 2 and matching competition
-        $liveStream = LiveStream::where('user_id', $farmer->id)
-                                ->where('competition_id', $competitionId)
-                                ->where('status', 2)
-                                ->first();
-
-        if (!$liveStream) {
-            return response()->json([
-                'message' => 'No live stream found for this user in the given competition with status 2.',
+                'message' => 'No competition found for today.',
                 'status' => 404,
                 'data' => null
             ], 404);
         }
 
+        $competitionId = $competition->id;
+
+        $liveStreams = LiveStream::where('competition_id', $competitionId)
+            ->where('status', 2)
+            ->get();
+
+        if ($liveStreams->isEmpty()) {
+            return response()->json([
+                'message' => 'No live stream found for today\'s competition with status 2.',
+                'status' => 404,
+                'data' => null
+            ], 404);
+        }
+
+        $data = $liveStreams->map(function ($stream) {
+            $farmer = Farmer::find($stream->user_id);
+
+            return [
+                'live_id'        => $stream->live_id,
+                'competition_id' => $stream->competition_id,
+                'status'         => $stream->status,
+                'created_at'     => $stream->created_at->toDateTimeString(),
+                'updated_at'     => $stream->updated_at->toDateTimeString(),
+                'user' => [
+                    'id'    => $farmer->id ?? null,
+                    'name'  => $farmer->name ?? null,
+                    'image' => $farmer->image ?? null,
+                ]
+            ];
+        });
+
         return response()->json([
             'status' => 200,
-            'message' => 'Live stream found.',
-            'data' => [
-                'live_id' => $liveStream->live_id,
-                'user_id' => $liveStream->user_id,
-                'user_name' => $liveStream->user_name,
-                'competition_id' => $liveStream->competition_id,
-                'slot' => $liveStream->slot,
-                'status' => $liveStream->status
-            ]
+            'message' => 'Live streams found.',
+            'data' => $data,
         ], 200);
 
     } catch (\Exception $e) {
