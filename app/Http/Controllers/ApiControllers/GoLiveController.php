@@ -239,9 +239,10 @@ public function updateLiveStatus(Request $request)
     }
 }
 
-public function liveUser(Request $request){
-         try {
-        $token = $request->header('Authentication'); // Note: ensure header name matches frontend
+public function liveUser(Request $request)
+{
+    try {
+        $token = $request->header('Authentication');
 
         $farmer = Farmer::where('auth', $token)
                         ->where('is_active', 1)
@@ -255,12 +256,47 @@ public function liveUser(Request $request){
             ], 403);
         }
 
-        
+        // ✅ Get competition_id from request
+        $competitionId = $request->input('competition_id');
 
+        if (!$competitionId || !is_numeric($competitionId)) {
+            return response()->json([
+                'message' => 'Invalid or missing competition_id.',
+                'status' => 422,
+                'data' => null
+            ], 422);
         }
-        
-        catch (\Exception $e) {
-        Log::error('Live streaming failed', ['error' => $e->getMessage()]);
+
+        // ✅ Get the user's live stream with status = 2 and matching competition
+        $liveStream = LiveStream::where('user_id', $farmer->id)
+                                ->where('competition_id', $competitionId)
+                                ->where('status', 2)
+                                ->first();
+
+        if (!$liveStream) {
+            return response()->json([
+                'message' => 'No live stream found for this user in the given competition with status 2.',
+                'status' => 404,
+                'data' => null
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => 200,
+            'message' => 'Live stream found.',
+            'data' => [
+                'live_id' => $liveStream->live_id,
+                'user_id' => $liveStream->user_id,
+                'user_name' => $liveStream->user_name,
+                'competition_id' => $liveStream->competition_id,
+                'slot' => $liveStream->slot,
+                'status' => $liveStream->status
+            ]
+        ], 200);
+
+    } catch (\Exception $e) {
+        Log::error('Live stream fetch failed', ['error' => $e->getMessage()]);
+
         return response()->json([
             'message' => 'Server Error',
             'status' => 500,
@@ -269,4 +305,5 @@ public function liveUser(Request $request){
         ], 500);
     }
 }
+
 }
