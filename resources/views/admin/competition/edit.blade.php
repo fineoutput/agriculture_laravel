@@ -160,7 +160,7 @@
         function loadCities(state_id, preselect = true) {
             if (state_id) {
                 $.ajax({
-                    url: "/competition-cities/" + state_id,
+                    url: "/agriculture_laravel/public/competition-cities/" + state_id,
                     method: "GET",
                     success: function (response) {
                         let citySelect = $("#city");
