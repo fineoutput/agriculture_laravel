@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use App\Models\MilkRanking;
 use App\Models\Farmer;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
+use App\Models\CompetitionEntry;
 
 class RankingController extends Controller
 {
@@ -16,12 +19,14 @@ class RankingController extends Controller
     {
         Log::info('Milk Entry Request Received', [
             'weight' => $request->input('weight'),
+            'competition_id' => $request->input('competition_id'),
             'authentication_header' => $request->header('Authentication'),
         ]);
 
         // Validate request
         $validator = Validator::make($request->all(), [
             'weight' => 'required',
+            'competition_id' => 'required',
             'image' => 'required|image|max:2048',
         ]);
 
@@ -52,18 +57,19 @@ class RankingController extends Controller
 
             // Store image
             $image = $request->file('image');
-    $filename = time() . '_' . $image->getClientOriginalName();
-    $destinationPath = public_path('milk_images');
+        $filename = time() . '_' . $image->getClientOriginalName();
+        $destinationPath = public_path('milk_images');
 
-    $image->move($destinationPath, $filename);
+        $image->move($destinationPath, $filename);
 
-// Generate public URL path
-    $imageUrl = url('milk_images/' . $filename);
+        // Generate public URL path
+            $imageUrl = url('milk_images/' . $filename);
 
             // Save milk entry
             $entry = MilkRanking::create([
                 'farmer_id' => $farmer->id,
                 'weight' => $request->weight,
+                'competition_id' => $request->competition_id,
                 'image' => $imageUrl,
             ]);
 
@@ -81,4 +87,71 @@ class RankingController extends Controller
                 ], 500);
             }
     }
+
+ public function leaderboard(Request $request)
+{
+    try {
+        $today = Carbon::now()->format('Y-m-d');
+
+        // Find today's competition
+        $competition = CompetitionEntry::all()->first(function ($entry) use ($today) {
+            $slots = json_decode($entry->time_slot, true);
+            if (is_array($slots)) {
+                foreach ($slots as $slot => $data) {
+                    if (isset($data['date']) && $data['date'] === $today) {
+                        return true;
+                    }
+                    if (is_array($data) && isset($data[0]['date']) && $data[0]['date'] === $today) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        });
+
+        if (!$competition) {
+            return response()->json([
+                'message' => 'No competition found for today.',
+                'status' => 404,
+                'data' => null,
+            ], 404);
+        }
+
+        $competitionId = $competition->id;
+
+        // Now get leaderboard
+        $leaderboard = MilkRanking::select('farmer_id', DB::raw('SUM(weight) as total_weight'))
+            ->where('competition_id', $competitionId)
+            ->groupBy('farmer_id')
+            ->orderByDesc('total_weight')
+            ->with('farmer:id,name,image')
+            ->get();
+
+        $data = $leaderboard->map(function ($entry, $index) {
+            return [
+                'rank' => $index + 1,
+                'farmer_id' => $entry->farmer_id,
+                'name' => $entry->farmer->name ?? null,
+                'image' => $entry->farmer->image ?? null,
+                'total_weight' => (float) $entry->total_weight,
+            ];
+        });
+
+        return response()->json([
+            'message' => 'Leaderboard fetched successfully',
+            'status' => 200,
+            'data' => $data
+        ], 200);
+
+    } catch (\Exception $e) {
+        Log::error('Error fetching leaderboard', ['error' => $e->getMessage()]);
+        return response()->json([
+            'message' => 'Server Error',
+            'status' => 500,
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+
 }

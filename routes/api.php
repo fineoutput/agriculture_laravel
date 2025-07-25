@@ -457,7 +457,11 @@ Route::get('Test_Message', [SmsController::class, 'sendTestSMS']);
 Route::get('reg-image', [RegImageController::class, 'getLatestEnabledImage']);
 
 
+
 Route::post('ranking-compitition', [RankingController::class, 'store']);
+
+
+Route::get('leader-board', [RankingController::class, 'leaderBoard']);
 
 
 Route::post('go-live-stream', [GoLiveController::class, 'goLive']);
