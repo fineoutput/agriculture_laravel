@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use App\Models\MilkRanking;
 use App\Models\Farmer;
+use App\Models\Doctor;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use App\Models\CompetitionEntry;
@@ -118,12 +119,25 @@ public function leaderboard(Request $request)
 
         $competitionId = $competition->id;
 
-        // ✅ Decode judge names
-        $judgeNames = is_array(json_decode($competition->judge_name, true))
-            ? json_decode($competition->judge_name, true)
-            : [$competition->judge_name];
+        // ✅ Decode judge IDs (stored as JSON or single value)
+        $judgeIds = json_decode($competition->judge, true);
+        if (!is_array($judgeIds)) {
+            $judgeIds = [$competition->judge];
+        }
 
-        // ✅ Get leaderboard sorted by total_weight
+        // ✅ Fetch judge details from Doctor model
+        $judges = Doctor::whereIn('id', $judgeIds)
+            ->get(['id', 'name', 'image', 'district'])
+            ->map(function ($judge) {
+                return [
+                    'id' => $judge->id,
+                    'name' => $judge->name,
+                    'image' => $judge->image,
+                    'district' => $judge->district,
+                ];
+            });
+
+        // ✅ Get leaderboard data
         $leaderboard = MilkRanking::select('farmer_id', DB::raw('SUM(weight) as total_weight'))
             ->where('competition_id', $competitionId)
             ->groupBy('farmer_id')
@@ -131,8 +145,7 @@ public function leaderboard(Request $request)
             ->with('farmer:id,name,image,village')
             ->get();
 
-        // ✅ Build leaderboard with judges in each entry
-        $data = $leaderboard->map(function ($entry, $index) use ($judgeNames) {
+        $data = $leaderboard->map(function ($entry, $index) {
             return [
                 'rank' => $index + 1,
                 'farmer_id' => $entry->farmer_id,
@@ -140,13 +153,13 @@ public function leaderboard(Request $request)
                 'image' => $entry->farmer->image ?? null,
                 'village' => $entry->farmer->village ?? null,
                 'total_weight' => (float) $entry->total_weight,
-                'judges' => $judgeNames,
             ];
         });
 
         return response()->json([
             'message' => 'Leaderboard fetched successfully',
             'status' => 200,
+            'judges' => $judges,
             'data' => $data
         ], 200);
 
@@ -159,6 +172,7 @@ public function leaderboard(Request $request)
         ], 500);
     }
 }
+
 
 
 
