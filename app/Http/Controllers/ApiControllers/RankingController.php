@@ -52,13 +52,13 @@ class RankingController extends Controller
 
             // Store image
             $image = $request->file('image');
-$filename = time() . '_' . $image->getClientOriginalName();
-$destinationPath = public_path('milk_images');
+    $filename = time() . '_' . $image->getClientOriginalName();
+    $destinationPath = public_path('milk_images');
 
-$image->move($destinationPath, $filename);
+    $image->move($destinationPath, $filename);
 
 // Generate public URL path
-$imageUrl = url('milk_images/' . $filename);
+    $imageUrl = url('milk_images/' . $filename);
 
             // Save milk entry
             $entry = MilkRanking::create([

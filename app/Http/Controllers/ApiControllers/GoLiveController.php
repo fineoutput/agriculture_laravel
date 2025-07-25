@@ -78,8 +78,7 @@ class GoLiveController extends Controller
     // }
 
 
-public function goLive(Request $request)
-{
+public function goLive(Request $request){
     try {
         $token = $request->header('Authentication'); // Make sure header matches frontend
 
@@ -134,21 +133,21 @@ public function goLive(Request $request)
         // ✅ Validate that the competition includes the given slot and today's date
        $timeSlots = json_decode($competition->time_slot, true);
 
-$slotValid = false;
-if (is_array($timeSlots) && isset($timeSlots[$slotRequested])) {
+    $slotValid = false;
+    if (is_array($timeSlots) && isset($timeSlots[$slotRequested])) {
     $slotData = $timeSlots[$slotRequested];
     if (!empty($slotData['date']) && $slotData['date'] === $today) {
         $slotValid = true;
     }
-}
+    }
 
-if (!$slotValid) {
+    if (!$slotValid) {
     return response()->json([
         'message' => 'The selected competition does not have this slot available today.',
         'status' => 201,
         'data' => null
     ], 201);
-}
+    }
 
 
         // ✅ Generate unique live ID
@@ -238,8 +237,7 @@ public function updateLiveStatus(Request $request)
     }
 }
 
-public function liveUser(Request $request)
-{
+public function liveUser(Request $request){
     try {
         $token = $request->header('Authentication');
 
@@ -304,5 +302,7 @@ public function liveUser(Request $request)
         ], 500);
     }
 }
+
+
 
 }
