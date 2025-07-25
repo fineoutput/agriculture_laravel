@@ -471,4 +471,4 @@ Route::get('get-competiton', [GetCompetitionController::class, 'getCompetition']
 Route::post('comp-result', [CompetitionResultController::class, 'storeCompResult']);
 
 
-Route::post('live-user', [GoLiveController::class, 'liveUser']);
+Route::get('live-user', [GoLiveController::class, 'liveUser']);

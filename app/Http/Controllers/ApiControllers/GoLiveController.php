@@ -249,9 +249,9 @@ public function liveUser(Request $request)
         if (!$farmer) {
             return response()->json([
                 'message' => 'Invalid token or inactive user!',
-                'status' => 403,
+                'status' => 201,
                 'data' => null
-            ], 403);
+            ], 201);
         }
 
         $today = Carbon::now()->format('Y-m-d');
