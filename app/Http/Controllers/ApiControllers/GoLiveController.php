@@ -78,10 +78,10 @@ class GoLiveController extends Controller
     // }
 
 
-    public function goLive(Request $request)
+public function goLive(Request $request)
 {
     try {
-        $token = $request->header('Authentication'); // Note: ensure header name matches frontend
+        $token = $request->header('Authentication'); // Make sure header matches frontend
 
         $farmer = Farmer::where('auth', $token)
                         ->where('is_active', 1)
@@ -95,10 +95,11 @@ class GoLiveController extends Controller
             ], 403);
         }
 
-        // ✅ Get slot from form-data
+        // ✅ Get slot and competition_id from form-data
         $slotRequested = $request->input('slot');
+        $competitionId = $request->input('competition_id');
 
-        // ✅ Normalize and validate slot
+        // ✅ Validate slot
         $validSlots = ['Morning', 'Afternoon', 'Evening', 'Night'];
         if (!$slotRequested || !in_array($slotRequested, $validSlots)) {
             return response()->json([
@@ -108,29 +109,47 @@ class GoLiveController extends Controller
             ], 422);
         }
 
+        // ✅ Validate competition ID
+        if (!$competitionId || !is_numeric($competitionId)) {
+            return response()->json([
+                'message' => 'Invalid or missing competition_id.',
+                'status' => 422,
+                'data' => null
+            ], 422);
+        }
+
         $today = Carbon::now()->format('Y-m-d');
 
-        // ✅ Find a matching competition for the given slot and today's date
-        $competition = CompetitionEntry::all()->first(function ($entry) use ($today, $slotRequested) {
-            $timeSlots = json_decode($entry->time_slot, true);
-
-            if (is_array($timeSlots) && isset($timeSlots[$slotRequested])) {
-                foreach ($timeSlots[$slotRequested] as $slotData) {
-                    if (!empty($slotData['date']) && $slotData['date'] === $today) {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        });
+        // ✅ Find the specified competition
+        $competition = CompetitionEntry::find($competitionId);
 
         if (!$competition) {
             return response()->json([
-                'message' => 'No competition found for this slot today.',
+                'message' => 'Competition not found.',
                 'status' => 404,
                 'data' => null
             ], 404);
+        }
+
+        // ✅ Validate that the competition includes the given slot and today's date
+        $timeSlots = json_decode($competition->time_slot, true);
+
+        $slotValid = false;
+        if (is_array($timeSlots) && isset($timeSlots[$slotRequested])) {
+            foreach ($timeSlots[$slotRequested] as $slotData) {
+                if (!empty($slotData['date']) && $slotData['date'] === $today) {
+                    $slotValid = true;
+                    break;
+                }
+            }
+        }
+
+        if (!$slotValid) {
+            return response()->json([
+                'message' => 'The selected competition does not have this slot available today.',
+                'status' => 422,
+                'data' => null
+            ], 422);
         }
 
         // ✅ Generate unique live ID
@@ -141,6 +160,8 @@ class GoLiveController extends Controller
             'live_id' => $liveId,
             'user_id' => $farmer->id,
             'user_name' => $farmer->name,
+            'competition_id' => $competition->id, // Save competition ID
+            'slot' => $slotRequested,
             'status' => 1
         ]);
 
@@ -167,6 +188,7 @@ class GoLiveController extends Controller
         ], 500);
     }
 }
+
 
 public function updateLiveStatus(Request $request)
 {
@@ -217,5 +239,34 @@ public function updateLiveStatus(Request $request)
     }
 }
 
+public function liveUser(Request $request){
+         try {
+        $token = $request->header('Authentication'); // Note: ensure header name matches frontend
 
+        $farmer = Farmer::where('auth', $token)
+                        ->where('is_active', 1)
+                        ->first();
+
+        if (!$farmer) {
+            return response()->json([
+                'message' => 'Invalid token or inactive user!',
+                'status' => 403,
+                'data' => null
+            ], 403);
+        }
+
+        
+
+        }
+        
+        catch (\Exception $e) {
+        Log::error('Live streaming failed', ['error' => $e->getMessage()]);
+        return response()->json([
+            'message' => 'Server Error',
+            'status' => 500,
+            'data' => null,
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
 }

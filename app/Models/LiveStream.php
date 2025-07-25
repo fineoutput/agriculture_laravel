@@ -15,6 +15,7 @@ class LiveStream extends Model
     'live_id',
     'user_id',
     'user_name',
+    'competition_id',
     'status',
     'created_at',
     'updated_at',
