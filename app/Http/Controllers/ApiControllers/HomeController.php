@@ -2947,19 +2947,19 @@ switch ($lang) {
 
         $validator = Validator::make($request->all(), [
             'Email' => 'nullable',
-            'farmer_name' => 'required|string',
-            'mobile_number' => 'required|string',
-            'village_Town' => 'nullable|string',
-            'district' => 'nullable|string',
-            'state' => 'nullable|string',
-            'animal_ID' => 'nullable|string',
-            'breed' => 'nullable|string',
-            'lactation_no' => 'nullable|string',
+            'farmer_name' => 'required',
+            'mobile_number' => 'required',
+            'village_Town' => 'nullable',
+            'district' => 'nullable',
+            'state' => 'nullable',
+            'animal_ID' => 'nullable',
+            'breed' => 'nullable',
+            'lactation_no' => 'nullable',
             'date_of_calving' => 'nullable',
-            'milk_yield' => 'nullable|string',
-            'aadhar_number' => 'nullable|string',
-            'farmer_photo_upload' => 'nullable|file|mimes:jpg,jpeg,png|max:25000',
-            'animal_photo_upload.*' => 'nullable|file|mimes:jpg,jpeg,png|max:25000',
+            'milk_yield' => 'nullable',
+            'aadhar_number' => 'nullable',
+            'farmer_photo_upload' => 'nullable',
+            'animal_photo_upload.*' => 'nullable',
         ]);
 
         if ($validator->fails()) {
