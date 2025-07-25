@@ -2,10 +2,6 @@
 
 @section('main')
 
-@php
-    $isEdit = isset($competition);
-    $timeSlots = $isEdit && !empty($competition->time_slot) ? json_decode($competition->time_slot, true) : [];
-@endphp
 <div class="content-wrapper">
   <section class="content-header">
     <h1>Edit Competition</h1>
@@ -83,51 +79,7 @@
                     </tr>
 
                        
-                    <!-- <div id="slot-wrapper">
-    @if($isEdit && count($timeSlots))
-        @foreach($timeSlots as $slot => $time)
-            <div class="slot-block form-row align-items-end mt-2">
-                <div class="form-group col-md-5">
-                    <label>Time Slot</label>
-                    <select name="time_slot[]" class="form-control time-slot-select" required>
-                        <option value="">Select Slot</option>
-                        @foreach(['Morning', 'Afternoon', 'Evening', 'Night'] as $option)
-                            <option value="{{ $option }}" {{ $option == $slot ? 'selected' : '' }}>{{ $option }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="form-group col-md-5">
-                    <label>Slot Time</label>
-                    <input type="time" name="slot_time[]" class="form-control" value="{{ $time }}" required>
-                </div>
-                <div class="form-group col-md-2">
-                    <button type="button" class="btn btn-danger remove-slot">Remove</button>
-                </div>
-            </div>
-        @endforeach
-    @else
-        <div class="slot-block form-row align-items-end">
-            <div class="form-group col-md-5">
-                <label>Time Slot</label>
-                <select name="time_slot[]" class="form-control time-slot-select" required>
-                    <option value="">Select Slot</option>
-                    @foreach (['Morning', 'Afternoon', 'Evening', 'Night'] as $slot)
-                        <option value="{{ $slot }}">{{ $slot }}</option>
-                    @endforeach
-                </select>
-            </div>
 
-            <div class="form-group col-md-5">
-                <label>Slot Time</label>
-                <input type="time" name="slot_time[]" class="form-control" required>
-            </div>
-
-            <div class="form-group col-md-2">
-                <button type="button" class="btn btn-success add-more-slot">Add More</button>
-            </div>
-        </div>
-    @endif
-</div> -->
 
 
 <tr>
@@ -152,18 +104,6 @@
     @enderror
 </td>
 
-
-  <!-- <td><strong>Select Judge (Doctor)</strong> <span style="color:red;">*</span></td>
-  <td>
-    <select name="judge" class="form-control" required>
-      <option value="">-- Select Judge --</option>
-      @foreach($doctors as $doctor)
-        <option value="{{ $doctor->id }}" {{ $competition->judge == $doctor->id ? 'selected' : '' }}>
-          {{ $doctor->name }}
-        </option>
-      @endforeach
-    </select>
-  </td> -->
 </tr>
                     <tr>
                       <td><strong>Entry Fees (₹)</strong> <span style="color:red;">*</span></td>
