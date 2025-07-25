@@ -88,12 +88,11 @@ class RankingController extends Controller
             }
     }
 
- public function leaderboard(Request $request)
+public function leaderboard(Request $request)
 {
     try {
         $today = Carbon::now()->format('Y-m-d');
 
-        // Find today's competition
         $competition = CompetitionEntry::all()->first(function ($entry) use ($today) {
             $slots = json_decode($entry->time_slot, true);
             if (is_array($slots)) {
@@ -119,21 +118,29 @@ class RankingController extends Controller
 
         $competitionId = $competition->id;
 
-        // Now get leaderboard
+        // ✅ Decode judge names
+        $judgeNames = is_array(json_decode($competition->judge_name, true))
+            ? json_decode($competition->judge_name, true)
+            : [$competition->judge_name];
+
+        // ✅ Get leaderboard sorted by total_weight
         $leaderboard = MilkRanking::select('farmer_id', DB::raw('SUM(weight) as total_weight'))
             ->where('competition_id', $competitionId)
             ->groupBy('farmer_id')
             ->orderByDesc('total_weight')
-            ->with('farmer:id,name,image')
+            ->with('farmer:id,name,image,village')
             ->get();
 
-        $data = $leaderboard->map(function ($entry, $index) {
+        // ✅ Build leaderboard with judges in each entry
+        $data = $leaderboard->map(function ($entry, $index) use ($judgeNames) {
             return [
                 'rank' => $index + 1,
                 'farmer_id' => $entry->farmer_id,
                 'name' => $entry->farmer->name ?? null,
                 'image' => $entry->farmer->image ?? null,
+                'village' => $entry->farmer->village ?? null,
                 'total_weight' => (float) $entry->total_weight,
+                'judges' => $judgeNames,
             ];
         });
 
@@ -152,6 +159,8 @@ class RankingController extends Controller
         ], 500);
     }
 }
+
+
 
 
 }
