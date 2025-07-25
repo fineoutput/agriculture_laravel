@@ -94,7 +94,8 @@ public function leaderboard(Request $request)
     try {
         $today = Carbon::now()->format('Y-m-d');
 
-        $competition = CompetitionEntry::all()->first(function ($entry) use ($today) {
+        // ✅ Get all competitions running today
+        $competitionsToday = CompetitionEntry::all()->filter(function ($entry) use ($today) {
             $slots = json_decode($entry->time_slot, true);
             if (is_array($slots)) {
                 foreach ($slots as $slot => $data) {
@@ -109,7 +110,7 @@ public function leaderboard(Request $request)
             return false;
         });
 
-        if (!$competition) {
+        if ($competitionsToday->isEmpty()) {
             return response()->json([
                 'message' => 'No competition found for today.',
                 'status' => 404,
@@ -117,15 +118,24 @@ public function leaderboard(Request $request)
             ], 404);
         }
 
-        $competitionId = $competition->id;
+        // ✅ Collect all competition IDs and all judge IDs
+        $competitionIds = [];
+        $judgeIds = [];
 
-        // ✅ Decode judge IDs (stored as JSON or single value)
-        $judgeIds = json_decode($competition->judge, true);
-        if (!is_array($judgeIds)) {
-            $judgeIds = [$competition->judge];
+        foreach ($competitionsToday as $comp) {
+            $competitionIds[] = $comp->id;
+
+            $decoded = json_decode($comp->judge, true);
+            if (is_array($decoded)) {
+                $judgeIds = array_merge($judgeIds, $decoded);
+            } else {
+                $judgeIds[] = $comp->judge;
+            }
         }
 
-        // ✅ Fetch judge details from Doctor model
+        $judgeIds = array_unique(array_filter($judgeIds));
+
+        // ✅ Fetch judges from Doctor model
         $judges = Doctor::whereIn('id', $judgeIds)
             ->get(['id', 'name', 'image', 'district'])
             ->map(function ($judge) {
@@ -137,9 +147,9 @@ public function leaderboard(Request $request)
                 ];
             });
 
-        // ✅ Get leaderboard data
+        // ✅ Get leaderboard data for all today's competitions
         $leaderboard = MilkRanking::select('farmer_id', DB::raw('SUM(weight) as total_weight'))
-            ->where('competition_id', $competitionId)
+            ->whereIn('competition_id', $competitionIds)
             ->groupBy('farmer_id')
             ->orderByDesc('total_weight')
             ->with('farmer:id,name,image,village')
@@ -172,6 +182,7 @@ public function leaderboard(Request $request)
         ], 500);
     }
 }
+
 
 
 
