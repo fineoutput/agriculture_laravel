@@ -277,9 +277,9 @@ public function liveUser(Request $request)
         if (!$competition) {
             return response()->json([
                 'message' => 'No competition found for today.',
-                'status' => 404,
+                'status' => 201,
                 'data' => null
-            ], 404);
+            ], 201);
         }
 
         $competitionId = $competition->id;
@@ -291,9 +291,9 @@ public function liveUser(Request $request)
         if ($liveStreams->isEmpty()) {
             return response()->json([
                 'message' => 'No live stream found for today\'s competition with status 2.',
-                'status' => 404,
+                'status' => 201,
                 'data' => null
-            ], 404);
+            ], 201);
         }
 
         $data = $liveStreams->map(function ($stream) {
