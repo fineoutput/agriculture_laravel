@@ -56,6 +56,7 @@
                                         <th>Aadhar Number</th>
                                         <th>Animal Photo</th>
                                         <th>Farmer Photo</th>
+                                        <th>Payment Image</th>
                                         <th>Created At</th>
                                         <th>Status</th>
                                         <th>Action</th>
@@ -88,6 +89,11 @@
                                             <td>
                                                 @if (!empty($row->farmer_photo_upload))
                                                     <img src="{{ asset($row->farmer_photo_upload) }}" width="80">
+                                                @else N/A @endif
+                                            </td>
+                                            <td>
+                                                @if (!empty($row->payment_image))
+                                                    <img src="{{ asset($row->payment_image) }}" width="80">
                                                 @else N/A @endif
                                             </td>
                                             <td>{{ $row->created_at }}</td>

@@ -26,6 +26,7 @@ use App\Models\GoogleForm;
 use App\Models\HealthInfo;
 use App\Models\MilkRecord;
 use App\Models\SalePurchaseSlider;
+use App\Models\CompetitionEntry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -1532,6 +1533,12 @@ switch ($lang) {
             // Define feed amount
             $feedAmount = config('app.feed_amount', 100.00);
 
+            // Fetch competition entry fees
+            $entryFees = CompetitionEntry::where('status', 1)
+                ->where('start_date', '<=', now())
+                ->where('end_date', '>=', now())
+                ->value('entry_fees') ?? 0;
+
             // Get the registration image
             $latestRegImage = RegImage::where('is_enabled', true)->latest()->first();
             $regImageUrl = $latestRegImage ? asset($latestRegImage->image_path) : '';            
@@ -1546,6 +1553,7 @@ switch ($lang) {
                 'CartCount' => $cartCount,
                 'feedBuy' => $feedBuy,
                 'feedAmount' => $feedAmount,
+                'entry_fees' => $entryFees,
                 'registration_image' => $regImageUrl,
             ];
 
@@ -1558,6 +1566,7 @@ switch ($lang) {
                 'notification_count' => $notificationCount,
                 'cart_count' => $cartCount,
                 'feed_buy' => $feedBuy,
+                'entry_fees' => $entryFees,
                 'ip' => $request->ip(),
             ]);
 
@@ -2960,6 +2969,7 @@ switch ($lang) {
             'aadhar_number' => 'nullable',
             'farmer_photo_upload' => 'nullable',
             'animal_photo_upload.*' => 'nullable',
+            'payment_image' => 'nullable',
         ]);
 
         if ($validator->fails()) {
@@ -2992,6 +3002,15 @@ switch ($lang) {
             }
         }
 
+        // 💳 Upload payment image
+        $paymentImagePath = '';
+        if ($request->hasFile('payment_image')) {
+            $file = $request->file('payment_image');
+            $name = 'payment_' . time() . '.' . $file->getClientOriginalExtension();
+            $file->move($uploadPath, $name);
+            $paymentImagePath = 'assets/uploads/form/' . $name;
+        }
+
         // 📝 Save form data
         $form = new GoogleForm();
         $form->farmer_id = $farmer->id;
@@ -3009,6 +3028,7 @@ switch ($lang) {
         $form->aadhar_number = $request->input('aadhar_number');
         $form->animal_photo_upload = json_encode($animalPhotoPaths);
         $form->farmer_photo_upload = $farmerPhotoPath;
+        $form->payment_image = $paymentImagePath;
         $form->save();
 
         return response()->json([

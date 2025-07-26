@@ -29,6 +29,7 @@ class GoogleForm extends Model
     'animal_photo_upload',
     'aadhar_number',
     'farmer_photo_upload',
+    'payment_image',
     'created_at',
     'status'
      ];
