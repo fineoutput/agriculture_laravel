@@ -205,21 +205,36 @@ public function goLive(Request $request){
 
         // ✅ Generate unique live ID
        // ✅ Delete any existing live stream for the user with status = 1
-LiveStream::where('user_id', $farmer->id)
-->where('status', 1)
-->delete();
+// ✅ Check for existing LiveStream entry for the user
+$existingLive = LiveStream::where('user_id', $farmer->id)
+                          ->whereIn('status', [1, 2])
+                          ->first();
+
+if ($existingLive) {
+    if ($existingLive->status == 2) {
+        // 🚫 User already live — don't allow another entry
+        return response()->json([
+            'message' => 'You are already live. Cannot start a new session.',
+            'status' => 201,
+            'data' => null
+        ], 201);
+    }
+
+    // 🔄 Delete previous entry if status is 1 (not started/completed)
+    $existingLive->delete();
+}
 
 // ✅ Generate new unique live ID
 $liveId = 'LIVE-' . Str::uuid();
 
 // ✅ Create new live stream entry
 LiveStream::create([
-'live_id' => $liveId,
-'user_id' => $farmer->id,
-'user_name' => $farmer->name,
-'competition_id' => $competition->id,
-'slot' => $slotRequested,
-'status' => 1
+    'live_id' => $liveId,
+    'user_id' => $farmer->id,
+    'user_name' => $farmer->name,
+    'competition_id' => $competition->id,
+    'slot' => $slotRequested,
+    'status' => 1
 ]);
 
 
