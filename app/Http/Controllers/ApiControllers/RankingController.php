@@ -89,99 +89,100 @@ class RankingController extends Controller
             }
     }
 
-public function leaderboard(Request $request)
-{
-    try {
-        $today = Carbon::now()->format('Y-m-d');
-
-        // ✅ Get all competitions running today
-        $competitionsToday = CompetitionEntry::all()->filter(function ($entry) use ($today) {
-            $slots = json_decode($entry->time_slot, true);
-            if (is_array($slots)) {
-                foreach ($slots as $slot => $data) {
-                    if (isset($data['date']) && $data['date'] === $today) {
-                        return true;
-                    }
-                    if (is_array($data) && isset($data[0]['date']) && $data[0]['date'] === $today) {
-                        return true;
+    public function leaderboard(Request $request)
+    {
+        try {
+            $today = Carbon::now()->format('Y-m-d');
+    
+            // ✅ Get all competitions running today
+            $competitionsToday = CompetitionEntry::all()->filter(function ($entry) use ($today) {
+                $slots = json_decode($entry->time_slot, true);
+                if (is_array($slots)) {
+                    foreach ($slots as $slot => $data) {
+                        if (isset($data['date']) && $data['date'] === $today) {
+                            return true;
+                        }
+                        if (is_array($data) && isset($data[0]['date']) && $data[0]['date'] === $today) {
+                            return true;
+                        }
                     }
                 }
+                return false;
+            });
+    
+            if ($competitionsToday->isEmpty()) {
+                return response()->json([
+                    'message' => 'No competition found for today.',
+                    'status' => 404,
+                    'data' => null,
+                ], 404);
             }
-            return false;
-        });
-
-        if ($competitionsToday->isEmpty()) {
-            return response()->json([
-                'message' => 'No competition found for today.',
-                'status' => 404,
-                'data' => null,
-            ], 404);
-        }
-
-        // ✅ Collect all competition IDs and all judge IDs
-        $competitionIds = [];
-        $judgeIds = [];
-
-        foreach ($competitionsToday as $comp) {
-            $competitionIds[] = $comp->id;
-
-            $decoded = json_decode($comp->judge, true);
-            if (is_array($decoded)) {
-                $judgeIds = array_merge($judgeIds, $decoded);
-            } else {
-                $judgeIds[] = $comp->judge;
+    
+            // ✅ Collect all competition IDs and all judge IDs
+            $competitionIds = [];
+            $judgeIds = [];
+    
+            foreach ($competitionsToday as $comp) {
+                $competitionIds[] = $comp->id;
+    
+                $decoded = json_decode($comp->judge, true);
+                if (is_array($decoded)) {
+                    $judgeIds = array_merge($judgeIds, $decoded);
+                } else {
+                    $judgeIds[] = $comp->judge;
+                }
             }
-        }
-
-        $judgeIds = array_unique(array_filter($judgeIds));
-
-        // ✅ Fetch judges from Doctor model
-        $judges = Doctor::whereIn('id', $judgeIds)
-            ->get(['id', 'name', 'image', 'district'])
-            ->map(function ($judge) {
+    
+            $judgeIds = array_unique(array_filter($judgeIds));
+    
+            // ✅ Fetch judge details
+            $judges = Doctor::whereIn('id', $judgeIds)
+                ->get(['id', 'name', 'image', 'district'])
+                ->map(function ($judge) {
+                    return [
+                        'id' => $judge->id,
+                        'name' => $judge->name,
+                        'image' => $judge->image,
+                        'district' => $judge->district,
+                    ];
+                });
+    
+            // ✅ Get individual entries sorted by weight
+            $entries = MilkRanking::whereIn('competition_id', $competitionIds)
+                ->orderByDesc('weight')
+                ->with('farmer:id,name,image,village')
+                ->get();
+    
+            $data = $entries->map(function ($entry, $index) {
                 return [
-                    'id' => $judge->id,
-                    'name' => $judge->name,
-                    'image' => $judge->image,
-                    'district' => $judge->district,
+                    'rank' => $index + 1,
+                    'farmer_id' => $entry->farmer_id,
+                    'name' => $entry->farmer->name ?? null,
+                    'image' => $entry->farmer->image ?? null,
+                    'village' => $entry->farmer->village ?? null,
+                    'weight' => (float) $entry->weight,
+                    'entry_image' => $entry->image ?? null,
+                    'submitted_at' => $entry->created_at->toDateTimeString(),
                 ];
             });
-
-        // ✅ Get leaderboard data for all today's competitions
-        $leaderboard = MilkRanking::select('farmer_id', DB::raw('SUM(weight) as total_weight'))
-            ->whereIn('competition_id', $competitionIds)
-            ->groupBy('farmer_id')
-            ->orderByDesc('total_weight')
-            ->with('farmer:id,name,image,village')
-            ->get();
-
-        $data = $leaderboard->map(function ($entry, $index) {
-            return [
-                'rank' => $index + 1,
-                'farmer_id' => $entry->farmer_id,
-                'name' => $entry->farmer->name ?? null,
-                'image' => $entry->farmer->image ?? null,
-                'village' => $entry->farmer->village ?? null,
-                'total_weight' => (float) $entry->total_weight,
-            ];
-        });
-
-        return response()->json([
-            'message' => 'Leaderboard fetched successfully',
-            'status' => 200,
-            'judges' => $judges,
-            'data' => $data
-        ], 200);
-
-    } catch (\Exception $e) {
-        Log::error('Error fetching leaderboard', ['error' => $e->getMessage()]);
-        return response()->json([
-            'message' => 'Server Error',
-            'status' => 500,
-            'error' => $e->getMessage()
-        ], 500);
+    
+            return response()->json([
+                'message' => 'Leaderboard fetched successfully',
+                'status' => 200,
+                'judges' => $judges,
+                'data' => $data,
+            ], 200);
+    
+        } catch (\Exception $e) {
+            Log::error('Error fetching leaderboard', ['error' => $e->getMessage()]);
+            return response()->json([
+                'message' => 'Server Error',
+                'status' => 500,
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
-}
+    
 
 
 
