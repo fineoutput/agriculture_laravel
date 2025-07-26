@@ -94,6 +94,19 @@ public function goLive(Request $request){
             ], 200);
         }
 
+        // After finding $farmer and before proceeding
+        $googleFormEntry = GoogleForm::where('farmer_id', $farmer->id)
+            ->where('status', 1)
+            ->first();
+
+        if (!$googleFormEntry) {
+            return response()->json([
+                'message' => 'User not approved to go live.',
+                'status' => 201,
+                'data' => null
+            ], 201);
+        }
+
         // ✅ Get slot and competition_id from form-data
         $slotRequested = $request->input('slot');
         $competitionId = $request->input('competition_id');

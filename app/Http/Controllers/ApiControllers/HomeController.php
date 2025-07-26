@@ -3011,6 +3011,15 @@ switch ($lang) {
             $paymentImagePath = 'assets/uploads/form/' . $name;
         }
 
+
+        // Check for duplicate entry
+$existingForm = GoogleForm::where('farmer_id', $farmer->id)->first();
+if ($existingForm) {
+    return response()->json([
+        'status' => 201,
+        'message' => 'You have already submitted the form!'
+    ]);
+}
         // 📝 Save form data
         $form = new GoogleForm();
         $form->farmer_id = $farmer->id;
@@ -3029,6 +3038,7 @@ switch ($lang) {
         $form->animal_photo_upload = json_encode($animalPhotoPaths);
         $form->farmer_photo_upload = $farmerPhotoPath;
         $form->payment_image = $paymentImagePath;
+        $form->status = 0;
         $form->save();
 
         return response()->json([

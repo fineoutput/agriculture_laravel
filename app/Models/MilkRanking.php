@@ -17,6 +17,7 @@ class MilkRanking extends Model
         'image',
         'competition_id',
         'weight',
+        'position',
         'status',
         'created_at',
         'updated_at',
