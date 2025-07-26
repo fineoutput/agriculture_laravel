@@ -204,17 +204,24 @@ public function goLive(Request $request){
 
 
         // ✅ Generate unique live ID
-        $liveId = 'LIVE-' . Str::uuid();
+       // ✅ Delete any existing live stream for the user with status = 1
+LiveStream::where('user_id', $farmer->id)
+->where('status', 1)
+->delete();
 
-        // ✅ Store the live session in the DB
-        LiveStream::create([
-            'live_id' => $liveId,
-            'user_id' => $farmer->id,
-            'user_name' => $farmer->name,
-            'competition_id' => $competition->id, // Save competition ID
-            'slot' => $slotRequested,
-            'status' => 1
-        ]);
+// ✅ Generate new unique live ID
+$liveId = 'LIVE-' . Str::uuid();
+
+// ✅ Create new live stream entry
+LiveStream::create([
+'live_id' => $liveId,
+'user_id' => $farmer->id,
+'user_name' => $farmer->name,
+'competition_id' => $competition->id,
+'slot' => $slotRequested,
+'status' => 1
+]);
+
 
         return response()->json([
             'status' => 200,
