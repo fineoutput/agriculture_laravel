@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\CompetitionEntry;
+use App\Models\MilkRanking;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Redirect;
@@ -179,5 +180,20 @@ public function store(Request $request)
         }
 
         return redirect()->route('admin.competition.index');
+    }
+
+
+    public function showRankings($competitionId)
+    {
+        // Get the competition details
+        $competition = CompetitionEntry::findOrFail($competitionId);
+        
+        // Get rankings for this competition, ordered by weight (highest first)
+        $rankings = MilkRanking::with('farmer')
+            ->where('competition_id', $competitionId)
+            ->orderByDesc('weight')
+            ->get();
+
+        return view('admin.competition.rankings', compact('rankings', 'competition'));
     }
 }

@@ -91,6 +91,7 @@
                       <td>
                         <a href="{{ route('admin.competition.edit', base64_encode($row->id)) }}" class="btn btn-primary btn-sm">Edit</a>
                         <a href="{{ route('admin.time-slot.edit', base64_encode($row->id)) }}" class="btn btn-primary btn-sm">Add Time Slot</a>
+                        <a href="{{ route('admin.competition.rankings', $row->id) }}" class="btn btn-success btn-sm">View Rankings</a>
                         <form action="{{ route('admin.competition.destroy', base64_encode($row->id)) }}" method="POST" style="display:inline-block" onsubmit="return confirm('Are you sure you want to delete this entry?');">
                           @csrf
                           @method('DELETE')

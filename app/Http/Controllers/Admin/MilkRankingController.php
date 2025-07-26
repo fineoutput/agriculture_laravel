@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\MilkRanking;
 use App\Models\GoogleForm;
+use App\Models\CompetitionEntry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -79,5 +80,20 @@ class MilkRankingController extends Controller
         $ranking->delete();
 
         return redirect()->back()->with('success', 'Ranking deleted');
+    }
+
+    
+    public function showByCompetition($competitionId)
+    {
+        // Get the competition details
+        $competition = CompetitionEntry::findOrFail($competitionId);
+        
+        // Get rankings for this competition, ordered by weight (highest first)
+        $rankings = MilkRanking::with('farmer')
+            ->where('competition_id', $competitionId)
+            ->orderByDesc('weight')
+            ->get();
+
+        return view('admin.milk_ranking.by_competition', compact('rankings', 'competition'));
     }
 }
