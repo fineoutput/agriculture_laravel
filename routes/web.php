@@ -376,6 +376,10 @@ Route::post('/pushnotifications/add', [PushNotificationsController::class, 'addP
     Route::delete('competition/delete/{id}', [CompetitionController::class, 'destroy'])->name('admin.competition.destroy');
     Route::post('competition/get-cities', [CompetitionController::class, 'getCitiesByState'])->name('admin.competition.getCities');
     Route::get('competition/rankings/{competitionId}', [CompetitionController::class, 'showRankings'])->name('admin.competition.rankings');
+    Route::get('competition/ranking/edit/{id}', [CompetitionController::class, 'editRanking'])->name('admin.competition.ranking.edit');
+    Route::post('competition/ranking/update/{id}', [CompetitionController::class, 'updateRanking'])->name('admin.competition.ranking.update');
+    Route::delete('competition/ranking/delete/{id}', [CompetitionController::class, 'deleteRanking'])->name('admin.competition.ranking.delete');
+    Route::post('competition/ranking/update-position', [CompetitionController::class, 'updatePosition'])->name('admin.competition.ranking.update-position');
 
 
 

@@ -196,4 +196,134 @@ public function store(Request $request)
 
         return view('admin.competition.rankings', compact('rankings', 'competition'));
     }
+
+    public function editRanking($id)
+    {
+        $ranking = MilkRanking::with('farmer')->findOrFail($id);
+        $competition = CompetitionEntry::findOrFail($ranking->competition_id);
+        
+        return view('admin.competition.edit_ranking', compact('ranking', 'competition'));
+    }
+
+    public function updateRanking(Request $request, $id)
+    {
+        try {
+            $ranking = MilkRanking::findOrFail($id);
+            
+            $request->validate([
+                'weight' => 'required|numeric|min:0.01',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'position' => 'nullable|integer|in:1,2,3',
+            ]);
+
+            $data = [
+                'weight' => $request->weight,
+                'position' => $request->position ? (int)$request->position : null,
+            ];
+
+            // Check for duplicate position if assigning a position
+            if ($data['position']) {
+                $existingRanking = MilkRanking::where('competition_id', $ranking->competition_id)
+                    ->where('id', '!=', $ranking->id)
+                    ->where('position', $data['position'])
+                    ->first();
+
+                if ($existingRanking) {
+                    Session::flash('emessage', 'Position ' . $data['position'] . ' is already assigned to another entry in this competition.');
+                    return redirect()->back()->withInput();
+                }
+            }
+
+            // Handle image upload if provided
+            if ($request->hasFile('image')) {
+                // Delete old image if exists
+                if ($ranking->image) {
+                    // Extract filename from URL
+                    $oldImagePath = str_replace(url('/'), '', $ranking->image);
+                    if (file_exists(public_path($oldImagePath))) {
+                        unlink(public_path($oldImagePath));
+                    }
+                }
+                
+                $image = $request->file('image');
+                $filename = time() . '_' . $image->getClientOriginalName();
+                $destinationPath = public_path('milk_images');
+                $image->move($destinationPath, $filename);
+                $data['image'] = url('milk_images/' . $filename);
+            }
+
+            $ranking->update($data);
+
+            Session::flash('message', 'Ranking updated successfully.');
+            return redirect()->route('admin.competition.rankings', $ranking->competition_id);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->back()
+                ->withErrors($e->validator)
+                ->withInput();
+        } catch (\Exception $e) {
+            Session::flash('emessage', 'An error occurred while updating the ranking.');
+            return redirect()->back()->withInput();
+        }
+    }
+
+    public function deleteRanking($id)
+    {
+        $ranking = MilkRanking::findOrFail($id);
+        $competitionId = $ranking->competition_id;
+        
+        // Delete image if exists
+        if ($ranking->image) {
+            // Extract filename from URL
+            $imagePath = str_replace(url('/'), '', $ranking->image);
+            if (file_exists(public_path($imagePath))) {
+                unlink(public_path($imagePath));
+            }
+        }
+        
+        $ranking->delete();
+
+        Session::flash('message', 'Ranking deleted successfully.');
+        return redirect()->route('admin.competition.rankings', $competitionId);
+    }
+
+    public function updatePosition(Request $request)
+    {
+        try {
+            $request->validate([
+                'ranking_id' => 'required|exists:tbl_ranking,id',
+                'position' => 'nullable|integer|in:1,2,3',
+            ]);
+
+            $ranking = MilkRanking::findOrFail($request->ranking_id);
+            $newPosition = $request->position ? (int)$request->position : null;
+
+            // If assigning a position, check if it's already taken by another entry in the same competition
+            if ($newPosition) {
+                $existingRanking = MilkRanking::where('competition_id', $ranking->competition_id)
+                    ->where('id', '!=', $ranking->id)
+                    ->where('position', $newPosition)
+                    ->first();
+
+                if ($existingRanking) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Position ' . $newPosition . ' is already assigned to another entry.'
+                    ], 400);
+                }
+            }
+
+            $ranking->update(['position' => $newPosition]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Position updated successfully.'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while updating the position.'
+            ], 500);
+        }
+    }
 }
