@@ -143,24 +143,64 @@ public function goLive(Request $request){
             ], 201);
         }
 
+        // Check if competition slot is still ongoing
+        $currentTime = Carbon::now('Asia/Kolkata'); // Set to Indian timezone
+        $timeSlots = json_decode($competition->time_slot, true);
+
+        if (is_array($timeSlots) && isset($timeSlots[$slotRequested])) {
+            $slotData = $timeSlots[$slotRequested];
+            
+            if (isset($slotData['date']) && isset($slotData['start_time']) && isset($slotData['end_time'])) {
+                // Create datetime objects for slot start and end with timezone
+                $slotStartDateTime = Carbon::parse($slotData['date'] . ' ' . $slotData['start_time'], 'Asia/Kolkata');
+                $slotEndDateTime = Carbon::parse($slotData['date'] . ' ' . $slotData['end_time'], 'Asia/Kolkata');
+                
+                // Add logging to debug
+                Log::info('Time comparison', [
+                    'current_time' => $currentTime->toDateTimeString(),
+                    'slot_start' => $slotStartDateTime->toDateTimeString(),
+                    'slot_end' => $slotEndDateTime->toDateTimeString(),
+                    'is_before_start' => $currentTime->lt($slotStartDateTime),
+                    'is_after_end' => $currentTime->gt($slotEndDateTime)
+                ]);
+                
+                // Check if current time is within the slot time window
+                if ($currentTime->lt($slotStartDateTime)) {
+                    return response()->json([
+                        'message' => 'Live streaming has not started yet for this slot.',
+                        'status' => 201,
+                        'data' => null
+                    ], 201);
+                }
+                
+                if ($currentTime->gt($slotEndDateTime)) {
+                    return response()->json([
+                        'message' => 'Live streaming has ended for this slot.',
+                        'status' => 201,
+                        'data' => null
+                    ], 201);
+                }
+            }
+        }
+
         // ✅ Validate that the competition includes the given slot and today's date
-       $timeSlots = json_decode($competition->time_slot, true);
+        $today = Carbon::now()->format('Y-m-d');
 
-    $slotValid = false;
-    if (is_array($timeSlots) && isset($timeSlots[$slotRequested])) {
-    $slotData = $timeSlots[$slotRequested];
-    if (!empty($slotData['date']) && $slotData['date'] === $today) {
-        $slotValid = true;
-    }
-    }
+        $slotValid = false;
+        if (is_array($timeSlots) && isset($timeSlots[$slotRequested])) {
+            $slotData = $timeSlots[$slotRequested];
+            if (!empty($slotData['date']) && $slotData['date'] === $today) {
+                $slotValid = true;
+            }
+        }
 
-    if (!$slotValid) {
-    return response()->json([
-        'message' => 'The selected competition does not have this slot available today.',
-        'status' => 201,
-        'data' => null
-    ], 201);
-    }
+        if (!$slotValid) {
+            return response()->json([
+                'message' => 'The selected competition does not have this slot available today.',
+                'status' => 201,
+                'data' => null
+            ], 201);
+        }
 
 
         // ✅ Generate unique live ID
@@ -221,7 +261,7 @@ public function updateLiveStatus(Request $request)
         // Update the status based on type
         if ($type === 'start') {
             $liveStream->status = 2;
-        } elseif ($type === 'end') {
+        } elseif ($type === 'end') {    
             $liveStream->status = 3;
         } else {
             return response()->json([
